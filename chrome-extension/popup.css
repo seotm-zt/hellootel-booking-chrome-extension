@@ -1,0 +1,377 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-width: 420px;
+  max-width: 420px;
+  background:
+    radial-gradient(circle at top right, rgba(239, 68, 68, 0.18), transparent 32%),
+    linear-gradient(180deg, #fff7f7 0%, #ffffff 100%);
+  color: #1f2937;
+}
+
+.popup {
+  padding: 18px;
+}
+
+.popup__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid rgba(190, 24, 24, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 45px rgba(127, 29, 29, 0.08);
+}
+
+.popup__eyebrow {
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.popup h1 {
+  margin: 10px 0 8px;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.popup p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.popup__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  height: 64px;
+  padding: 0 12px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.popup__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.popup__button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 14px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.popup__button--danger {
+  background: #b91c1c;
+}
+
+.popup__status {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.popup__auth {
+  margin-top: 12px;
+  padding: 18px;
+  border: 1px solid rgba(185, 28, 28, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 32px rgba(17, 24, 39, 0.06);
+}
+
+.popup__auth h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.popup__auth p {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.popup__auth-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  margin-top: 12px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: #b91c1c;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+
+.popup__auth-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(185, 28, 28, 0.2);
+}
+
+.popup__auth-button:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.popup__list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.popup__empty {
+  padding: 20px;
+  border: 1px dashed rgba(107, 114, 128, 0.35);
+  border-radius: 18px;
+  text-align: center;
+  color: #6b7280;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.booking-card {
+  padding: 10px 12px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 14px 32px rgba(17, 24, 39, 0.06);
+}
+
+.booking-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.booking-card__code {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.booking-card__title {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.booking-card__subtitle {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.booking-card__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 10px;
+  margin-top: 10px;
+}
+
+.booking-card__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.booking-card__row strong {
+  color: #111827;
+  font-weight: 700;
+}
+
+.booking-card__value {
+  text-align: right;
+  color: #374151;
+}
+
+.booking-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.booking-card__price {
+  color: #b91c1c;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.booking-card__remove {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(185, 28, 28, 0.18);
+  border-radius: 10px;
+  background: #fff1f2;
+  color: #9f1239;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.popup--blocked .popup__actions {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Login form */
+.popup__login {
+  margin-top: 12px;
+  padding: 18px;
+  border: 1px solid rgba(185, 28, 28, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 32px rgba(17, 24, 39, 0.06);
+}
+
+.popup__login h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.popup__login p {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.popup__login-form {
+  display: grid;
+  gap: 8px;
+}
+
+.popup__input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(17, 24, 39, 0.18);
+  border-radius: 12px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.popup__input:focus {
+  border-color: #b91c1c;
+}
+
+.popup__button--primary {
+  background: #b91c1c;
+}
+
+.popup__button:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+
+/* User bar */
+.popup__user-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(239, 68, 68, 0.07);
+}
+
+.popup__user-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #b91c1c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.popup__button--sm {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+  border-radius: 10px;
+  background: #111827;
+  flex-shrink: 0;
+}
+
+/* Status error variant */
+.popup__status--error {
+  background: #b91c1c;
+}
+
+/* Send to Developer section */
+.popup__dev-report {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px dashed rgba(107, 114, 128, 0.3);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.popup__dev-report-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.popup__dev-report-info strong {
+  color: #374151;
+  font-size: 13px;
+}
+
+.popup__button--dev {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 12px;
+  border-radius: 12px;
+  background: #374151;
+}

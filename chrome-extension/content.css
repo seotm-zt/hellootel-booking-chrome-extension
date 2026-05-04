@@ -1,0 +1,74 @@
+.ttb-save-booking-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid #c02626;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #ef4444 0%, #c81e1e 100%);
+  box-shadow: 0 10px 20px rgba(200, 30, 30, 0.18);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+
+.ttb-save-booking-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(200, 30, 30, 0.24);
+}
+
+.ttb-save-booking-button:disabled {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+.ttb-save-booking-button[data-saved="true"] {
+  border-color: #9f1239;
+  background: linear-gradient(180deg, #e11d48 0%, #9f1239 100%);
+  box-shadow: 0 12px 24px rgba(159, 18, 57, 0.22);
+}
+
+.ttb-save-booking-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ttb-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 999999;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(20, 24, 38, 0.94);
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1.45;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.ttb-toast[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 575.98px) {
+  .ttb-save-booking-button {
+    width: 100%;
+  }
+
+  .ttb-save-booking-actions {
+    width: 100%;
+  }
+}

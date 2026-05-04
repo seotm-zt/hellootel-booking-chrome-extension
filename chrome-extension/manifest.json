@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "TopTravel Booking Saver",
+  "version": "0.3.0",
+  "description": "Saves bookings from supported sites to the toptravel.tours database.",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs"
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "host_permissions": [
+    "http://tour.localhost/*",
+    "https://toptravel.tours/*",
+    "https://57.128.254.23/*",
+    "http://57.128.254.23:3003/*"
+  ],
+  "action": {
+    "default_title": "TopTravel Booking Saver",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://tour.localhost/*",
+        "https://toptravel.tours/*",
+        "https://57.128.254.23/*",
+        "http://57.128.254.23:3003/*"
+      ],
+      "js": [
+        "toptravel-auth.js",
+        "parsers/registry.js",
+        "parsers/config-engine.js",
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
