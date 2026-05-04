@@ -99,7 +99,7 @@ async function injectButton(card, parser) {
     try {
       const authorized = await isAuthorized();
       if (!authorized) {
-        showToast("Sign in to the TopTravel Booking Saver extension.");
+        showToast("Sign in to the Booking Saver extension.");
         btn.textContent = prev;
         return;
       }

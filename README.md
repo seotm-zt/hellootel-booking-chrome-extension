@@ -174,7 +174,7 @@ booking_saver/
 │   └── Filament/Resources/                  — интерфейс adminки
 ├── chrome-extension/                        — код Chrome-расширения
 │   ├── manifest.json
-│   ├── toptravel-auth.js                    — URL API и авторизация
+│   ├── auth.js                              — URL API и авторизация
 │   ├── background.js                        — service worker
 │   ├── content.js / content.css             — инъекция кнопок Save на страницы
 │   ├── popup.html / popup.js / popup.css    — попап расширения
@@ -209,10 +209,10 @@ booking_saver/
 
 ### 1. Указать URL сервера
 
-Открыть `chrome-extension/toptravel-auth.js` и заменить адрес API:
+Открыть `chrome-extension/auth.js` и заменить адрес API:
 
 ```js
-const TOPTRAVEL_API_BASE = "https://your-domain.com/api/v1/extension";
+const API_BASE = "https://your-domain.com/api/v1/extension";
 ```
 
 ### 2. Установить расширение в Chrome
@@ -384,9 +384,9 @@ php artisan cache:clear && php artisan view:clear
 - Adminка: `http://booking.localhost/admin`
 - API: `http://booking.localhost/api/v1/extension`
 
-В `chrome-extension/toptravel-auth.js` для локальной разработки:
+В `chrome-extension/auth.js` для локальной разработки:
 
 ```js
-const TOPTRAVEL_API_BASE = "http://booking.localhost/api/v1/extension";
+const API_BASE = "http://booking.localhost/api/v1/extension";
 ```
 

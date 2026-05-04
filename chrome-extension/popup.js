@@ -1,4 +1,3 @@
-const API_BASE = TOPTRAVEL_API_BASE;
 
 const sendToDevButton = document.getElementById("sendToDev");
 
@@ -149,7 +148,7 @@ async function exportJson() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `toptravel-bookings-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `bookings-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
     showStatus("JSON exported.");
@@ -269,12 +268,12 @@ sendToDevButton.addEventListener("click", sendPageReport);
 
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === "local" && changes[TOPTRAVEL_AUTH_STATE_KEY]) {
+  if (areaName === "local" && changes[AUTH_STATE_KEY]) {
     render().catch(console.error);
   }
 });
 
 render().catch((error) => {
-  console.error("TopTravel popup render failed", error);
+  console.error("popup render failed", error);
   showStatus("Failed to load data.", true);
 });

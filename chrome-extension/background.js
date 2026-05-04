@@ -7,7 +7,7 @@
  * loopback addresses (tour.localhost).
  */
 
-importScripts("toptravel-auth.js");
+importScripts("auth.js");
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "SAVE_BOOKING") {
@@ -19,7 +19,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
 
-        const response = await fetch(`${TOPTRAVEL_API_BASE}/bookings`, {
+        const response = await fetch(`${API_BASE}/bookings`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -51,7 +51,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "LOAD_PARSERS") {
     (async () => {
       try {
-        const resp = await fetch(`${TOPTRAVEL_API_BASE}/parsers`, {
+        const resp = await fetch(`${API_BASE}/parsers`, {
           headers: { Accept: "application/json" },
         });
         const data = resp.ok ? await resp.json() : null;
@@ -66,7 +66,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "LOAD_RULES") {
     (async () => {
       try {
-        const resp = await fetch(`${TOPTRAVEL_API_BASE}/parser-rules`, {
+        const resp = await fetch(`${API_BASE}/parser-rules`, {
           headers: { Accept: "application/json" },
         });
         const data = resp.ok ? await resp.json() : null;

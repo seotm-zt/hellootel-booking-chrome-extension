@@ -1,23 +1,23 @@
-const TOPTRAVEL_API_BASE = "https://booking-configurator.hellootel.com/api/v1/extension";
-//const TOPTRAVEL_API_BASE = "http://booking.localhost/api/v1/extension";
+//const API_BASE = "https://booking-configurator.hellootel.com/api/v1/extension";
+const API_BASE = "http://booking.localhost/api/v1/extension";
 
-const TOPTRAVEL_AUTH_STATE_KEY = "toptravelAuthState";
+const AUTH_STATE_KEY = "authState";
 
 async function readAuthState() {
-  const result = await chrome.storage.local.get(TOPTRAVEL_AUTH_STATE_KEY);
-  return result[TOPTRAVEL_AUTH_STATE_KEY] || null;
+  const result = await chrome.storage.local.get(AUTH_STATE_KEY);
+  return result[AUTH_STATE_KEY] || null;
 }
 
 async function writeAuthState(state) {
-  await chrome.storage.local.set({ [TOPTRAVEL_AUTH_STATE_KEY]: state });
+  await chrome.storage.local.set({ [AUTH_STATE_KEY]: state });
 }
 
 async function clearAuthState() {
-  await chrome.storage.local.remove(TOPTRAVEL_AUTH_STATE_KEY);
+  await chrome.storage.local.remove(AUTH_STATE_KEY);
 }
 
 async function apiLogin(email, password) {
-  const response = await fetch(`${TOPTRAVEL_API_BASE}/login`, {
+  const response = await fetch(`${API_BASE}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Accept": "application/json" },
     body: JSON.stringify({ email, password }),
