@@ -51,6 +51,8 @@
  *     br_map       {string}   Selector of the paragraph containing <br> lines
  *     key_match    {string[]} Keywords to match in the key part (before ": ")
  *
+ * ─── The following keys work in ALL parser types (card, form, table) ──────────
+ *
  * ─── label_maps ───────────────────────────────────────────────────────────────
  *
  *   Array of label/value grid configs (e.g. .meta-item containing .label + .value):
@@ -60,6 +62,18 @@
  *
  *   Array of definition-list configs (dt/dd pairs):
  *   [{ container?, item, key, value, fields: { fieldName: ["keyword1", ...] } }]
+ *
+ * ─── meta_maps ────────────────────────────────────────────────────────────────
+ *
+ *   Same format as label_maps but results go into result.meta instead of
+ *   top-level booking fields. Use for site-specific data (from, to, vehicle …):
+ *   [{ item, label, value, fields: { metaKey: ["keyword1", ...] } }]
+ *
+ * ─── tourist_blocks ───────────────────────────────────────────────────────────
+ *
+ *   Extracts an array of tourist/passenger objects into result.tourists (DB column).
+ *   Each matching item element is one tourist; fields matched via label text:
+ *   { item, label?, value?, fields: { last_name: ["фамилия"], first_name: ["имя"], dob: [...] } }
  *
  * ─── type: "form" ─────────────────────────────────────────────────────────────
  *
@@ -115,17 +129,7 @@ const ConfigParserEngine = (() => {
           }
         }
 
-        if (cfg.label_maps) {
-          for (const map of cfg.label_maps) {
-            Object.assign(result, _extractLabelMap(card, map));
-          }
-        }
-
-        if (cfg.dl_maps) {
-          for (const map of cfg.dl_maps) {
-            Object.assign(result, _extractDlMap(card, map));
-          }
-        }
+        _applyCommonMaps(card, cfg, result);
 
         return result;
       },
@@ -157,7 +161,9 @@ const ConfigParserEngine = (() => {
       },
 
       parseCard(card) {
-        return _extractFormFields(card, cfg.fields || {});
+        const result = _extractFormFields(card, cfg.fields || {});
+        _applyCommonMaps(card, cfg, result);
+        return result;
       },
     };
   }
@@ -200,9 +206,9 @@ const ConfigParserEngine = (() => {
         }
 
         if (control) {
-        const val = _getControlValue(control);
-        result[field] = spec.as_array ? (val ? [val] : []) : val;
-      }
+          const val = _getControlValue(control);
+          result[field] = spec.as_array ? (val ? [val] : []) : val;
+        }
       }
     }
     return result;
@@ -279,9 +285,41 @@ const ConfigParserEngine = (() => {
           const val = _norm(cell.textContent);
           result[field] = asArray ? (val ? [val] : []) : val;
         }
+
+        _applyCommonMaps(card, cfg, result);
+
         return result;
       },
     };
+  }
+
+  // ── shared: apply label_maps / dl_maps / meta_maps / tourist_blocks ──────────
+  //   Called at the end of parseCard() in all three parser types.
+
+  function _applyCommonMaps(card, cfg, result) {
+    if (cfg.label_maps) {
+      for (const map of cfg.label_maps) {
+        Object.assign(result, _extractLabelMap(card, map));
+      }
+    }
+
+    if (cfg.dl_maps) {
+      for (const map of cfg.dl_maps) {
+        Object.assign(result, _extractDlMap(card, map));
+      }
+    }
+
+    if (cfg.meta_maps) {
+      result.meta = result.meta || {};
+      for (const map of cfg.meta_maps) {
+        Object.assign(result.meta, _extractLabelMap(card, map));
+      }
+    }
+
+    if (cfg.tourist_blocks) {
+      const tourists = _extractTouristBlocks(card, cfg.tourist_blocks);
+      if (tourists.length) result.tourists = tourists;
+    }
   }
 
   // ── shared matches factory ───────────────────────────────────────────────────
@@ -437,6 +475,25 @@ const ConfigParserEngine = (() => {
       }
     }
     return result;
+  }
+
+  function _extractTouristBlocks(card, cfg) {
+    const tourists = [];
+    for (const itemEl of card.querySelectorAll(cfg.item)) {
+      const tourist = {};
+      for (const colEl of itemEl.children) {
+        const labelEl = colEl.querySelector(cfg.label || "label");
+        const valueEl = colEl.querySelector(cfg.value || "span");
+        if (!labelEl || !valueEl) continue;
+        const labelText = _norm(labelEl.textContent).toLowerCase();
+        const valueText = _norm(valueEl.textContent);
+        for (const [field, keywords] of Object.entries(cfg.fields || {})) {
+          if (keywords.some((kw) => labelText.includes(kw))) tourist[field] = valueText;
+        }
+      }
+      if (Object.keys(tourist).length) tourists.push(tourist);
+    }
+    return tourists;
   }
 
   function _extractDlMap(card, map) {

@@ -14,10 +14,14 @@ class ExtensionBooking extends Model
         'subtitle',
         'stay_dates',
         'guests',
+        'adults',
+        'children',
+        'infants',
         'meal_plan',
         'transfer',
         'total_price',
         'statuses',
+        'tourists',
         'meta',
         'details_link',
         'thumbnail',
@@ -32,6 +36,7 @@ class ExtensionBooking extends Model
     {
         return [
             'statuses'    => 'array',
+            'tourists'    => 'array',
             'meta'        => 'array',
             'captured_at' => 'datetime',
         ];

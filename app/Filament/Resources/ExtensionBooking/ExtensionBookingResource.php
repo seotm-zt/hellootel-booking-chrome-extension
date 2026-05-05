@@ -5,6 +5,8 @@ namespace App\Filament\Resources\ExtensionBooking;
 use App\Filament\Resources\ExtensionBooking\Pages\ListExtensionBookings;
 use App\Filament\Resources\ExtensionBooking\Pages\ViewExtensionBooking;
 use App\Models\ExtensionBooking;
+use Filament\Infolists\Components\KeyValueEntry;
+use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
@@ -86,7 +88,10 @@ class ExtensionBookingResource extends Resource
                     TextEntry::make('subtitle')->label('Subtitle')->placeholder('—'),
                     TextEntry::make('total_price')->label('Total price')->placeholder('—'),
                     TextEntry::make('stay_dates')->label('Stay dates')->placeholder('—'),
-                    TextEntry::make('guests')->label('Guests')->placeholder('—'),
+                    TextEntry::make('guests')->label('Guests (text)')->placeholder('—'),
+                    TextEntry::make('adults')->label('Adults')->placeholder('—'),
+                    TextEntry::make('children')->label('Children')->placeholder('—'),
+                    TextEntry::make('infants')->label('Infants')->placeholder('—'),
                     TextEntry::make('meal_plan')->label('Meal plan')->placeholder('—'),
                     TextEntry::make('transfer')->label('Transfer')->placeholder('—'),
                     TextEntry::make('statuses')->label('Statuses')
@@ -95,6 +100,28 @@ class ExtensionBookingResource extends Resource
                             : ($state ?? '—')
                         ),
                     TextEntry::make('saved_by')->label('Saved by'),
+                ]),
+
+            Section::make('Tourists / Passengers')
+                ->hidden(fn (ExtensionBooking $record): bool => empty($record->tourists))
+                ->schema([
+                    RepeatableEntry::make('tourists')
+                        ->label('')
+                        ->columns(3)
+                        ->schema([
+                            TextEntry::make('last_name')->label('Last name')->placeholder('—'),
+                            TextEntry::make('first_name')->label('First name')->placeholder('—'),
+                            TextEntry::make('dob')->label('Date of birth')->placeholder('—'),
+                        ]),
+                ]),
+
+            Section::make('Meta / Extra fields')
+                ->hidden(fn (ExtensionBooking $record): bool => empty($record->meta))
+                ->schema([
+                    KeyValueEntry::make('meta')
+                        ->label('')
+                        ->keyLabel('Field')
+                        ->valueLabel('Value'),
                 ]),
 
             Section::make('Source')

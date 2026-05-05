@@ -12,12 +12,17 @@
 
 | Компонент | Версия |
 |-----------|--------|
-| PHP       | >= 8.2 |
+| PHP       | >= 8.2 (рекомендуется 8.4) |
 | MySQL     | >= 8.0 |
 | Apache    | >= 2.4 |
 | Composer  | >= 2.x |
 
 PHP-расширения: `pdo_mysql`, `mbstring`, `xml`, `curl`, `zip`, `bcmath`, `intl`
+
+> **Хостинг Hellootel (booking-configurator.hellootel.com):**
+> Системный PHP — 8.1, PHP 8.4 находится по пути `/opt/php84/bin/php`.
+> Во всех командах ниже заменить `php` на `/opt/php84/bin/php`,
+> а `composer` на `/opt/php84/bin/php /opt/php84/bin/composer`.
 
 ---
 
@@ -36,6 +41,9 @@ unzip booking_saver.zip -d /var/www/booking_saver
 ```bash
 cd /var/www/booking_saver
 composer install --no-dev --optimize-autoloader
+
+# На Hellootel (PHP 8.1 по умолчанию):
+/opt/php84/bin/php /opt/php84/bin/composer install --no-dev --optimize-autoloader
 ```
 
 ### 3. Настроить окружение
@@ -43,6 +51,9 @@ composer install --no-dev --optimize-autoloader
 ```bash
 cp .env.example .env
 php artisan key:generate
+
+# На Hellootel:
+/opt/php84/bin/php artisan key:generate
 ```
 
 Отредактировать `.env`:
@@ -70,6 +81,9 @@ CREATE DATABASE booking_saver CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 ```bash
 php artisan migrate
+
+# На Hellootel:
+/opt/php84/bin/php artisan migrate
 ```
 
 ### 6. Создать первого администратора
@@ -139,10 +153,18 @@ chmod -R 775 /var/www/booking_saver/bootstrap/cache
 ### 9. Кэш для production
 
 ```bash
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan filament:cache-components
+php artisan optimize
+
+# На Hellootel:
+/opt/php84/bin/php artisan optimize
+```
+
+Очистить кэш (если что-то пошло не так):
+```bash
+php artisan optimize:clear
+
+# На Hellootel:
+/opt/php84/bin/php artisan optimize:clear
 ```
 
 ---
