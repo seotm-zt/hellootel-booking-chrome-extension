@@ -4,18 +4,24 @@ namespace App\Filament\Resources\ExtensionBooking;
 
 use App\Filament\Resources\ExtensionBooking\Pages\ListExtensionBookings;
 use App\Filament\Resources\ExtensionBooking\Pages\ViewExtensionBooking;
+use App\Filament\Resources\ProcessedBooking\ProcessedBookingResource;
 use App\Models\ExtensionBooking;
+use App\Services\BookingProcessorService;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 class ExtensionBookingResource extends Resource
 {
@@ -50,6 +56,17 @@ class ExtensionBookingResource extends Resource
                 TextColumn::make('source_domain')->label('Site')->placeholder('—'),
                 TextColumn::make('saved_by')->label('User')->searchable()->placeholder('—'),
                 TextColumn::make('created_at')->label('Saved')->dateTime('d.m.Y H:i')->sortable(),
+                IconColumn::make('processed_booking_id')
+                    ->label('Обработана')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-minus-circle')
+                    ->trueColor('success')
+                    ->falseColor('gray')
+                    ->url(fn (ExtensionBooking $r): ?string => $r->processed_booking_id
+                        ? ProcessedBookingResource::getUrl('view', ['record' => $r->processed_booking_id])
+                        : null)
+                    ->openUrlInNewTab(),
             ])
             ->filters([
                 Filter::make('saved_by')
@@ -71,6 +88,33 @@ class ExtensionBookingResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    BulkAction::make('process')
+                        ->label('Обработать')
+                        ->icon('heroicon-o-check-badge')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('Обработать выбранные брони')
+                        ->modalDescription('Будут созданы записи в таблице обработанных броней. Уже обработанные брони будут пропущены.')
+                        ->modalSubmitActionLabel('Обработать')
+                        ->action(function (Collection $records): void {
+                            $service = app(BookingProcessorService::class);
+                            $created = 0;
+                            $skipped = 0;
+                            foreach ($records as $record) {
+                                if ($record->processed_booking_id) {
+                                    $skipped++;
+                                    continue;
+                                }
+                                $service->process($record);
+                                $created++;
+                            }
+                            Notification::make()
+                                ->title('Обработка завершена')
+                                ->body("Создано: {$created}, пропущено (уже обработаны): {$skipped}")
+                                ->success()
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])

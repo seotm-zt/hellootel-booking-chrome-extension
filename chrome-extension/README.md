@@ -28,7 +28,7 @@ Chrome-расширение, которое:
 1. Откройте `chrome://extensions`.
 2. Включите `Developer mode`.
 3. Нажмите `Load unpacked`.
-4. Выберите папку проекта `D:\Alexcg.oline\chrome`.
+4. Выберите папку проекта `C:\tmp\chrome-extension`.
 
 ## Как использовать
 

@@ -36,6 +36,10 @@
       "matches": [
         "<all_urls>"
       ],
+      "exclude_matches": [
+        "http://booking.localhost/*",
+        "https://booking.localhost/*"
+      ],
       "js": [
         "auth.js",
         "parsers/registry.js",

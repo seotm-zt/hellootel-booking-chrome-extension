@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExtensionBooking extends Model
 {
     protected $fillable = [
         'user_id',
+        'processed_booking_id',
         'saved_by',
         'booking_code',
         'hotel_name',
@@ -40,5 +42,10 @@ class ExtensionBooking extends Model
             'meta'        => 'array',
             'captured_at' => 'datetime',
         ];
+    }
+
+    public function processedBooking(): BelongsTo
+    {
+        return $this->belongsTo(ProcessedBooking::class, 'processed_booking_id');
     }
 }
