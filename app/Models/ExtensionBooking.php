@@ -15,6 +15,8 @@ class ExtensionBooking extends Model
         'hotel_name',
         'subtitle',
         'stay_dates',
+        'reservation_at',
+        'nights',
         'guests',
         'adults',
         'children',

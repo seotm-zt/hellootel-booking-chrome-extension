@@ -10,6 +10,7 @@ class ProcessedBooking extends Model
     protected $fillable = [
         'source_booking_id',
         'booking_code',
+        'hotel_name',
         'tourists',
         'tourist_ids',
         'guest_info',
@@ -18,12 +19,17 @@ class ProcessedBooking extends Model
         'room_type_name',
         'operator_id',
         'operator_name',
-        'reservation_at',
+        'reservation_date',
+        'reservation_time',
         'arrival_at',
         'departure_at',
+        'nights',
         'agency_id',
+        'agency_name',
         'price',
         'currency_code',
+        'commission',
+        'status',
         'person_count_adults',
         'person_count_children',
         'person_count_teens',
@@ -39,10 +45,10 @@ class ProcessedBooking extends Model
         return [
             'tourists'     => 'array',
             'tourist_ids'  => 'array',
-            'reservation_at' => 'date',
-            'arrival_at'   => 'date',
-            'departure_at' => 'date',
-            'price'        => 'float',
+            'arrival_at'     => 'date',
+            'departure_at'   => 'date',
+            'price'          => 'float',
+            'commission'     => 'float',
         ];
     }
 

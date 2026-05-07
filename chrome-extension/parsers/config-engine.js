@@ -29,8 +29,11 @@
  *     attr         {string?}  Return this attribute value instead of textContent
  *     multi        {bool?}    Return array of all matching texts
  *     strip_icons  {bool?}    Text-nodes only (skips <i> / <svg> children)
- *     strip_prefix {string?}  Strip this literal prefix from extracted text
+ *     strip_prefix  {string?}  Strip this literal prefix from extracted text
  *                             (case-insensitive, use with sel)
+ *     strip_pattern {string?}  RegExp pattern (no backslash-letter escapes: use [0-9] not \d,
+ *                             [ ]* not \s, [(] not \() applied to text AFTER strip_prefix.
+ *                             Works in both single and multi modes.
  *     append_location {string?}  Append " (text)" from another selector
  *
  *   DATASET
@@ -68,6 +71,14 @@
  *   Same format as label_maps but results go into result.meta instead of
  *   top-level booking fields. Use for site-specific data (from, to, vehicle …):
  *   [{ item, label, value, fields: { metaKey: ["keyword1", ...] } }]
+ *
+ * ─── meta_fields ──────────────────────────────────────────────────────────────
+ *
+ *   Object whose keys go into result.meta. Each value is a normal field spec
+ *   (same as fields entries: sel, strip_prefix, strip_pattern, etc.).
+ *   Use when a single selector needs to be stored under meta rather than a
+ *   top-level booking field (e.g. reservation_at from "Забронирован:"):
+ *   { metaKey: { sel: "...", strip_prefix: "..." } }
  *
  * ─── tourist_blocks ───────────────────────────────────────────────────────────
  *
@@ -316,6 +327,16 @@ const ConfigParserEngine = (() => {
       }
     }
 
+    if (cfg.meta_fields) {
+      result.meta = result.meta || {};
+      for (const [key, spec] of Object.entries(cfg.meta_fields)) {
+        const val = _extractField(card, spec);
+        if (val !== null && val !== undefined && val !== "") {
+          result.meta[key] = val;
+        }
+      }
+    }
+
     if (cfg.tourist_blocks) {
       const tourists = _extractTouristBlocks(card, cfg.tourist_blocks);
       if (tourists.length) result.tourists = tourists;
@@ -434,7 +455,17 @@ const ConfigParserEngine = (() => {
 
     if (spec.multi) {
       return Array.from(card.querySelectorAll(spec.sel))
-        .map((el) => _textOf(el, spec.strip_icons))
+        .map((el) => {
+          let t = _textOf(el, spec.strip_icons);
+          if (spec.strip_prefix) {
+            const rx = new RegExp("^" + spec.strip_prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*", "i");
+            t = t.replace(rx, "").trim();
+          }
+          if (spec.strip_pattern) {
+            t = t.replace(new RegExp(spec.strip_pattern), "").trim();
+          }
+          return t;
+        })
         .filter(Boolean);
     }
 
@@ -451,6 +482,10 @@ const ConfigParserEngine = (() => {
         "i"
       );
       text = text.replace(rx, "").trim();
+    }
+
+    if (spec.strip_pattern) {
+      text = text.replace(new RegExp(spec.strip_pattern), "").trim();
     }
 
     if (spec.append_location) {

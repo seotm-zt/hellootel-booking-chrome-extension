@@ -1,19 +1,27 @@
-const API_BASE = "https://booking-configurator.hellootel.com/api/v1/extension";
-//const API_BASE = "http://booking.localhost/api/v1/extension";
+//const API_BASE = "https://booking-configurator.hellootel.com/api/v1/extension";
+const API_BASE = "http://booking.localhost/api/v1/extension";
 
 const AUTH_STATE_KEY = "authState";
 
 async function readAuthState() {
-  const result = await chrome.storage.local.get(AUTH_STATE_KEY);
-  return result[AUTH_STATE_KEY] || null;
+  try {
+    const result = await chrome.storage.local.get(AUTH_STATE_KEY);
+    return result[AUTH_STATE_KEY] || null;
+  } catch {
+    return null;
+  }
 }
 
 async function writeAuthState(state) {
-  await chrome.storage.local.set({ [AUTH_STATE_KEY]: state });
+  try {
+    await chrome.storage.local.set({ [AUTH_STATE_KEY]: state });
+  } catch {}
 }
 
 async function clearAuthState() {
-  await chrome.storage.local.remove(AUTH_STATE_KEY);
+  try {
+    await chrome.storage.local.remove(AUTH_STATE_KEY);
+  } catch {}
 }
 
 async function apiLogin(email, password) {

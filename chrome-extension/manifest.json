@@ -50,6 +50,22 @@
         "content.css"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://booking.localhost/admin/extension/page-reports/*",
+        "https://booking.localhost/admin/extension/page-reports/*"
+      ],
+      "js": [
+        "auth.js",
+        "parsers/registry.js",
+        "parsers/config-engine.js",
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
     }
   ]
 }

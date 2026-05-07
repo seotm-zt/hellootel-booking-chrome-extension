@@ -49,10 +49,12 @@ class ExtensionBookingResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('booking_code')->label('Code')->searchable()->badge()->color('danger')->placeholder('—'),
-                TextColumn::make('hotel_name')->label('Hotel / Tour')->searchable()->limit(40),
+                TextColumn::make('hotel_name')->label('Hotel')->searchable()->limit(35)->placeholder('—'),
+                TextColumn::make('subtitle')->label('Room type')->limit(30)->placeholder('—'),
                 TextColumn::make('total_price')->label('Price')->placeholder('—'),
                 TextColumn::make('stay_dates')->label('Dates')->placeholder('—'),
-                TextColumn::make('guests')->label('Guests')->placeholder('—'),
+                TextColumn::make('reservation_at')->label('Reserved at')->placeholder('—'),
+                TextColumn::make('guests')->label('Guests')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('source_domain')->label('Site')->placeholder('—'),
                 TextColumn::make('saved_by')->label('User')->searchable()->placeholder('—'),
                 TextColumn::make('created_at')->label('Saved')->dateTime('d.m.Y H:i')->sortable(),
@@ -129,7 +131,8 @@ class ExtensionBookingResource extends Resource
                 ->schema([
                     TextEntry::make('booking_code')->label('Code')->badge()->color('danger')->placeholder('—'),
                     TextEntry::make('hotel_name')->label('Hotel / Tour')->placeholder('—'),
-                    TextEntry::make('subtitle')->label('Subtitle')->placeholder('—'),
+                    TextEntry::make('subtitle')->label('Room type')->placeholder('—'),
+                    TextEntry::make('reservation_at')->label('Reserved at')->placeholder('—'),
                     TextEntry::make('total_price')->label('Total price')->placeholder('—'),
                     TextEntry::make('stay_dates')->label('Stay dates')->placeholder('—'),
                     TextEntry::make('guests')->label('Guests (text)')->placeholder('—'),
