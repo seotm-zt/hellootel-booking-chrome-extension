@@ -48,8 +48,8 @@ function createMetaRow(label, value) {
 
 function renderEmptyState(allConfirmed = false) {
   bookingsList.innerHTML = allConfirmed
-    ? '<div class="popup__empty popup__empty--done">✓ Все брони подтверждены</div>'
-    : '<div class="popup__empty">Нет броней. Нажмите кнопку сохранения на странице с бронью.</div>';
+    ? '<div class="popup__empty popup__empty--done">✓ All bookings confirmed</div>'
+    : '<div class="popup__empty">No bookings. Click the save button on a booking page.</div>';
   bookingCount.textContent = "0";
 }
 
@@ -113,17 +113,17 @@ function renderBookings(bookings) {
               <div class="booking-card__title">${title}</div>
               ${subtitle ? `<div class="booking-card__subtitle">${subtitle}</div>` : ""}
             </div>
-            ${sourceUrl ? `<a class="booking-card__goto" href="${sourceUrl}" target="_blank" title="Перейти на страницу брони">↗</a>` : ""}
+            ${sourceUrl ? `<a class="booking-card__goto" href="${sourceUrl}" target="_blank" title="Go to booking page">↗</a>` : ""}
           </div>
           <div class="booking-card__meta">
-            ${createMetaRow("Даты", booking.stay_dates)}
-            ${createMetaRow("Гости", booking.guests)}
-            ${createMetaRow("Питание", booking.meal_plan)}
-            ${createMetaRow("Статус", formatStatuses(booking.statuses))}
+            ${createMetaRow("Dates", booking.stay_dates)}
+            ${createMetaRow("Guests", booking.guests)}
+            ${createMetaRow("Meal plan", booking.meal_plan)}
+            ${createMetaRow("Status", formatStatuses(booking.statuses))}
           </div>
           <div class="booking-card__footer">
             <div class="booking-card__price">${normalizeText(booking.total_price || "—")}</div>
-            <button class="booking-card__remove" data-remove-id="${booking.id}" type="button">Удалить</button>
+            <button class="booking-card__remove" data-remove-id="${booking.id}" type="button">Remove</button>
           </div>
         </article>
       `;

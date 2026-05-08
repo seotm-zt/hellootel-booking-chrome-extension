@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Http;
 class ApiTesting extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-beaker';
-    protected static ?string $navigationLabel = 'Тестирование API';
-    protected static ?string $title = 'Тестирование API';
+    protected static ?string $navigationLabel = 'API Testing';
+    protected static ?string $title = 'API Testing';
     protected static ?string $navigationGroup = 'HellOotel';
     protected static ?int $navigationSort = 200;
 
@@ -24,27 +24,27 @@ class ApiTesting extends Page
 
     protected static array $endpoints = [
         'hotels' => [
-            'label' => 'Отели',
+            'label' => 'Hotels',
             'url' => 'https://demo.hellootel.com/api/v1/hotel/list?language=en',
             'params' => [],
         ],
         'room_types' => [
-            'label' => 'Типы номеров в отеле',
+            'label' => 'Room types in hotel',
             'url' => 'https://demo.hellootel.com/api/v1/hotel/room-types',
             'params' => ['hotel_id' => null, 'bonus_reservation_mode' => '0', 'arrival_at' => '', 'departure_at' => '', 'language' => 'en'],
         ],
         'bonus_room_types' => [
-            'label' => 'Бонусные номера в отеле',
+            'label' => 'Bonus room types in hotel',
             'url' => 'https://demo.hellootel.com/api/v1/hotel/bonus-room-types',
             'params' => ['hotel_ids[]' => null, 'language' => 'en'],
         ],
         'reservations' => [
-            'label' => 'Список резерва',
+            'label' => 'Reservations list',
             'url' => 'https://demo.hellootel.com/api/v1/reservation/list',
             'params' => [],
         ],
         'operators' => [
-            'label' => 'Список операторов',
+            'label' => 'Operators list',
             'url' => 'https://demo.hellootel.com/api/v1/operator/list?language=en',
             'params' => [],
         ],

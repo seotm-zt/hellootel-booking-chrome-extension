@@ -12,10 +12,10 @@ function getEffectiveLocation() {
   return window.location;
 }
 
-const BUTTON_LABEL     = "Сохранить в базе";
-const UPDATE_LABEL     = "Обновить в базе";
-const CONFIRMED_LABEL  = "Подтверждено ✓";
-const SAVING_LABEL     = "Сохранение...";
+const BUTTON_LABEL     = "Save to database";
+const UPDATE_LABEL     = "Update in database";
+const CONFIRMED_LABEL  = "Confirmed ✓";
+const SAVING_LABEL     = "Saving...";
 
 let scanQueued = false;
 let toastElement = null;
@@ -108,10 +108,10 @@ function buildTouristRow(t = {}) {
   const div = document.createElement("div");
   div.className = "ttb-tourist-row";
   div.innerHTML = `
-    <input class="ttb-modal__input ttb-tourist__last"  type="text" placeholder="Фамилия"       value="${esc(t.last_name)}">
-    <input class="ttb-modal__input ttb-tourist__first" type="text" placeholder="Имя"           value="${esc(t.first_name)}">
-    <input class="ttb-modal__input ttb-tourist__dob"   type="text" placeholder="Дата рождения" value="${esc(t.dob)}">
-    <button class="ttb-tourist__remove" type="button" title="Удалить">✕</button>
+    <input class="ttb-modal__input ttb-tourist__last"  type="text" placeholder="Last name"    value="${esc(t.last_name)}">
+    <input class="ttb-modal__input ttb-tourist__first" type="text" placeholder="First name"   value="${esc(t.first_name)}">
+    <input class="ttb-modal__input ttb-tourist__dob"   type="text" placeholder="Date of birth" value="${esc(t.dob)}">
+    <button class="ttb-tourist__remove" type="button" title="Remove">✕</button>
   `;
   div.querySelector(".ttb-tourist__remove").addEventListener("click", () => div.remove());
   return div;
@@ -119,10 +119,10 @@ function buildTouristRow(t = {}) {
 
 async function loadRoomTypes(hotelId, selectEl, preselectedId) {
   selectEl.disabled = true;
-  selectEl.innerHTML = '<option value="">Загрузка...</option>';
+  selectEl.innerHTML = '<option value="">Loading...</option>';
   try {
     const types = await getRoomTypesFromServer(hotelId);
-    selectEl.innerHTML = '<option value="">— выберите тип номера —</option>';
+    selectEl.innerHTML = '<option value="">— select room type —</option>';
     for (const t of types) {
       const opt = document.createElement("option");
       opt.value       = t.id;
@@ -132,7 +132,7 @@ async function loadRoomTypes(hotelId, selectEl, preselectedId) {
     }
     selectEl.disabled = false;
   } catch {
-    selectEl.innerHTML = '<option value="">— ошибка загрузки —</option>';
+    selectEl.innerHTML = '<option value="">— loading error —</option>';
     selectEl.disabled  = false;
   }
 }
@@ -169,90 +169,90 @@ async function showConfirmModal(saveResult) {
     <div class="ttb-modal" role="dialog" aria-modal="true">
 
       <div class="ttb-modal__header">
-        <span class="ttb-modal__title">Подтверждение брони</span>
-        <button class="ttb-modal__close" type="button" aria-label="Закрыть">✕</button>
+        <span class="ttb-modal__title">Confirm booking</span>
+        <button class="ttb-modal__close" type="button" aria-label="Close">✕</button>
       </div>
 
       <div class="ttb-modal__body">
 
-        <label class="ttb-modal__label">Отель</label>
+        <label class="ttb-modal__label">Hotel</label>
         <div class="ttb-modal__autocomplete">
           <input class="ttb-modal__input" id="ttb-hotel-input" type="text"
-            placeholder="Введите название отеля..."
+            placeholder="Type hotel name..."
             value="${esc(pre.hotelName)}" autocomplete="off" />
           <ul class="ttb-modal__suggestions" id="ttb-hotel-suggestions" hidden></ul>
         </div>
-        ${hotelMatch ? `<div class="ttb-modal__match-badge">Авто-сопоставление · ${hotelMatch.score}%</div>` : ""}
+        ${hotelMatch ? `<div class="ttb-modal__match-badge">Auto-matched · ${hotelMatch.score}%</div>` : ""}
 
-        <label class="ttb-modal__label">Тип номера</label>
+        <label class="ttb-modal__label">Room type</label>
         <select class="ttb-modal__select" id="ttb-room-select" ${pre.hotelId ? "" : "disabled"}>
-          <option value="">${pre.hotelId ? "— выберите тип номера —" : "— сначала выберите отель —"}</option>
+          <option value="">${pre.hotelId ? "— select room type —" : "— select hotel first —"}</option>
         </select>
 
-        <div class="ttb-modal__section-title">Данные брони</div>
+        <div class="ttb-modal__section-title">Booking details</div>
 
-        <label class="ttb-modal__label">Номер брони</label>
+        <label class="ttb-modal__label">Booking number</label>
         <input class="ttb-modal__input" id="ttb-booking-code" type="text" value="${esc(pre.bookingCode)}" placeholder="ORD-123456" />
 
         <div class="ttb-modal__row-2">
           <div>
-            <label class="ttb-modal__label">Дата брони</label>
+            <label class="ttb-modal__label">Booking date</label>
             <input class="ttb-modal__input" id="ttb-reserv-date" type="date" value="${esc(pre.reservDate)}" />
           </div>
           <div>
-            <label class="ttb-modal__label">Время</label>
+            <label class="ttb-modal__label">Time</label>
             <input class="ttb-modal__input" id="ttb-reserv-time" type="text" placeholder="17:03" maxlength="5" value="${esc(pre.reservTime)}" />
           </div>
         </div>
 
         <div class="ttb-modal__row-2">
           <div>
-            <label class="ttb-modal__label">Дата заезда</label>
+            <label class="ttb-modal__label">Check-in</label>
             <input class="ttb-modal__input" id="ttb-arrival" type="date" value="${esc(pre.arrivalAt)}" />
           </div>
           <div>
-            <label class="ttb-modal__label">Дата выезда</label>
+            <label class="ttb-modal__label">Check-out</label>
             <input class="ttb-modal__input" id="ttb-departure" type="date" value="${esc(pre.departureAt)}" />
           </div>
         </div>
 
         <div class="ttb-modal__row-2">
           <div>
-            <label class="ttb-modal__label">Стоимость</label>
+            <label class="ttb-modal__label">Price</label>
             <input class="ttb-modal__input" id="ttb-price" type="text" placeholder="1250.00" value="${esc(pre.price)}" />
           </div>
           <div>
-            <label class="ttb-modal__label">Валюта</label>
+            <label class="ttb-modal__label">Currency</label>
             <input class="ttb-modal__input" id="ttb-currency" type="text" maxlength="3" placeholder="EUR" value="${esc(pre.currency)}" />
           </div>
         </div>
 
         <div class="ttb-modal__row-3">
           <div>
-            <label class="ttb-modal__label">Взрослых</label>
+            <label class="ttb-modal__label">Adults</label>
             <input class="ttb-modal__input" id="ttb-adults" type="number" min="0" value="${esc(pre.adults)}" />
           </div>
           <div>
-            <label class="ttb-modal__label">Детей</label>
+            <label class="ttb-modal__label">Children</label>
             <input class="ttb-modal__input" id="ttb-children" type="number" min="0" value="${esc(pre.children)}" />
           </div>
           <div>
-            <label class="ttb-modal__label">Младенцев</label>
+            <label class="ttb-modal__label">Infants</label>
             <input class="ttb-modal__input" id="ttb-infants" type="number" min="0" value="${esc(pre.infants)}" />
           </div>
         </div>
 
-        <div class="ttb-modal__section-title">Жильцы</div>
+        <div class="ttb-modal__section-title">Guests</div>
         <div id="ttb-tourists-list"></div>
-        <button class="ttb-modal__add-tourist" type="button" id="ttb-add-tourist">+ Добавить жильца</button>
+        <button class="ttb-modal__add-tourist" type="button" id="ttb-add-tourist">+ Add guest</button>
 
       </div>
 
       <div class="ttb-modal__footer">
-        <button class="ttb-modal__btn ttb-modal__btn--delete"  type="button">Удалить из базы</button>
+        <button class="ttb-modal__btn ttb-modal__btn--delete"  type="button">Delete from database</button>
         <div style="flex:1"></div>
-        <button class="ttb-modal__btn ttb-modal__btn--cancel"  type="button">Отменить</button>
-        <button class="ttb-modal__btn ttb-modal__btn--confirm" type="button" disabled>Подтвердить</button>
+        <button class="ttb-modal__btn ttb-modal__btn--cancel"  type="button">Cancel</button>
+        <button class="ttb-modal__btn ttb-modal__btn--confirm" type="button" disabled>Confirm</button>
       </div>
 
     </div>
@@ -337,7 +337,7 @@ async function showConfirmModal(saveResult) {
 
     function closeCancel() {
       destroyModal();
-      showToast("Бронь сохранена. Ещё не подтверждена.");
+      showToast("Booking saved. Not yet confirmed.");
       resolve(false);
     }
 
@@ -350,24 +350,24 @@ async function showConfirmModal(saveResult) {
 
     const deleteBtn = overlay.querySelector(".ttb-modal__btn--delete");
     deleteBtn.addEventListener("click", async () => {
-      if (!confirm("Удалить бронь из базы данных?")) return;
+      if (!confirm("Delete this booking from the database?")) return;
       deleteBtn.disabled    = true;
-      deleteBtn.textContent = "Удаление...";
+      deleteBtn.textContent = "Deleting...";
       try {
         await deleteBookingFromServer(raw.id);
         destroyModal();
-        showToast("Бронь удалена из базы.");
+        showToast("Booking deleted from database.");
         resolve("deleted");
       } catch (err) {
         deleteBtn.disabled    = false;
-        deleteBtn.textContent = "Удалить из базы";
-        showToast(`Ошибка: ${err.message}`);
+        deleteBtn.textContent = "Delete from database";
+        showToast(`Delete failed: ${err.message}`);
       }
     });
 
     confirmBtn.addEventListener("click", async () => {
       confirmBtn.disabled    = true;
-      confirmBtn.textContent = "Отправка...";
+      confirmBtn.textContent = "Sending...";
       try {
         const selectedRoomId   = roomSelect.value ? parseInt(roomSelect.value, 10) : null;
         const selectedRoomName = roomSelect.selectedOptions[0]?.textContent?.trim() ?? null;
@@ -397,12 +397,12 @@ async function showConfirmModal(saveResult) {
         });
 
         destroyModal();
-        showToast("Бронь подтверждена ✓");
+        showToast("Booking confirmed ✓");
         resolve(true);
       } catch (err) {
-        confirmBtn.disabled    = false;
-        confirmBtn.textContent = "Подтвердить";
-        showToast(`Ошибка: ${err.message}`);
+        destroyModal();
+        showToast(`Confirm failed: ${err.message}`);
+        resolve(false);
       }
     });
   });
@@ -447,7 +447,7 @@ async function injectButton(card, parser) {
     try {
       const authorized = await isAuthorized();
       if (!authorized) {
-        showToast("Sign in to the Booking Saver extension.");
+        showToast("Sign in to the extension first.");
         btn.textContent = prev;
         return;
       }
@@ -537,4 +537,9 @@ if (document.readyState === "loading") {
 
 window.addEventListener("focus", queueScan);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) queueScan(); });
+
+// Clean up the modal if the user navigates away (Livewire SPA or real unload).
+window.addEventListener("pagehide", destroyModal);
+document.addEventListener("livewire:navigate", destroyModal);
+
 installObserver();

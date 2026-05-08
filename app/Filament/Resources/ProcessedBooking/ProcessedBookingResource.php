@@ -34,7 +34,7 @@ class ProcessedBookingResource extends Resource
 {
     protected static ?string $model = ProcessedBooking::class;
     protected static ?string $navigationIcon = 'heroicon-o-check-badge';
-    protected static ?string $navigationLabel = 'Обработанные брони';
+    protected static ?string $navigationLabel = 'Processed Bookings';
     protected static ?int $navigationSort = 201;
 
     public static function getNavigationGroup(): ?string
@@ -44,12 +44,12 @@ class ProcessedBookingResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return 'Обработанная бронь';
+        return 'Processed Booking';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Обработанные брони';
+        return 'Processed Bookings';
     }
 
     public static function table(Table $table): Table
@@ -57,9 +57,9 @@ class ProcessedBookingResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('id')->label('ID')->sortable(),
-                TextColumn::make('booking_code')->label('Код брони')->badge()->color('success')->searchable()->placeholder('—'),
+                TextColumn::make('booking_code')->label('Code')->badge()->color('success')->searchable()->placeholder('—'),
                 IconColumn::make('hotel_id')
-                    ->label('Сопост.')
+                    ->label('Matched')
                     ->boolean()
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-x-circle')
@@ -67,12 +67,12 @@ class ProcessedBookingResource extends Resource
                     ->falseColor('gray')
                     ->getStateUsing(fn (ProcessedBooking $r) => (bool) $r->hotel_id),
                 TextColumn::make('hotel_id')->label('hotel_id')->placeholder('—')->searchable(),
-                TextColumn::make('hotel_name')->label('Отель (текст)')->limit(30)->placeholder('—')->searchable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('hotel_name')->label('Hotel (text)')->limit(30)->placeholder('—')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('room_type_id')->label('room_type_id')->placeholder('—'),
-                TextColumn::make('room_type_name')->label('Тип номера')->limit(25)->placeholder('—'),
-                TextColumn::make('status')->label('Статус')->placeholder('—')->badge()->color('warning'),
+                TextColumn::make('room_type_name')->label('Room type')->limit(25)->placeholder('—'),
+                TextColumn::make('status')->label('Status')->placeholder('—')->badge()->color('warning'),
                 IconColumn::make('confirmed_at')
-                    ->label('Подтв.')
+                    ->label('Conf.')
                     ->boolean()
                     ->trueIcon('heroicon-o-check-badge')
                     ->falseIcon('heroicon-o-clock')
@@ -80,10 +80,10 @@ class ProcessedBookingResource extends Resource
                     ->falseColor('gray')
                     ->getStateUsing(fn (ProcessedBooking $r) => (bool) $r->confirmed_at)
                     ->tooltip(fn (ProcessedBooking $r) => $r->confirmed_at
-                        ? 'Подтверждено: ' . $r->confirmed_at->format('d.m.Y H:i')
-                        : 'Не подтверждено'),
+                        ? 'Confirmed: ' . $r->confirmed_at->format('d.m.Y H:i')
+                        : 'Not confirmed'),
                 TextColumn::make('confirmed_by_user_id')
-                    ->label('Кто подтвердил')
+                    ->label('Confirmed by')
                     ->placeholder('—')
                     ->formatStateUsing(fn ($state) => $state
                         ? \App\Models\User::find($state)?->name ?? "User #{$state}"
@@ -92,26 +92,26 @@ class ProcessedBookingResource extends Resource
                 TextColumn::make('operator_id')->label('operator_id')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('operator_name')->label('operator_name')->placeholder('—')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('agency_id')->label('agency_id')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('agency_name')->label('Агентство')->placeholder('—')->searchable(),
-                TextColumn::make('reservation_date')->label('Дата брони')->date('d.m.Y')->sortable()->placeholder('—'),
-                TextColumn::make('reservation_time')->label('Время')->placeholder('—'),
-                TextColumn::make('arrival_at')->label('Заезд')->date('d.m.Y')->sortable()->placeholder('—'),
-                TextColumn::make('departure_at')->label('Выезд')->date('d.m.Y')->placeholder('—'),
-                TextColumn::make('nights')->label('Ночей')->alignCenter()->placeholder('—'),
-                TextColumn::make('guest_info')->label('Гости')->limit(25)->placeholder('—')->searchable(),
-                TextColumn::make('person_count_adults')->label('Взр.')->alignCenter(),
-                TextColumn::make('person_count_children')->label('Дети')->alignCenter(),
-                TextColumn::make('person_count_teens')->label('Млад.')->alignCenter(),
-                TextColumn::make('price')->label('Стоимость')->placeholder('—')
+                TextColumn::make('agency_name')->label('Agency')->placeholder('—')->searchable(),
+                TextColumn::make('reservation_date')->label('Res. date')->date('d.m.Y')->sortable()->placeholder('—'),
+                TextColumn::make('reservation_time')->label('Time')->placeholder('—'),
+                TextColumn::make('arrival_at')->label('Check-in')->date('d.m.Y')->sortable()->placeholder('—'),
+                TextColumn::make('departure_at')->label('Check-out')->date('d.m.Y')->placeholder('—'),
+                TextColumn::make('nights')->label('Nights')->alignCenter()->placeholder('—'),
+                TextColumn::make('guest_info')->label('Guests')->limit(25)->placeholder('—')->searchable(),
+                TextColumn::make('person_count_adults')->label('Adt.')->alignCenter(),
+                TextColumn::make('person_count_children')->label('Chd.')->alignCenter(),
+                TextColumn::make('person_count_teens')->label('Inf.')->alignCenter(),
+                TextColumn::make('price')->label('Price')->placeholder('—')
                     ->formatStateUsing(fn ($state, ProcessedBooking $r) => $state
                         ? number_format($state, 2, '.', ' ') . ($r->currency_code ? ' ' . $r->currency_code : '')
                         : '—'),
-                TextColumn::make('commission')->label('Комиссия')->placeholder('—')
+                TextColumn::make('commission')->label('Commission')->placeholder('—')
                     ->formatStateUsing(fn ($state, ProcessedBooking $r) => $state
                         ? number_format($state, 2, '.', ' ') . ($r->currency_code ? ' ' . $r->currency_code : '')
                         : '—')
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('total_bonus')->label('Бонус')->alignCenter()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('total_bonus')->label('Bonus')->alignCenter()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('hm_approval')->label('hm_approval')->alignCenter()->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('payment_status_ag')->label('pay_ag')->alignCenter()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('payment_status_rm')->label('pay_rm')->alignCenter()->toggleable(isToggledHiddenByDefault: true),
@@ -119,7 +119,7 @@ class ProcessedBookingResource extends Resource
             ])
             ->actions([
                 Action::make('match')
-                    ->label('Сопоставить')
+                    ->label('Match')
                     ->icon('heroicon-o-magnifying-glass')
                     ->color('info')
                     ->action(function (ProcessedBooking $record): void {
@@ -132,21 +132,21 @@ class ProcessedBookingResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     BulkAction::make('match_all')
-                        ->label('Сопоставить с API')
+                        ->label('Match with API')
                         ->icon('heroicon-o-magnifying-glass')
                         ->color('info')
                         ->requiresConfirmation()
-                        ->modalHeading('Сопоставить с HellOotel API')
-                        ->modalDescription('Для выбранных записей будет выполнен поиск отеля и типа номера по справочникам API.')
-                        ->modalSubmitActionLabel('Сопоставить')
+                        ->modalHeading('Match with HellOotel API')
+                        ->modalDescription('The selected records will be matched against the HellOotel hotel and room type directories.')
+                        ->modalSubmitActionLabel('Match')
                         ->action(function (Collection $records): void {
                             $matched = 0;
                             foreach ($records as $record) {
                                 if (static::runMatch($record)) $matched++;
                             }
                             Notification::make()
-                                ->title('Сопоставление завершено')
-                                ->body("Обновлено: {$matched} из {$records->count()}")
+                                ->title('Matching complete')
+                                ->body("Updated: {$matched} of {$records->count()}")
                                 ->success()
                                 ->send();
                         })
@@ -160,7 +160,7 @@ class ProcessedBookingResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Идентификаторы')->columns(1)->schema([
+            Section::make('Identifiers')->columns(1)->schema([
                 TextInput::make('booking_code')->label('booking_code')->columnSpanFull(),
 
                 \Filament\Forms\Components\Grid::make(2)->schema([
@@ -170,8 +170,8 @@ class ProcessedBookingResource extends Resource
                         ->searchable()
                         ->live()
                         ->afterStateUpdated(fn(Set $set) => $set('room_type_id', null))
-                        ->placeholder('— выберите отель —'),
-                    TextInput::make('hotel_name')->label('Название отеля (текст из брони)'),
+                        ->placeholder('— select hotel —'),
+                    TextInput::make('hotel_name')->label('Hotel name (raw from booking)'),
                 ]),
 
                 \Filament\Forms\Components\Grid::make(2)->schema([
@@ -184,53 +184,53 @@ class ProcessedBookingResource extends Resource
                         })
                         ->searchable()
                         ->live()
-                        ->placeholder('— выберите тип номера —'),
-                    TextInput::make('room_type_name')->label('Тип номера (текст из брони)'),
+                        ->placeholder('— select room type —'),
+                    TextInput::make('room_type_name')->label('Room type (raw from booking)'),
                 ]),
                 \Filament\Forms\Components\Grid::make(2)->schema([
                     Select::make('operator_id')
                         ->label('operator_id')
                         ->options(fn() => app(HellOotelLookupService::class)->getOperators())
                         ->searchable()
-                        ->placeholder('— выберите оператора —'),
-                    TextInput::make('operator_name')->label('Оператор (текст из брони)'),
+                        ->placeholder('— select operator —'),
+                    TextInput::make('operator_name')->label('Operator (raw from booking)'),
                 ]),
 
                 \Filament\Forms\Components\Grid::make(2)->schema([
                     TextInput::make('agency_id')->label('agency_id')->numeric(),
-                    TextInput::make('agency_name')->label('Агентство (текст из брони)'),
+                    TextInput::make('agency_name')->label('Agency (raw from booking)'),
                 ]),
 
                 TextInput::make('status')->label('status')->columnSpanFull(),
             ]),
 
-            Section::make('Даты')->columns(4)->schema([
-                DatePicker::make('reservation_date')->label('Дата брони')->displayFormat('d.m.Y'),
-                TextInput::make('reservation_time')->label('Время брони')->placeholder('HH:MM')->maxLength(5),
-                DatePicker::make('arrival_at')->label('Дата заезда')->displayFormat('d.m.Y'),
-                DatePicker::make('departure_at')->label('Дата выезда')->displayFormat('d.m.Y'),
-                TextInput::make('nights')->label('Ночей')->numeric()->minValue(0),
+            Section::make('Dates')->columns(4)->schema([
+                DatePicker::make('reservation_date')->label('Reservation date')->displayFormat('d.m.Y'),
+                TextInput::make('reservation_time')->label('Reservation time')->placeholder('HH:MM')->maxLength(5),
+                DatePicker::make('arrival_at')->label('Check-in')->displayFormat('d.m.Y'),
+                DatePicker::make('departure_at')->label('Check-out')->displayFormat('d.m.Y'),
+                TextInput::make('nights')->label('Nights')->numeric()->minValue(0),
             ]),
 
-            Section::make('Гости')->columns(2)->schema([
+            Section::make('Guests')->columns(2)->schema([
                 TextInput::make('guest_info')->label('guest_info'),
                 TextInput::make('person_count_adults')->label('person_count_adults')->numeric()->minValue(0),
                 TextInput::make('person_count_children')->label('person_count_children')->numeric()->minValue(0),
                 TextInput::make('person_count_teens')->label('person_count_teens')->numeric()->minValue(0),
             ]),
 
-            Section::make('Туристы (детально)')->schema([
+            Section::make('Tourists (detailed)')->schema([
                 Repeater::make('tourists')->label('')->columns(3)
                     ->schema([
-                        TextInput::make('last_name')->label('Фамилия'),
-                        TextInput::make('first_name')->label('Имя'),
-                        TextInput::make('dob')->label('Дата рождения'),
+                        TextInput::make('last_name')->label('Last name'),
+                        TextInput::make('first_name')->label('First name'),
+                        TextInput::make('dob')->label('Date of birth'),
                     ])
                     ->defaultItems(0)
-                    ->addActionLabel('Добавить туриста'),
+                    ->addActionLabel('Add tourist'),
             ]),
 
-            Section::make('Стоимость и статусы')->columns(3)->schema([
+            Section::make('Price & statuses')->columns(3)->schema([
                 TextInput::make('price')->label('price')->numeric(),
                 TextInput::make('commission')->label('commission')->numeric(),
                 TextInput::make('currency_code')->label('currency_code')->maxLength(3)->placeholder('EUR'),
@@ -246,54 +246,54 @@ class ProcessedBookingResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            InfoSection::make('Идентификаторы')->columns(3)->schema([
+            InfoSection::make('Identifiers')->columns(3)->schema([
                 TextEntry::make('booking_code')->label('booking_code')->badge()->color('success')->placeholder('—'),
                 TextEntry::make('hotel_id')->label('hotel_id')->placeholder('—'),
-                TextEntry::make('hotel_name')->label('Отель (текст)')->placeholder('—'),
+                TextEntry::make('hotel_name')->label('Hotel (text)')->placeholder('—'),
                 TextEntry::make('room_type_id')->label('room_type_id')->placeholder('—'),
-                TextEntry::make('room_type_name')->label('Тип номера')->placeholder('—'),
-                TextEntry::make('status')->label('Статус')->badge()->color('warning')->placeholder('—'),
+                TextEntry::make('room_type_name')->label('Room type')->placeholder('—'),
+                TextEntry::make('status')->label('Status')->badge()->color('warning')->placeholder('—'),
                 TextEntry::make('operator_id')->label('operator_id')->placeholder('—'),
                 TextEntry::make('operator_name')->label('operator_name')->placeholder('—'),
                 TextEntry::make('agency_id')->label('agency_id')->placeholder('—'),
-                TextEntry::make('agency_name')->label('Агентство')->placeholder('—'),
+                TextEntry::make('agency_name')->label('Agency')->placeholder('—'),
             ]),
 
-            InfoSection::make('Даты')->columns(5)->schema([
-                TextEntry::make('reservation_date')->label('Дата брони')->date('d.m.Y')->placeholder('—'),
-                TextEntry::make('reservation_time')->label('Время брони')->placeholder('—'),
-                TextEntry::make('arrival_at')->label('Заезд')->date('d.m.Y')->placeholder('—'),
-                TextEntry::make('departure_at')->label('Выезд')->date('d.m.Y')->placeholder('—'),
-                TextEntry::make('nights')->label('Ночей')->placeholder('—'),
+            InfoSection::make('Dates')->columns(5)->schema([
+                TextEntry::make('reservation_date')->label('Reservation date')->date('d.m.Y')->placeholder('—'),
+                TextEntry::make('reservation_time')->label('Reservation time')->placeholder('—'),
+                TextEntry::make('arrival_at')->label('Check-in')->date('d.m.Y')->placeholder('—'),
+                TextEntry::make('departure_at')->label('Check-out')->date('d.m.Y')->placeholder('—'),
+                TextEntry::make('nights')->label('Nights')->placeholder('—'),
             ]),
 
-            InfoSection::make('Гости')->columns(2)->schema([
+            InfoSection::make('Guests')->columns(2)->schema([
                 TextEntry::make('guest_info')->label('guest_info')->placeholder('—'),
-                TextEntry::make('person_count_adults')->label('Взрослых'),
-                TextEntry::make('person_count_children')->label('Детей'),
-                TextEntry::make('person_count_teens')->label('Младенцев'),
+                TextEntry::make('person_count_adults')->label('Adults'),
+                TextEntry::make('person_count_children')->label('Children'),
+                TextEntry::make('person_count_teens')->label('Infants'),
             ]),
 
-            InfoSection::make('Туристы (детально)')
+            InfoSection::make('Tourists (detailed)')
                 ->hidden(fn (ProcessedBooking $r): bool => empty($r->tourists))
                 ->schema([
                     RepeatableEntry::make('tourists')->label('')->columns(3)->schema([
-                        TextEntry::make('last_name')->label('Фамилия')->placeholder('—'),
-                        TextEntry::make('first_name')->label('Имя')->placeholder('—'),
-                        TextEntry::make('dob')->label('Дата рождения')->placeholder('—'),
+                        TextEntry::make('last_name')->label('Last name')->placeholder('—'),
+                        TextEntry::make('first_name')->label('First name')->placeholder('—'),
+                        TextEntry::make('dob')->label('Date of birth')->placeholder('—'),
                     ]),
                 ]),
 
-            InfoSection::make('Стоимость и статусы')->columns(4)->schema([
-                TextEntry::make('price')->label('Стоимость')
+            InfoSection::make('Price & statuses')->columns(4)->schema([
+                TextEntry::make('price')->label('Price')
                     ->formatStateUsing(fn ($state, ProcessedBooking $r) => $state
                         ? number_format($state, 2, '.', ' ') . ($r->currency_code ? ' ' . $r->currency_code : '')
                         : '—'),
-                TextEntry::make('commission')->label('Комиссия')
+                TextEntry::make('commission')->label('Commission')
                     ->formatStateUsing(fn ($state, ProcessedBooking $r) => $state
                         ? number_format($state, 2, '.', ' ') . ($r->currency_code ? ' ' . $r->currency_code : '')
                         : '—'),
-                TextEntry::make('currency_code')->label('Валюта')->placeholder('—'),
+                TextEntry::make('currency_code')->label('Currency')->placeholder('—'),
                 TextEntry::make('total_bonus')->label('total_bonus'),
                 TextEntry::make('hm_approval')->label('hm_approval')->placeholder('—'),
                 TextEntry::make('payment_status_ag')->label('payment_status_ag'),
@@ -301,29 +301,29 @@ class ProcessedBookingResource extends Resource
                 TextEntry::make('payment_status_cm')->label('payment_status_cm'),
             ]),
 
-            InfoSection::make('Подтверждение')->columns(2)->schema([
+            InfoSection::make('Confirmation')->columns(2)->schema([
                 TextEntry::make('confirmed_at')
-                    ->label('Подтверждено')
+                    ->label('Confirmed at')
                     ->dateTime('d.m.Y H:i')
-                    ->placeholder('Не подтверждено')
+                    ->placeholder('Not confirmed')
                     ->badge()
                     ->color(fn ($state) => $state ? 'success' : 'gray'),
                 TextEntry::make('confirmed_by_user_id')
-                    ->label('Кто подтвердил')
+                    ->label('Confirmed by')
                     ->placeholder('—')
                     ->formatStateUsing(fn ($state) => $state
                         ? \App\Models\User::find($state)?->name ?? "User #{$state}"
                         : '—'),
             ]),
 
-            InfoSection::make('Источник')->columns(2)->schema([
-                TextEntry::make('sourceBooking.booking_code')->label('Исходная бронь')
+            InfoSection::make('Source')->columns(2)->schema([
+                TextEntry::make('sourceBooking.booking_code')->label('Source booking')
                     ->url(fn (ProcessedBooking $r) => $r->source_booking_id
                         ? \App\Filament\Resources\ExtensionBooking\ExtensionBookingResource::getUrl('view', ['record' => $r->source_booking_id])
                         : null)
                     ->openUrlInNewTab()
                     ->placeholder('—'),
-                TextEntry::make('created_at')->label('Дата обработки')->dateTime('d.m.Y H:i'),
+                TextEntry::make('created_at')->label('Processed at')->dateTime('d.m.Y H:i'),
             ]),
         ]);
     }
@@ -339,8 +339,8 @@ class ProcessedBookingResource extends Resource
 
         if (!$hotelId) {
             Notification::make()
-                ->title('Отель не найден')
-                ->body("Не удалось сопоставить: «{$source->hotel_name}»")
+                ->title('Hotel not found')
+                ->body("Could not match: \"{$source->hotel_name}\"")
                 ->warning()
                 ->send();
             return false;
@@ -352,10 +352,10 @@ class ProcessedBookingResource extends Resource
             'room_type_name' => $roomTypeName,
         ]);
 
-        $roomMsg = $roomTypeName ? ", тип номера: {$roomTypeName} (#{$roomTypeId})" : ', тип номера не найден';
+        $roomMsg = $roomTypeName ? ", room type: {$roomTypeName} (#{$roomTypeId})" : ', room type not found';
         Notification::make()
-            ->title('Сопоставлено')
-            ->body("Отель #{$hotelId}{$roomMsg}")
+            ->title('Matched')
+            ->body("Hotel #{$hotelId}{$roomMsg}")
             ->success()
             ->send();
 

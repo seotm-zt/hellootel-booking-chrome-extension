@@ -5,7 +5,7 @@
             <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
                 <div class="flex items-center gap-3">
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                        ID отеля
+                        Hotel ID
                     </label>
                     <input
                         type="text"
@@ -16,13 +16,13 @@
                 </div>
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                        API токен (Basic Auth)
+                        API Token (Basic Auth)
                     </label>
                     <input
                         type="text"
                         wire:model.live="apiToken"
                         class="fi-input block w-full min-w-0 rounded-lg border border-gray-300 shadow-sm text-sm dark:border-white/10 dark:bg-white/5 dark:text-white px-3 py-1.5 font-mono"
-                        placeholder="токен"
+                        placeholder="token"
                     />
                 </div>
             </div>
@@ -52,7 +52,7 @@
                         wire:target="callApi('{{ $key }}')"
                         class="fi-btn fi-btn-size-sm fi-btn-color-primary fi-color-primary fi-color-custom inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold shadow-sm bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 shrink-0 transition"
                     >
-                        <span wire:loading.remove wire:target="callApi('{{ $key }}')">Выполнить</span>
+                        <span wire:loading.remove wire:target="callApi('{{ $key }}')">Execute</span>
                         <span wire:loading wire:target="callApi('{{ $key }}')">
                             <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -65,7 +65,7 @@
                 {{-- Response --}}
                 @if(isset($apiErrors[$key]) && $apiErrors[$key])
                     <div class="p-4 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20">
-                        Ошибка: {{ $apiErrors[$key] }}
+                        Error: {{ $apiErrors[$key] }}
                     </div>
                 @elseif(isset($responses[$key]))
                     <div class="p-4">
@@ -81,7 +81,7 @@
                                         : (is_array($responses[$key]['body']) ? count($responses[$key]['body']) : null);
                                 @endphp
                                 @if($count !== null)
-                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ $count }} записей</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ $count }} records</span>
                                 @endif
                             @endif
                         </div>
@@ -89,7 +89,7 @@
                     </div>
                 @else
                     <div class="px-4 py-3 text-xs text-gray-400 dark:text-gray-500 italic">
-                        Нажмите «Выполнить» чтобы получить ответ
+                        Click "Execute" to get a response
                     </div>
                 @endif
             </div>

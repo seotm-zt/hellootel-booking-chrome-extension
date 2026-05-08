@@ -77,14 +77,14 @@
  *   Object whose keys go into result.meta. Each value is a normal field spec
  *   (same as fields entries: sel, strip_prefix, strip_pattern, etc.).
  *   Use when a single selector needs to be stored under meta rather than a
- *   top-level booking field (e.g. reservation_at from "Забронирован:"):
+ *   top-level booking field (e.g. reservation_at from "Booked:"):
  *   { metaKey: { sel: "...", strip_prefix: "..." } }
  *
  * ─── tourist_blocks ───────────────────────────────────────────────────────────
  *
  *   Extracts an array of tourist/passenger objects into result.tourists (DB column).
  *   Each matching item element is one tourist; fields matched via label text:
- *   { item, label?, value?, fields: { last_name: ["фамилия"], first_name: ["имя"], dob: [...] } }
+ *   { item, label?, value?, fields: { last_name: ["last name", "surname"], first_name: ["first name", "name"], dob: [...] } }
  *
  * ─── type: "form" ─────────────────────────────────────────────────────────────
  *

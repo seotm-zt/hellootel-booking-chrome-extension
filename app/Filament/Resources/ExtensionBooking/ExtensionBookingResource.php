@@ -59,7 +59,7 @@ class ExtensionBookingResource extends Resource
                 TextColumn::make('saved_by')->label('User')->searchable()->placeholder('—'),
                 TextColumn::make('created_at')->label('Saved')->dateTime('d.m.Y H:i')->sortable(),
                 IconColumn::make('processed_booking_id')
-                    ->label('Обработана')
+                    ->label('Processed')
                     ->boolean()
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-minus-circle')
@@ -91,13 +91,13 @@ class ExtensionBookingResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     BulkAction::make('process')
-                        ->label('Обработать')
+                        ->label('Process')
                         ->icon('heroicon-o-check-badge')
                         ->color('success')
                         ->requiresConfirmation()
-                        ->modalHeading('Обработать выбранные брони')
-                        ->modalDescription('Будут созданы записи в таблице обработанных броней. Уже обработанные брони будут пропущены.')
-                        ->modalSubmitActionLabel('Обработать')
+                        ->modalHeading('Process selected bookings')
+                        ->modalDescription('Records will be created in the processed bookings table. Already processed bookings will be skipped.')
+                        ->modalSubmitActionLabel('Process')
                         ->action(function (Collection $records): void {
                             $service = app(BookingProcessorService::class);
                             $created = 0;
@@ -111,8 +111,8 @@ class ExtensionBookingResource extends Resource
                                 $created++;
                             }
                             Notification::make()
-                                ->title('Обработка завершена')
-                                ->body("Создано: {$created}, пропущено (уже обработаны): {$skipped}")
+                                ->title('Processing complete')
+                                ->body("Created: {$created}, skipped (already processed): {$skipped}")
                                 ->success()
                                 ->send();
                         })
