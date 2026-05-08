@@ -38,6 +38,8 @@ class ProcessedBooking extends Model
         'payment_status_ag',
         'payment_status_rm',
         'payment_status_cm',
+        'confirmed_by_user_id',
+        'confirmed_at',
     ];
 
     protected function casts(): array
@@ -47,8 +49,9 @@ class ProcessedBooking extends Model
             'tourist_ids'  => 'array',
             'arrival_at'     => 'date',
             'departure_at'   => 'date',
-            'price'          => 'float',
-            'commission'     => 'float',
+            'price'        => 'float',
+            'commission'   => 'float',
+            'confirmed_at' => 'datetime',
         ];
     }
 

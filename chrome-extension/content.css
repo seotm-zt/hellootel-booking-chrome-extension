@@ -32,6 +32,27 @@
   box-shadow: 0 12px 24px rgba(159, 18, 57, 0.22);
 }
 
+.ttb-save-booking-button--saved {
+  border-color: #b45309;
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 10px 20px rgba(180, 83, 9, 0.22);
+  color: #ffffff;
+}
+
+.ttb-save-booking-button--saved:hover {
+  box-shadow: 0 16px 28px rgba(180, 83, 9, 0.3);
+}
+
+.ttb-save-booking-button--confirmed {
+  border-color: #15803d !important;
+  background: linear-gradient(180deg, #22c55e 0%, #15803d 100%) !important;
+  box-shadow: 0 10px 20px rgba(21, 128, 61, 0.22) !important;
+}
+
+.ttb-save-booking-button--confirmed:hover {
+  box-shadow: 0 16px 28px rgba(21, 128, 61, 0.3) !important;
+}
+
 .ttb-save-booking-actions {
   display: flex;
   align-items: center;
@@ -71,4 +92,291 @@
   .ttb-save-booking-actions {
     width: 100%;
   }
+}
+
+/* ── Confirmation modal ─────────────────────────────────────────────── */
+
+.ttb-modal-overlay {
+  all: initial;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(0, 0, 0, 0.55) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.ttb-modal {
+  all: initial;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(580px, calc(100vw - 32px)) !important;
+  max-height: calc(100vh - 48px) !important;
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3) !important;
+  overflow: hidden !important;
+  font-family: inherit !important;
+}
+
+.ttb-modal__header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 12px 16px 10px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.ttb-modal__title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.ttb-modal__close {
+  all: initial !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  background: #f3f4f6 !important;
+  color: #6b7280 !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+}
+
+.ttb-modal__close:hover {
+  background: #e5e7eb !important;
+  color: #374151 !important;
+}
+
+
+.ttb-modal__body {
+  padding: 12px 16px !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+}
+
+.ttb-modal__label {
+  display: block !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: #9ca3af !important;
+  margin-top: 8px !important;
+  margin-bottom: 3px !important;
+}
+
+.ttb-modal__label:first-child {
+  margin-top: 0 !important;
+}
+
+.ttb-modal__autocomplete {
+  position: relative !important;
+}
+
+.ttb-modal__input,
+.ttb-modal__select {
+  all: initial !important;
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 7px 10px !important;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  font-size: 13px !important;
+  font-family: inherit !important;
+  line-height: 1.4 !important;
+  transition: border-color 0.15s !important;
+  outline: none !important;
+}
+
+.ttb-modal__input:focus,
+.ttb-modal__select:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+.ttb-modal__select:disabled {
+  color: #9ca3af !important;
+  background: #f9fafb !important;
+  cursor: not-allowed !important;
+}
+
+.ttb-modal__suggestions {
+  all: initial !important;
+  position: absolute !important;
+  top: calc(100% + 4px) !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 10 !important;
+  background: #ffffff !important;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  overflow: hidden !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 4px 0 !important;
+}
+
+.ttb-modal__suggestion {
+  all: initial !important;
+  display: block !important;
+  padding: 9px 12px !important;
+  font-size: 13px !important;
+  color: #111827 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  transition: background 0.1s !important;
+}
+
+.ttb-modal__suggestion:hover {
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+}
+
+.ttb-modal__match-badge {
+  font-size: 11px !important;
+  color: #16a34a !important;
+  font-weight: 500 !important;
+  margin-top: 4px !important;
+}
+
+.ttb-modal__section-title {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: #6b7280 !important;
+  margin-top: 10px !important;
+  margin-bottom: 4px !important;
+  padding-bottom: 4px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.ttb-modal__row-2 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+}
+
+.ttb-modal__row-3 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1fr !important;
+  gap: 8px !important;
+}
+
+/* ── Tourist rows ── */
+
+.ttb-tourist-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1fr auto !important;
+  gap: 6px !important;
+  align-items: center !important;
+  margin-bottom: 4px !important;
+}
+
+.ttb-tourist__remove {
+  all: initial !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 50% !important;
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  font-size: 11px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  font-family: inherit !important;
+}
+
+.ttb-tourist__remove:hover {
+  background: #fecaca !important;
+}
+
+.ttb-modal__add-tourist {
+  all: initial !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  border: 1.5px dashed #d1d5db !important;
+  background: transparent !important;
+  color: #6b7280 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  margin-top: 4px !important;
+  transition: border-color 0.15s, color 0.15s !important;
+}
+
+.ttb-modal__add-tourist:hover {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+.ttb-modal__footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  padding: 14px 20px !important;
+  border-top: 1px solid #f0f0f0 !important;
+}
+
+.ttb-modal__btn {
+  all: initial !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 36px !important;
+  padding: 0 18px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  transition: opacity 0.15s, transform 0.15s !important;
+}
+
+.ttb-modal__btn:hover { opacity: 0.85 !important; }
+.ttb-modal__btn:active { transform: scale(0.97) !important; }
+.ttb-modal__btn:disabled { opacity: 0.55 !important; cursor: not-allowed !important; }
+
+.ttb-modal__btn--delete {
+  background: transparent !important;
+  color: #b91c1c !important;
+  border: 1px solid rgba(185, 28, 28, 0.3) !important;
+}
+
+.ttb-modal__btn--delete:hover {
+  background: #fef2f2 !important;
+}
+
+.ttb-modal__btn--cancel {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+}
+
+.ttb-modal__btn--confirm {
+  background: linear-gradient(180deg, #22c55e 0%, #15803d 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(21, 128, 61, 0.25) !important;
 }

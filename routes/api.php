@@ -11,8 +11,12 @@ Route::prefix('v1/extension')->group(function () {
     Route::post('page-report',  [ExtensionController::class, 'pageReport']);
 
     Route::middleware(ApiTokenAuth::class)->group(function () {
-        Route::get('bookings',          [ExtensionController::class, 'index']);
-        Route::post('bookings',         [ExtensionController::class, 'store']);
-        Route::delete('bookings/{id}',  [ExtensionController::class, 'destroy']);
+        Route::get('bookings',                      [ExtensionController::class, 'index']);
+        Route::post('bookings',                     [ExtensionController::class, 'store']);
+        Route::patch('bookings/{id}/confirm',       [ExtensionController::class, 'confirm']);
+        Route::delete('bookings/{id}',              [ExtensionController::class, 'destroy']);
+
+        Route::get('hotels',                        [ExtensionController::class, 'hotels']);
+        Route::get('hotels/{id}/room-types',        [ExtensionController::class, 'hotelRoomTypes']);
     });
 });

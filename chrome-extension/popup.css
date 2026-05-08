@@ -158,6 +158,13 @@ body {
   background: rgba(255, 255, 255, 0.72);
 }
 
+.popup__empty--done {
+  border-color: rgba(21, 128, 61, 0.35);
+  color: #15803d;
+  background: rgba(240, 253, 244, 0.9);
+  font-weight: 600;
+}
+
 .booking-card {
   padding: 10px 12px;
   border: 1px solid rgba(17, 24, 39, 0.08);
@@ -236,6 +243,25 @@ body {
   color: #b91c1c;
   font-size: 15px;
   font-weight: 800;
+}
+
+.booking-card__goto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+  font-size: 14px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.booking-card__goto:hover {
+  background: rgba(239, 68, 68, 0.18);
 }
 
 .booking-card__remove {

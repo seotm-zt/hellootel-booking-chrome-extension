@@ -46,8 +46,10 @@ function createMetaRow(label, value) {
   `;
 }
 
-function renderEmptyState() {
-  bookingsList.innerHTML = '<div class="popup__empty">The database is empty. Click the button on a booking in the orders list.</div>';
+function renderEmptyState(allConfirmed = false) {
+  bookingsList.innerHTML = allConfirmed
+    ? '<div class="popup__empty popup__empty--done">✓ Все брони подтверждены</div>'
+    : '<div class="popup__empty">Нет броней. Нажмите кнопку сохранения на странице с бронью.</div>';
   bookingCount.textContent = "0";
 }
 
@@ -83,18 +85,25 @@ async function deleteBookingFromServer(id) {
 }
 
 function renderBookings(bookings) {
+  const unconfirmed = bookings.filter(b => !b.processed_booking?.confirmed_at);
+
   if (!bookings.length) {
-    renderEmptyState();
+    renderEmptyState(false);
     return;
   }
 
-  bookingCount.textContent = String(bookings.length);
-  bookingsList.innerHTML = bookings
+  if (!unconfirmed.length) {
+    renderEmptyState(true);
+    return;
+  }
+
+  bookingCount.textContent = String(unconfirmed.length);
+  bookingsList.innerHTML = unconfirmed
     .map((booking) => {
-      const code = normalizeText(booking.booking_code || "No code");
-      const title = normalizeText(booking.hotel_name || "Untitled");
+      const code     = normalizeText(booking.booking_code || "No code");
+      const title    = normalizeText(booking.hotel_name || "Untitled");
       const subtitle = normalizeText(booking.subtitle);
-      const savedAt = booking.created_at ? new Date(booking.created_at).toLocaleString("en-US") : "";
+      const sourceUrl = booking.source_url || "";
 
       return `
         <article class="booking-card" data-booking-id="${booking.id}">
@@ -104,18 +113,17 @@ function renderBookings(bookings) {
               <div class="booking-card__title">${title}</div>
               ${subtitle ? `<div class="booking-card__subtitle">${subtitle}</div>` : ""}
             </div>
+            ${sourceUrl ? `<a class="booking-card__goto" href="${sourceUrl}" target="_blank" title="Перейти на страницу брони">↗</a>` : ""}
           </div>
           <div class="booking-card__meta">
-            ${createMetaRow("Dates", booking.stay_dates)}
-            ${createMetaRow("Guests", booking.guests)}
-            ${createMetaRow("Meal plan", booking.meal_plan)}
-            ${createMetaRow("Transfer", booking.transfer)}
-            ${createMetaRow("Statuses", formatStatuses(booking.statuses))}
-            ${createMetaRow("Saved", savedAt)}
+            ${createMetaRow("Даты", booking.stay_dates)}
+            ${createMetaRow("Гости", booking.guests)}
+            ${createMetaRow("Питание", booking.meal_plan)}
+            ${createMetaRow("Статус", formatStatuses(booking.statuses))}
           </div>
           <div class="booking-card__footer">
-            <div class="booking-card__price">${normalizeText(booking.total_price || "Price not found")}</div>
-            <button class="booking-card__remove" data-remove-id="${booking.id}" type="button">Delete</button>
+            <div class="booking-card__price">${normalizeText(booking.total_price || "—")}</div>
+            <button class="booking-card__remove" data-remove-id="${booking.id}" type="button">Удалить</button>
           </div>
         </article>
       `;

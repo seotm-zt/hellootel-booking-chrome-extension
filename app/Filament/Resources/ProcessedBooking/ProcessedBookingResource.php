@@ -71,6 +71,24 @@ class ProcessedBookingResource extends Resource
                 TextColumn::make('room_type_id')->label('room_type_id')->placeholder('—'),
                 TextColumn::make('room_type_name')->label('Тип номера')->limit(25)->placeholder('—'),
                 TextColumn::make('status')->label('Статус')->placeholder('—')->badge()->color('warning'),
+                IconColumn::make('confirmed_at')
+                    ->label('Подтв.')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-badge')
+                    ->falseIcon('heroicon-o-clock')
+                    ->trueColor('success')
+                    ->falseColor('gray')
+                    ->getStateUsing(fn (ProcessedBooking $r) => (bool) $r->confirmed_at)
+                    ->tooltip(fn (ProcessedBooking $r) => $r->confirmed_at
+                        ? 'Подтверждено: ' . $r->confirmed_at->format('d.m.Y H:i')
+                        : 'Не подтверждено'),
+                TextColumn::make('confirmed_by_user_id')
+                    ->label('Кто подтвердил')
+                    ->placeholder('—')
+                    ->formatStateUsing(fn ($state) => $state
+                        ? \App\Models\User::find($state)?->name ?? "User #{$state}"
+                        : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('operator_id')->label('operator_id')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('operator_name')->label('operator_name')->placeholder('—')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('agency_id')->label('agency_id')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
@@ -281,6 +299,21 @@ class ProcessedBookingResource extends Resource
                 TextEntry::make('payment_status_ag')->label('payment_status_ag'),
                 TextEntry::make('payment_status_rm')->label('payment_status_rm'),
                 TextEntry::make('payment_status_cm')->label('payment_status_cm'),
+            ]),
+
+            InfoSection::make('Подтверждение')->columns(2)->schema([
+                TextEntry::make('confirmed_at')
+                    ->label('Подтверждено')
+                    ->dateTime('d.m.Y H:i')
+                    ->placeholder('Не подтверждено')
+                    ->badge()
+                    ->color(fn ($state) => $state ? 'success' : 'gray'),
+                TextEntry::make('confirmed_by_user_id')
+                    ->label('Кто подтвердил')
+                    ->placeholder('—')
+                    ->formatStateUsing(fn ($state) => $state
+                        ? \App\Models\User::find($state)?->name ?? "User #{$state}"
+                        : '—'),
             ]),
 
             InfoSection::make('Источник')->columns(2)->schema([

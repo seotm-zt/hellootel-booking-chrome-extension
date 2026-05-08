@@ -9,44 +9,108 @@
 
 importScripts("auth.js");
 
+async function authedFetch(path, options = {}) {
+  const token = await getToken();
+  if (!token) throw new Error("No token. Sign in to the extension.");
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || data.message || `HTTP ${response.status}`);
+  }
+
+  return data;
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "SAVE_BOOKING") {
     (async () => {
       try {
-        const token = await getToken();
-        if (!token) {
-          sendResponse({ ok: false, error: "No token. Sign in to the extension." });
-          return;
-        }
-
-        const response = await fetch(`${API_BASE}/bookings`, {
+        const data = await authedFetch("/bookings", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
           body: JSON.stringify(message.payload),
         });
-
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          sendResponse({ ok: false, error: data.error || data.message || `HTTP ${response.status}` });
-        } else {
-          sendResponse({ ok: true, data });
-        }
+        sendResponse({ ok: true, data });
       } catch (err) {
         sendResponse({ ok: false, error: err.message });
       }
     })();
-
     return true;
   }
 
-  // Parser loading is routed through the background SW so it bypasses
-  // Chrome's Private Network Access restrictions that block content scripts
-  // on public-IP pages from reaching tour.localhost (loopback).
+  if (message.type === "LOAD_BOOKINGS") {
+    (async () => {
+      try {
+        const data = await authedFetch("/bookings");
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === "CONFIRM_BOOKING") {
+    (async () => {
+      try {
+        const data = await authedFetch(`/bookings/${message.bookingId}/confirm`, {
+          method: "PATCH",
+          body: JSON.stringify(message.payload),
+        });
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === "SEARCH_HOTELS") {
+    (async () => {
+      try {
+        const q = encodeURIComponent(message.query || "");
+        const data = await authedFetch(`/hotels?q=${q}`);
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === "GET_ROOM_TYPES") {
+    (async () => {
+      try {
+        const data = await authedFetch(`/hotels/${message.hotelId}/room-types`);
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === "DELETE_BOOKING") {
+    (async () => {
+      try {
+        const data = await authedFetch(`/bookings/${message.bookingId}`, { method: "DELETE" });
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
 
   if (message.type === "LOAD_PARSERS") {
     (async () => {
