@@ -9,6 +9,7 @@ class ProcessedBooking extends Model
 {
     protected $fillable = [
         'source_booking_id',
+        'saved_by_user_id',
         'booking_code',
         'hotel_name',
         'tourists',
@@ -58,5 +59,14 @@ class ProcessedBooking extends Model
     public function sourceBooking(): BelongsTo
     {
         return $this->belongsTo(ExtensionBooking::class, 'source_booking_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $record) {
+            if ($source = $record->sourceBooking) {
+                ExtensionBooking::withoutEvents(fn () => $source->delete());
+            }
+        });
     }
 }

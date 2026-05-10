@@ -55,6 +55,11 @@ class ProcessedBookingResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query) {
+                if (!auth()->user()?->hasRole('admin')) {
+                    $query->where('saved_by_user_id', auth()->id());
+                }
+            })
             ->columns([
                 TextColumn::make('id')->label('ID')->sortable(),
                 TextColumn::make('booking_code')->label('Code')->badge()->color('success')->searchable()->placeholder('—'),

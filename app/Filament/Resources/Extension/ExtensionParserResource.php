@@ -31,6 +31,11 @@ class ExtensionParserResource extends Resource
         return 'Chrome Extension';
     }
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole('admin') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

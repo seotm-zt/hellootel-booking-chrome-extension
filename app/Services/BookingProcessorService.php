@@ -31,8 +31,11 @@ class BookingProcessorService
 
         [$hotelId, $roomTypeId, $roomTypeName] = $this->matchHotelAndRoom($booking, $fieldMap);
 
+        [$adults, $children, $infants] = $this->parseGuestCounts($booking);
+
         $processed = ProcessedBooking::create([
             'source_booking_id'     => $booking->id,
+            'saved_by_user_id'      => $booking->user_id,
             'booking_code'          => $booking->booking_code,
             'hotel_name'            => $booking->hotel_name,
             'tourists'              => $tourists,
@@ -54,9 +57,9 @@ class BookingProcessorService
             'currency_code'         => $currency,
             'commission'            => $commission,
             'status'                => $this->resolveField($booking, $fieldMap, 'status', $this->firstStatus($booking->statuses)),
-            'person_count_adults'   => $booking->adults ?? 0,
-            'person_count_children' => $booking->children ?? 0,
-            'person_count_teens'    => $booking->infants ?? 0,
+            'person_count_adults'   => $adults,
+            'person_count_children' => $children,
+            'person_count_teens'    => $infants,
             'total_bonus'           => 0,
             'hm_approval'           => null,
             'payment_status_ag'     => 0,
@@ -266,5 +269,28 @@ class BookingProcessorService
     {
         if (empty($statuses)) return null;
         return array_values(array_filter($statuses))[0] ?? null;
+    }
+
+    // Returns [adults, children, infants] — uses explicit booking fields first,
+    // then falls back to parsing "1 ADL , 2 CHD"-style strings from guests.
+    private function parseGuestCounts(ExtensionBooking $booking): array
+    {
+        $adults   = $booking->adults;
+        $children = $booking->children;
+        $infants  = $booking->infants;
+
+        if ($adults === null && $children === null && $booking->guests) {
+            $g = $booking->guests;
+            if (preg_match('/(\d+)\s*ADL/i', $g, $m)) $adults   = (int) $m[1];
+            if (preg_match('/(\d+)\s*CHD/i', $g, $m)) $children = (int) $m[1];
+            if (preg_match('/(\d+)\s*INF/i', $g, $m)) $infants  = (int) $m[1];
+        }
+
+        // Also derive from tourists array if still missing
+        if ($adults === null && !empty($booking->tourists)) {
+            $adults = count($booking->tourists);
+        }
+
+        return [$adults ?? 0, $children ?? 0, $infants ?? 0];
     }
 }

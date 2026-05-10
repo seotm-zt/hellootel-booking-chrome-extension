@@ -104,13 +104,26 @@ function esc(v) {
   return String(v ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
+function normaliseTourist(t = {}) {
+  if (t.last_name || t.first_name) return t;
+  // full_name: "FIRST LAST" → split on last space → last_name = last word
+  const full = (t.full_name || "").trim();
+  const idx  = full.lastIndexOf(" ");
+  return {
+    last_name:  idx !== -1 ? full.slice(idx + 1) : full,
+    first_name: idx !== -1 ? full.slice(0, idx)  : "",
+    dob: t.dob ?? "",
+  };
+}
+
 function buildTouristRow(t = {}) {
+  const n   = normaliseTourist(t);
   const div = document.createElement("div");
   div.className = "ttb-tourist-row";
   div.innerHTML = `
-    <input class="ttb-modal__input ttb-tourist__last"  type="text" placeholder="Last name"    value="${esc(t.last_name)}">
-    <input class="ttb-modal__input ttb-tourist__first" type="text" placeholder="First name"   value="${esc(t.first_name)}">
-    <input class="ttb-modal__input ttb-tourist__dob"   type="text" placeholder="Date of birth" value="${esc(t.dob)}">
+    <input class="ttb-modal__input ttb-tourist__last"  type="text" placeholder="Last name"    value="${esc(n.last_name)}">
+    <input class="ttb-modal__input ttb-tourist__first" type="text" placeholder="First name"   value="${esc(n.first_name)}">
+    <input class="ttb-modal__input ttb-tourist__dob"   type="text" placeholder="Date of birth" value="${esc(n.dob)}">
     <button class="ttb-tourist__remove" type="button" title="Remove">✕</button>
   `;
   div.querySelector(".ttb-tourist__remove").addEventListener("click", () => div.remove());
@@ -437,7 +450,15 @@ async function injectButton(card, parser) {
   wrap.className = "ttb-save-booking-actions";
   wrap.append(btn);
 
-  parser.getButtonContainer(card).appendChild(wrap);
+  const container = parser.getButtonContainer(card);
+  const placement = parser.buttonPlacement ?? "inside";
+  if (placement === "before") {
+    container.parentNode?.insertBefore(wrap, container);
+  } else if (placement === "after") {
+    container.parentNode?.insertBefore(wrap, container.nextSibling);
+  } else {
+    container.appendChild(wrap);
+  }
 
   btn.addEventListener("click", async () => {
     const prev = btn.textContent;

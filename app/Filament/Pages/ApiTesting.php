@@ -22,6 +22,11 @@ class ApiTesting extends Page
     public string $hotelId = '32';
     public string $apiToken = 'D-JG2YaHw66wiwv3NKQXa09tnAP9TU3z';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole('admin') ?? false;
+    }
+
     protected static array $endpoints = [
         'hotels' => [
             'label' => 'Hotels',

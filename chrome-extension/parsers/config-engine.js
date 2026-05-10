@@ -16,8 +16,12 @@
  *
  *   card    {string}   CSS selector for booking card elements.
  *
- *   button  {string?}  CSS selector (relative to card) for button injection.
- *                      Defaults to the card element itself.
+ *   button           {string?}  CSS selector (relative to card) for button injection.
+ *                               Defaults to the card element itself.
+ *   button_placement {string?}  Where to place the button relative to the container:
+ *                               "inside" (default) — appended as last child
+ *                               "before" — inserted as sibling before the container
+ *                               "after"  — inserted as sibling after the container
  *
  * ─── fields ───────────────────────────────────────────────────────────────────
  *
@@ -126,6 +130,8 @@ const ConfigParserEngine = (() => {
         return Array.from(document.querySelectorAll(cfg.card));
       },
 
+      buttonPlacement: cfg.button_placement || "inside",
+
       getButtonContainer(card) {
         if (!cfg.button) return card;
         return card.querySelector(cfg.button) || card;
@@ -165,6 +171,8 @@ const ConfigParserEngine = (() => {
           : document.body;
         return el ? [el] : [];
       },
+
+      buttonPlacement: cfg.button_placement || "inside",
 
       getButtonContainer(card) {
         if (!cfg.button) return card;
@@ -273,6 +281,8 @@ const ConfigParserEngine = (() => {
         _colMap = _buildColMap(table);
         return Array.from(table.querySelectorAll("tbody tr"));
       },
+
+      buttonPlacement: cfg.button_placement || "inside",
 
       getButtonContainer(card) {
         if (cfg.button_cell) return card.querySelector(cfg.button_cell) || card;
@@ -518,10 +528,25 @@ const ConfigParserEngine = (() => {
       const tourist = {};
       for (const colEl of itemEl.children) {
         const labelEl = colEl.querySelector(cfg.label || "label");
-        const valueEl = colEl.querySelector(cfg.value || "span");
-        if (!labelEl || !valueEl) continue;
+        if (!labelEl) continue;
         const labelText = _norm(labelEl.textContent).toLowerCase();
-        const valueText = _norm(valueEl.textContent);
+
+        let valueText;
+        if (cfg.td_text) {
+          // value is a bare text node inside the cell (after the label span)
+          valueText = Array.from(colEl.childNodes)
+            .filter((n) => n.nodeType === Node.TEXT_NODE)
+            .map((n) => n.textContent.trim())
+            .filter(Boolean)
+            .join(" ")
+            .trim();
+          if (!valueText) continue;
+        } else {
+          const valueEl = colEl.querySelector(cfg.value || "span");
+          if (!valueEl) continue;
+          valueText = _norm(valueEl.textContent);
+        }
+
         for (const [field, keywords] of Object.entries(cfg.fields || {})) {
           if (keywords.some((kw) => labelText.includes(kw))) tourist[field] = valueText;
         }

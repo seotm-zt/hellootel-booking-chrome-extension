@@ -34,6 +34,11 @@ class ExtensionBookingResource extends Resource
         return 'Chrome Extension';
     }
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole('admin') ?? false;
+    }
+
     public static function getModelLabel(): string
     {
         return 'Booking';

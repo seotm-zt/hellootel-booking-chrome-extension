@@ -50,4 +50,13 @@ class ExtensionBooking extends Model
     {
         return $this->belongsTo(ProcessedBooking::class, 'processed_booking_id');
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $record) {
+            if ($processed = $record->processedBooking) {
+                ProcessedBooking::withoutEvents(fn () => $processed->delete());
+            }
+        });
+    }
 }
