@@ -214,6 +214,10 @@
   cursor: not-allowed !important;
 }
 
+.ttb-modal__suggestions[hidden] {
+  display: none !important;
+}
+
 .ttb-modal__suggestions {
   all: initial !important;
   position: absolute !important;
@@ -250,10 +254,14 @@
 }
 
 .ttb-modal__match-badge {
+  float: right !important;
   font-size: 11px !important;
   color: #16a34a !important;
-  font-weight: 500 !important;
-  margin-top: 4px !important;
+  font-weight: 400 !important;
+}
+
+.ttb-modal__match-badge strong {
+  font-weight: 700 !important;
 }
 
 .ttb-modal__section-title {

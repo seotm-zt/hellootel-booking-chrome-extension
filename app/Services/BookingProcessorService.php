@@ -15,7 +15,15 @@ class BookingProcessorService
     public function process(ExtensionBooking $booking): ProcessedBooking
     {
         if ($booking->processed_booking_id) {
-            return ProcessedBooking::findOrFail($booking->processed_booking_id);
+            $processed = ProcessedBooking::findOrFail($booking->processed_booking_id);
+            // Patch fields that may have been null on first processing
+            if (!$processed->currency_code && $booking->total_price) {
+                [, $currency] = $this->parseTotalPrice($booking->total_price);
+                if ($currency) {
+                    $processed->update(['currency_code' => $currency]);
+                }
+            }
+            return $processed;
         }
 
         [$arrival, $departure] = $this->parseStayDates($booking->stay_dates);
@@ -229,7 +237,7 @@ class BookingProcessorService
         $currency = null;
         if (preg_match('/\b([A-Z]{3})\b/', strtoupper($raw), $m)) {
             $currency = $m[1];
-        } elseif (preg_match('/[€$£¥₽]/', $raw, $m)) {
+        } elseif (preg_match('/[€$£¥₽]/u', $raw, $m)) {
             $currency = match($m[0]) {
                 '€' => 'EUR', '$' => 'USD', '£' => 'GBP',
                 '¥' => 'JPY', '₽' => 'RUB', default => null,

@@ -7,7 +7,7 @@ const statusBox = document.getElementById("status");
 
 const loginSection = document.getElementById("loginSection");
 const loginForm = document.getElementById("loginForm");
-const loginEmail = document.getElementById("loginEmail");
+const loginUsername = document.getElementById("loginUsername");
 const loginPassword = document.getElementById("loginPassword");
 const loginSubmit = document.getElementById("loginSubmit");
 
@@ -16,6 +16,16 @@ const userNameLabel = document.getElementById("userNameLabel");
 const logoutButton = document.getElementById("logoutButton");
 const exportButton = document.getElementById("exportJson");
 const clearButton = document.getElementById("clearBookings");
+
+const confirmModal     = document.getElementById("confirmModal");
+const confirmModalClose = document.getElementById("confirmModalClose");
+const confirmForm      = document.getElementById("confirmForm");
+const confirmSubmit    = document.getElementById("confirmSubmit");
+const confirmError     = document.getElementById("confirmError");
+const currencySelect   = document.getElementById("currencySelect");
+
+let currencies = [];
+let confirmBookingId = null;
 
 function normalizeText(value) {
   return (value || "").replace(/\s+/g, " ").trim();
@@ -84,6 +94,107 @@ async function deleteBookingFromServer(id) {
   }
 }
 
+async function loadCurrencies() {
+  if (currencies.length) return;
+  try {
+    const resp = await apiFetch("/currencies");
+    if (!resp.ok) return;
+    const json = await resp.json();
+    const raw = json.data ?? [];
+    // normalise: [{code, name}] or {code: name}
+    if (Array.isArray(raw)) {
+      currencies = raw.map((c) =>
+        typeof c === "object" && c.code
+          ? { code: c.code, name: c.name ?? c.code }
+          : { code: String(c), name: String(c) }
+      );
+    } else {
+      currencies = Object.entries(raw).map(([code, name]) => ({ code, name: `${code} — ${name}` }));
+    }
+    populateCurrencySelect(currencySelect, "");
+  } catch {}
+}
+
+function populateCurrencySelect(select, selectedCode) {
+  const current = select.value || selectedCode;
+  select.innerHTML = '<option value="">—</option>';
+  for (const c of currencies) {
+    const opt = document.createElement("option");
+    opt.value = c.code;
+    opt.textContent = `${c.code}${c.name && c.name !== c.code ? " — " + c.name : ""}`;
+    if (c.code === current) opt.selected = true;
+    select.appendChild(opt);
+  }
+  if (current) select.value = current;
+}
+
+function openConfirmModal(booking) {
+  confirmBookingId = booking.id;
+  confirmError.hidden = true;
+
+  const pb = booking.processed_booking ?? {};
+
+  const set = (name, val) => {
+    const el = confirmForm.elements[name];
+    if (el && val != null) el.value = val;
+  };
+
+  set("booking_code",  booking.booking_code ?? pb.booking_code ?? "");
+  set("hotel_name",    booking.hotel_name   ?? pb.hotel_name   ?? "");
+  set("room_type_name",pb.room_type_name ?? "");
+  set("price",         pb.price ?? "");
+  set("arrival_at",    pb.arrival_at   ? pb.arrival_at.slice(0, 10)   : "");
+  set("departure_at",  pb.departure_at ? pb.departure_at.slice(0, 10) : "");
+  set("adults",        pb.person_count_adults   ?? booking.adults   ?? "");
+  set("children",      pb.person_count_children ?? booking.children ?? "");
+  set("infants",       pb.person_count_teens    ?? booking.infants  ?? "");
+
+  populateCurrencySelect(currencySelect, pb.currency_code ?? "");
+
+  confirmModal.hidden = false;
+}
+
+function closeConfirmModal() {
+  confirmModal.hidden = true;
+  confirmBookingId = null;
+}
+
+confirmModalClose.addEventListener("click", closeConfirmModal);
+confirmModal.addEventListener("click", (e) => {
+  if (e.target === confirmModal) closeConfirmModal();
+});
+
+confirmForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  confirmError.hidden = true;
+  confirmSubmit.disabled = true;
+  confirmSubmit.textContent = "Saving...";
+
+  const fd = new FormData(confirmForm);
+  const payload = {};
+  for (const [k, v] of fd.entries()) {
+    if (v !== "") payload[k] = v;
+  }
+
+  try {
+    const resp = await apiFetch(`/bookings/${confirmBookingId}/confirm`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    const json = await resp.json();
+    if (!resp.ok) throw new Error(json.error || json.message || `HTTP ${resp.status}`);
+    closeConfirmModal();
+    await render();
+    showStatus("Booking confirmed.");
+  } catch (err) {
+    confirmError.textContent = err.message || "Failed to confirm.";
+    confirmError.hidden = false;
+  } finally {
+    confirmSubmit.disabled = false;
+    confirmSubmit.textContent = "Confirm booking";
+  }
+});
+
 function renderBookings(bookings) {
   const unconfirmed = bookings.filter(b => !b.processed_booking?.confirmed_at);
 
@@ -123,12 +234,24 @@ function renderBookings(bookings) {
           </div>
           <div class="booking-card__footer">
             <div class="booking-card__price">${normalizeText(booking.total_price || "—")}</div>
-            <button class="booking-card__remove" data-remove-id="${booking.id}" type="button">Remove</button>
+            <div style="display:flex;gap:6px">
+              <button class="booking-card__confirm" data-confirm-id="${booking.id}" type="button">Confirm</button>
+              <button class="booking-card__remove" data-remove-id="${booking.id}" type="button">Remove</button>
+            </div>
           </div>
         </article>
       `;
     })
     .join("");
+
+  const allBookingsMap = Object.fromEntries(bookings.map((b) => [String(b.id), b]));
+
+  for (const button of bookingsList.querySelectorAll("[data-confirm-id]")) {
+    button.addEventListener("click", () => {
+      const booking = allBookingsMap[button.dataset.confirmId];
+      if (booking) openConfirmModal(booking);
+    });
+  }
 
   for (const button of bookingsList.querySelectorAll("[data-remove-id]")) {
     button.addEventListener("click", async () => {
@@ -178,7 +301,9 @@ async function render() {
 
   loginSection.hidden = true;
   authenticatedSection.hidden = false;
-  userNameLabel.textContent = auth.user?.name || auth.user?.email || "";
+  userNameLabel.textContent = auth.user?.name || auth.user?.username || "";
+
+  loadCurrencies().catch(() => {});
 
   try {
     const bookings = await loadBookings();
@@ -195,7 +320,7 @@ loginForm.addEventListener("submit", async (event) => {
   hideStatus();
 
   try {
-    await apiLogin(loginEmail.value.trim(), loginPassword.value);
+    await apiLogin(loginUsername.value.trim(), loginPassword.value);
     loginPassword.value = "";
     await render();
   } catch (error) {

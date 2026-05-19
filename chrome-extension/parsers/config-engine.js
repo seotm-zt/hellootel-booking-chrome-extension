@@ -351,6 +351,11 @@ const ConfigParserEngine = (() => {
       const tourists = _extractTouristBlocks(card, cfg.tourist_blocks);
       if (tourists.length) result.tourists = tourists;
     }
+
+    // Auto-derive currency from total_price if not explicitly extracted
+    if (!result.currency && result.total_price) {
+      result.currency = detectCurrency(result.total_price) || null;
+    }
   }
 
   // ── shared matches factory ───────────────────────────────────────────────────

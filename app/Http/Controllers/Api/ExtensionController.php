@@ -15,7 +15,7 @@ use App\Services\HellOotelLookupService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -24,31 +24,54 @@ class ExtensionController extends Controller
     public function login(Request $request): JsonResponse
     {
         $request->validate([
-            'email'    => 'required|email',
+            'username' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $hellootel = Http::timeout(10)
+            ->withHeaders(['Accept' => 'application/json'])
+            ->post('https://demo.hellootel.com/api/v1/auth/login', [
+                'name'     => $request->username,
+                'password' => $request->password,
+            ]);
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['error' => 'Invalid credentials'], 401);
+        if (!$hellootel->successful()) {
+            $error = $hellootel->json('error') ?: $hellootel->json('message') ?: 'Invalid credentials';
+            return response()->json(['error' => $error], 401);
         }
+
+        $payload        = $hellootel->json();
+        $hellootelToken = $payload['access_token'] ?? null;
+
+        if (!$hellootelToken) {
+            return response()->json(['error' => 'Authentication failed'], 401);
+        }
+
+        $username  = $payload['login'] ?? $request->username;
+        $fakeEmail = $username . '@hellootel.local';
+        $name      = $payload['full_name'] ?? $payload['legacy_name'] ?? $username;
+
+        $user = User::firstOrCreate(
+            ['email' => $fakeEmail],
+            ['name' => $name, 'password' => Str::random(32)]
+        );
+
+        if ($user->name !== $name) {
+            $user->name = $name;
+        }
+        $user->access_token = $hellootelToken;
+        $user->save();
 
         if (!$user->hasAnyRole([Role::ADMIN->value, Role::OPERATOR->value])) {
-            return response()->json(['error' => 'Access denied'], 403);
-        }
-
-        if (!$user->access_token) {
-            $user->access_token = Str::random(64);
-            $user->save();
+            $user->assignRole(Role::OPERATOR->value);
         }
 
         return response()->json([
             'token' => $user->access_token,
             'user'  => [
-                'id'    => $user->id,
-                'name'  => $user->name,
-                'email' => $user->email,
+                'id'       => $user->id,
+                'name'     => $user->name,
+                'username' => $username,
             ],
         ]);
     }
@@ -270,6 +293,19 @@ class ExtensionController extends Controller
         $booking->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    public function currencies(): JsonResponse
+    {
+        $data = \Illuminate\Support\Facades\Cache::remember('hellootel.currencies', 86400, function () {
+            $resp = Http::timeout(10)
+                ->withBasicAuth('D-JG2YaHw66wiwv3NKQXa09tnAP9TU3z', '')
+                ->get('https://demo.hellootel.com/api/v1/reservation/tour-price-currencies', ['language' => 'en']);
+
+            return $resp->successful() ? ($resp->json() ?? []) : [];
+        });
+
+        return response()->json(['data' => $data]);
     }
 
     public function parsersList(): JsonResponse

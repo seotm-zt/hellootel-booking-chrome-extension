@@ -53,6 +53,11 @@ class ApiTesting extends Page
             'url' => 'https://demo.hellootel.com/api/v1/operator/list?language=en',
             'params' => [],
         ],
+        'currencies' => [
+            'label' => 'Tour price currencies',
+            'url' => 'https://demo.hellootel.com/api/v1/reservation/tour-price-currencies?language=en',
+            'params' => [],
+        ],
     ];
 
     public function getEndpoints(): array

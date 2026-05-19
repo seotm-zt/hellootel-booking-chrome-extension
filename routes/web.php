@@ -1,9 +1,18 @@
 <?php
 
+use App\Http\Controllers\HellOotelPortalController;
 use Illuminate\Support\Facades\Route;
 
 // Redirect root to admin panel
 Route::get('/', fn () => redirect('/admin'));
+
+// HellOotel operator portal
+Route::prefix('portal')->name('portal.')->middleware('web')->group(function () {
+    Route::get('/',         [HellOotelPortalController::class, 'login'])->name('login');
+    Route::post('/login',   [HellOotelPortalController::class, 'authenticate'])->name('authenticate');
+    Route::get('/bookings', [HellOotelPortalController::class, 'bookings'])->name('bookings');
+    Route::post('/logout',  [HellOotelPortalController::class, 'logout'])->name('logout');
+});
 
 // Page Report HTML preview (served inside Filament admin iframe)
 Route::get('/admin/extension/page-reports/{id}/html', function (int $id) {

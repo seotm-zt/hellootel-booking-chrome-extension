@@ -42,6 +42,7 @@
       ],
       "js": [
         "auth.js",
+        "parsers/currency-utils.js",
         "parsers/registry.js",
         "parsers/config-engine.js",
         "content.js"
@@ -58,6 +59,7 @@
       ],
       "js": [
         "auth.js",
+        "parsers/currency-utils.js",
         "parsers/registry.js",
         "parsers/config-engine.js",
         "content.js"

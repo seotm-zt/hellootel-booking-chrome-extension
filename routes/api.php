@@ -8,6 +8,7 @@ Route::prefix('v1/extension')->group(function () {
     Route::post('login',        [ExtensionController::class, 'login']);
     Route::get('parsers',       [ExtensionController::class, 'parsersList']);
     Route::get('parser-rules',  [ExtensionController::class, 'parserRules']);
+    Route::get('currencies',    [ExtensionController::class, 'currencies']);
     Route::post('page-report',  [ExtensionController::class, 'pageReport']);
 
     Route::middleware(ApiTokenAuth::class)->group(function () {

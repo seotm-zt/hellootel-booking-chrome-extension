@@ -127,6 +127,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "LOAD_CURRENCIES") {
+    (async () => {
+      try {
+        const data = await authedFetch("/currencies");
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
   if (message.type === "LOAD_RULES") {
     (async () => {
       try {

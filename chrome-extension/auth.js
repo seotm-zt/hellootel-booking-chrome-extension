@@ -1,5 +1,5 @@
-//const API_BASE = "https://booking-configurator.hellootel.com/api/v1/extension";
 const API_BASE = "http://booking.localhost/api/v1/extension";
+//const API_BASE = "https://booking-configurator.hellootel.com/api/v1/extension";
 
 const AUTH_STATE_KEY = "authState";
 
@@ -24,11 +24,11 @@ async function clearAuthState() {
   } catch {}
 }
 
-async function apiLogin(email, password) {
+async function apiLogin(username, password) {
   const response = await fetch(`${API_BASE}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Accept": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ username, password }),
   });
 
   const data = await response.json();

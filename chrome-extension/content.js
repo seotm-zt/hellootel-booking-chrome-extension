@@ -56,6 +56,49 @@ const getRoomTypesFromServer = (hotelId)            => sendMessage({ type: "GET_
 const confirmBookingOnServer = (bookingId, payload) => sendMessage({ type: "CONFIRM_BOOKING", bookingId, payload });
 const deleteBookingFromServer = (bookingId)          => sendMessage({ type: "DELETE_BOOKING",  bookingId });
 
+// ── Currency list cache ───────────────────────────────────────────────
+let _currencies = null; // null = not yet fetched
+
+async function ensureCurrencies() {
+  if (_currencies !== null) return _currencies;
+  try {
+    const json = await sendMessage({ type: "LOAD_CURRENCIES" });
+    const raw = json?.data ?? [];
+    if (Array.isArray(raw)) {
+      _currencies = raw.map((c) =>
+        typeof c === "object" && c.code
+          ? { code: c.code, name: c.name ?? c.code }
+          : { code: String(c), name: String(c) }
+      );
+    } else {
+      _currencies = Object.entries(raw).map(([code, name]) => ({ code, name }));
+    }
+  } catch {
+    _currencies = [];
+  }
+  return _currencies;
+}
+
+function populateCurrencySelectEl(select, selectedCode) {
+  select.innerHTML = '<option value="">—</option>';
+  let found = false;
+  for (const c of (_currencies || [])) {
+    const opt = document.createElement("option");
+    opt.value = c.code;
+    opt.textContent = c.code + (c.name && c.name !== c.code ? " — " + c.name : "");
+    if (c.code === selectedCode) { opt.selected = true; found = true; }
+    select.appendChild(opt);
+  }
+  // If selectedCode is not in the API list, add it so the value is visible
+  if (selectedCode && !found) {
+    const opt = document.createElement("option");
+    opt.value = selectedCode;
+    opt.textContent = selectedCode;
+    opt.selected = true;
+    select.appendChild(opt);
+  }
+}
+
 // ── Booking state caches ──────────────────────────────────────────────
 // Key format: "domain:booking_code"
 let confirmedCodes = new Set(); // confirmed bookings
@@ -169,7 +212,7 @@ async function showConfirmModal(saveResult) {
     arrivalAt:   processed?.arrival_at     ?? "",
     departureAt: processed?.departure_at   ?? "",
     price:       processed?.price          ?? "",
-    currency:    processed?.currency_code  ?? "",
+    currency:    processed?.currency_code  ?? detectCurrency(raw.total_price) ?? "",
     adults:      processed?.person_count_adults   ?? raw.adults   ?? "",
     children:    processed?.person_count_children ?? raw.children ?? "",
     infants:     processed?.person_count_teens    ?? raw.infants  ?? "",
@@ -188,14 +231,16 @@ async function showConfirmModal(saveResult) {
 
       <div class="ttb-modal__body">
 
-        <label class="ttb-modal__label">Hotel</label>
+        <label class="ttb-modal__label">
+          Hotel
+          ${hotelMatch ? `<span class="ttb-modal__match-badge">Auto-matched · <strong>${hotelMatch.score}%</strong></span>` : ""}
+        </label>
         <div class="ttb-modal__autocomplete">
           <input class="ttb-modal__input" id="ttb-hotel-input" type="text"
             placeholder="Type hotel name..."
             value="${esc(pre.hotelName)}" autocomplete="off" />
           <ul class="ttb-modal__suggestions" id="ttb-hotel-suggestions" hidden></ul>
         </div>
-        ${hotelMatch ? `<div class="ttb-modal__match-badge">Auto-matched · ${hotelMatch.score}%</div>` : ""}
 
         <label class="ttb-modal__label">Room type</label>
         <select class="ttb-modal__select" id="ttb-room-select" ${pre.hotelId ? "" : "disabled"}>
@@ -236,7 +281,9 @@ async function showConfirmModal(saveResult) {
           </div>
           <div>
             <label class="ttb-modal__label">Currency</label>
-            <input class="ttb-modal__input" id="ttb-currency" type="text" maxlength="3" placeholder="EUR" value="${esc(pre.currency)}" />
+            <select class="ttb-modal__input ttb-modal__select" id="ttb-currency">
+              <option value="">—</option>
+            </select>
           </div>
         </div>
 
@@ -273,6 +320,12 @@ async function showConfirmModal(saveResult) {
 
   document.body.appendChild(overlay);
   modalElement = overlay;
+
+  // Populate currency select (async — list may not be loaded yet)
+  ensureCurrencies().then(() => {
+    const currSelect = overlay.querySelector("#ttb-currency");
+    if (currSelect) populateCurrencySelectEl(currSelect, pre.currency);
+  });
 
   const hotelInput   = overlay.querySelector("#ttb-hotel-input");
   const suggestions  = overlay.querySelector("#ttb-hotel-suggestions");
@@ -546,6 +599,7 @@ async function boot() {
     ParserRegistry.loadParsers(),
     ParserRegistry.loadRules(),
     refreshConfirmedCodes(),
+    ensureCurrencies(),
   ]);
   queueScan();
 }
