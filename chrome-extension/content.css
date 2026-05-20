@@ -349,6 +349,23 @@
   border-top: 1px solid #f0f0f0 !important;
 }
 
+.ttb-modal__api-error {
+  margin: 0 20px 14px !important;
+  padding: 10px 14px !important;
+  background: #fef2f2 !important;
+  border: 1px solid #fca5a5 !important;
+  border-radius: 6px !important;
+  color: #b91c1c !important;
+  font-size: 13px !important;
+  font-family: sans-serif !important;
+  line-height: 1.4 !important;
+  word-break: break-word !important;
+}
+
+.ttb-modal__api-error[hidden] {
+  display: none !important;
+}
+
 .ttb-modal__btn {
   all: initial !important;
   display: inline-flex !important;

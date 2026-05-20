@@ -314,6 +314,7 @@ async function showConfirmModal(saveResult) {
         <button class="ttb-modal__btn ttb-modal__btn--cancel"  type="button">Cancel</button>
         <button class="ttb-modal__btn ttb-modal__btn--confirm" type="button" disabled>Confirm</button>
       </div>
+      <div class="ttb-modal__api-error" id="ttb-api-error" hidden></div>
 
     </div>
   `;
@@ -431,9 +432,18 @@ async function showConfirmModal(saveResult) {
       }
     });
 
+    const apiErrorEl = overlay.querySelector("#ttb-api-error");
+
+    const showApiError = (msg) => {
+      apiErrorEl.textContent = msg;
+      apiErrorEl.hidden = false;
+    };
+    const clearApiError = () => { apiErrorEl.hidden = true; apiErrorEl.textContent = ""; };
+
     confirmBtn.addEventListener("click", async () => {
       confirmBtn.disabled    = true;
       confirmBtn.textContent = "Sending...";
+      clearApiError();
       try {
         const selectedRoomId   = roomSelect.value ? parseInt(roomSelect.value, 10) : null;
         const selectedRoomName = roomSelect.selectedOptions[0]?.textContent?.trim() ?? null;
@@ -444,7 +454,7 @@ async function showConfirmModal(saveResult) {
           dob:        row.querySelector(".ttb-tourist__dob").value.trim(),
         })).filter(t => t.last_name || t.first_name);
 
-        await confirmBookingOnServer(raw.id, {
+        const result = await confirmBookingOnServer(raw.id, {
           hotel_id:         selectedHotelId || null,
           hotel_name:       selectedHotelName || null,
           room_type_id:     selectedRoomId || null,
@@ -461,6 +471,13 @@ async function showConfirmModal(saveResult) {
           infants:  overlay.querySelector("#ttb-infants").value  !== "" ? parseInt(overlay.querySelector("#ttb-infants").value,  10) : null,
           tourists: tourists.length ? tourists : null,
         });
+
+        if (result?.hellootel?.error) {
+          showApiError("HellOotel: " + result.hellootel.error);
+          confirmBtn.disabled    = false;
+          confirmBtn.textContent = "Retry";
+          return;
+        }
 
         destroyModal();
         showToast("Booking confirmed ✓");

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ExtensionBooking;
+use App\Models\ExtensionPageReport;
 use App\Models\ExtensionParser;
 use App\Models\ExtensionParserRule;
 use App\Models\ProcessedBooking;
@@ -35,7 +36,8 @@ class BookingProcessorService
             ->filter()
             ->implode(', ') ?: null;
 
-        $fieldMap = $this->getFieldMap($booking);
+        $parser   = $this->resolveParser($booking->source_domain ?? '', $booking->source_url ?? '');
+        $fieldMap = $parser?->config['field_map'] ?? [];
 
         [$hotelId, $roomTypeId, $roomTypeName] = $this->matchHotelAndRoom($booking, $fieldMap);
 
@@ -52,8 +54,8 @@ class BookingProcessorService
             'hotel_id'              => $hotelId,
             'room_type_id'          => $roomTypeId,
             'room_type_name'        => $roomTypeName ?? $this->resolveField($booking, $fieldMap, 'room_type_name', $booking->subtitle),
-            'operator_id'           => null,
-            'operator_name'         => $this->resolveField($booking, $fieldMap, 'operator_name', null),
+            'operator_id'           => $parser?->operator_id,
+            'operator_name'         => $parser?->operator_name ?? $this->resolveField($booking, $fieldMap, 'operator_name', null),
             'reservation_date'       => $this->tryParseDate($this->extractDatePart($booking->reservation_at ?? '')),
             'reservation_time'       => $this->extractTimePart($booking->reservation_at ?? ''),
             'arrival_at'            => $arrival,
@@ -114,12 +116,24 @@ class BookingProcessorService
         if (!$booking->source_domain) return [];
 
         $parser = $this->resolveParser($booking->source_domain, $booking->source_url ?? '');
-        return $parser['field_map'] ?? [];
+        return $parser?->config['field_map'] ?? [];
     }
 
-    // Resolve parser config array for a given domain + URL (checks rules first, then direct domain match)
-    private function resolveParser(string $domain, string $url): array
+    // Resolve ExtensionParser model for a given domain + URL (checks rules first, then direct domain match)
+    private function resolveParser(string $domain, string $url): ?ExtensionParser
     {
+        if (!$domain) return null;
+
+        // Bookings saved from the HTML preview page have domain=booking.localhost.
+        // The real URL is stored in the corresponding ExtensionPageReport.
+        if ($domain === 'booking.localhost' && preg_match('#/page-reports/(\d+)/#', $url, $m)) {
+            $report = ExtensionPageReport::find((int) $m[1]);
+            if ($report?->url) {
+                $domain = parse_url($report->url, PHP_URL_HOST) ?: $domain;
+                $url    = $report->url;
+            }
+        }
+
         $path = parse_url($url, PHP_URL_PATH) ?? '';
 
         // Check parser rules (best-match: longest path_match prefix wins)
@@ -131,18 +145,16 @@ class BookingProcessorService
 
         if ($rule) {
             $parser = ExtensionParser::where('name', $rule->parser)->where('is_active', true)->first();
-            if ($parser) return $parser->config ?? [];
+            if ($parser) return $parser;
         }
 
         // Direct domain match
-        $parser = ExtensionParser::where('domain', $domain)
+        return ExtensionParser::where('domain', $domain)
             ->where('is_active', true)
             ->get()
             ->filter(fn($p) => $p->path_match === null || $p->path_match === '' || str_starts_with($path, $p->path_match))
             ->sortByDesc(fn($p) => strlen($p->path_match ?? ''))
             ->first();
-
-        return $parser ? ($parser->config ?? []) : [];
     }
 
     // Resolve a value from ExtensionBooking using field_map path, or return $default
@@ -196,7 +208,7 @@ class BookingProcessorService
         foreach (['d.m.Y H:i', 'd.m.Y', 'd/m/Y H:i', 'd/m/Y', 'Y-m-d', 'd.m.y', 'd-m-Y'] as $fmt) {
             try {
                 $d = Carbon::createFromFormat($fmt, $s);
-                if ($d) return $d->format('Y-m-d');
+                if ($d && $d->year >= 1900) return $d->format('Y-m-d');
             } catch (\Exception) {}
         }
         return null;

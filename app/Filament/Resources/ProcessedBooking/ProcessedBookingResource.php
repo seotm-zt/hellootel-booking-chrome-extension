@@ -321,6 +321,23 @@ class ProcessedBookingResource extends Resource
                         : '—'),
             ]),
 
+            InfoSection::make('HellOotel')->columns(3)->schema([
+                TextEntry::make('hellootel_reservation_id')
+                    ->label('Reservation ID')
+                    ->placeholder('—')
+                    ->badge()
+                    ->color(fn ($state) => $state ? 'success' : 'gray'),
+                TextEntry::make('hellootel_sent_at')
+                    ->label('Sent at')
+                    ->dateTime('d.m.Y H:i')
+                    ->placeholder('Not sent'),
+                TextEntry::make('hellootel_response')
+                    ->label('API response')
+                    ->placeholder('—')
+                    ->columnSpanFull()
+                    ->extraAttributes(['style' => 'font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all;']),
+            ]),
+
             InfoSection::make('Source')->columns(2)->schema([
                 TextEntry::make('sourceBooking.booking_code')->label('Source booking')
                     ->url(fn (ProcessedBooking $r) => $r->source_booking_id

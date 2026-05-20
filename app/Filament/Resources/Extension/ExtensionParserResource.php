@@ -6,8 +6,10 @@ use App\Filament\Resources\Extension\Pages\CreateExtensionParser;
 use App\Filament\Resources\Extension\Pages\EditExtensionParser;
 use App\Filament\Resources\Extension\Pages\ListExtensionParsers;
 use App\Models\ExtensionParser;
+use App\Services\HellOotelLookupService;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -64,6 +66,27 @@ class ExtensionParserResource extends Resource
                 Toggle::make('is_active')
                     ->label('Active')
                     ->default(true)
+                    ->columnSpanFull(),
+
+                Select::make('operator_id')
+                    ->label('Operator (HellOotel)')
+                    ->placeholder('— not set —')
+                    ->searchable()
+                    ->options(function () {
+                        try {
+                            return app(HellOotelLookupService::class)->getOperators();
+                        } catch (\Throwable) {
+                            return [];
+                        }
+                    })
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        if (!$state) { $set('operator_name', null); return; }
+                        try {
+                            $ops = app(HellOotelLookupService::class)->getOperators();
+                            $set('operator_name', $ops[$state] ?? null);
+                        } catch (\Throwable) {}
+                    })
+                    ->reactive()
                     ->columnSpanFull(),
 
                 Textarea::make('notes')

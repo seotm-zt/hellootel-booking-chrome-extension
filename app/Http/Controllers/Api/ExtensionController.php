@@ -12,6 +12,7 @@ use App\Models\ProcessedBooking;
 use App\Models\User;
 use App\Services\BookingProcessorService;
 use App\Services\HellOotelLookupService;
+use App\Services\HellOotelReservationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -30,7 +31,7 @@ class ExtensionController extends Controller
 
         $hellootel = Http::timeout(10)
             ->withHeaders(['Accept' => 'application/json'])
-            ->post('https://demo.hellootel.com/api/v1/auth/login', [
+            ->post(config('services.hellootel.base') . '/auth/login', [
                 'name'     => $request->username,
                 'password' => $request->password,
             ]);
@@ -175,7 +176,7 @@ class ExtensionController extends Controller
         ], $booking->wasRecentlyCreated ? 201 : 200);
     }
 
-    public function confirm(int $id, Request $request): JsonResponse
+    public function confirm(int $id, Request $request, HellOotelReservationService $reservation): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
@@ -231,7 +232,21 @@ class ExtensionController extends Controller
 
         $processed->save();
 
-        return response()->json(['data' => $processed]);
+        $hellootelResult = ['id' => null, 'error' => null];
+        try {
+            $hellootelResult = $reservation->send($processed);
+        } catch (\Throwable $e) {
+            Log::warning('HellOotel reservation send failed', [
+                'processed_id' => $processed->id,
+                'error'        => $e->getMessage(),
+            ]);
+            $hellootelResult['error'] = $e->getMessage();
+        }
+
+        return response()->json([
+            'data'      => $processed,
+            'hellootel' => $hellootelResult,
+        ]);
     }
 
     public function hotels(Request $request, HellOotelLookupService $lookup): JsonResponse
@@ -297,13 +312,14 @@ class ExtensionController extends Controller
 
     public function currencies(): JsonResponse
     {
-        $data = \Illuminate\Support\Facades\Cache::remember('hellootel.currencies', 86400, function () {
-            $resp = Http::timeout(10)
-                ->withBasicAuth('D-JG2YaHw66wiwv3NKQXa09tnAP9TU3z', '')
-                ->get('https://demo.hellootel.com/api/v1/reservation/tour-price-currencies', ['language' => 'en']);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
 
-            return $resp->successful() ? ($resp->json() ?? []) : [];
-        });
+        $resp = Http::timeout(10)
+            ->withBasicAuth($user->access_token, '')
+            ->get(config('services.hellootel.base') . '/reservation/tour-price-currencies', ['language' => 'en']);
+
+        $data = $resp->successful() ? ($resp->json() ?? []) : [];
 
         return response()->json(['data' => $data]);
     }

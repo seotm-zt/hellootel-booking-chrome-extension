@@ -41,6 +41,9 @@ class ProcessedBooking extends Model
         'payment_status_cm',
         'confirmed_by_user_id',
         'confirmed_at',
+        'hellootel_reservation_id',
+        'hellootel_sent_at',
+        'hellootel_response',
     ];
 
     protected function casts(): array
@@ -52,7 +55,8 @@ class ProcessedBooking extends Model
             'departure_at'   => 'date',
             'price'        => 'float',
             'commission'   => 'float',
-            'confirmed_at' => 'datetime',
+            'confirmed_at'      => 'datetime',
+            'hellootel_sent_at' => 'datetime',
         ];
     }
 
