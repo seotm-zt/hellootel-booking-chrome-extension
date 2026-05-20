@@ -41,6 +41,7 @@ class ProcessedBooking extends Model
         'payment_status_cm',
         'confirmed_by_user_id',
         'confirmed_at',
+        'hotel_vote',
         'hellootel_reservation_id',
         'hellootel_sent_at',
         'hellootel_response',
@@ -51,6 +52,7 @@ class ProcessedBooking extends Model
         return [
             'tourists'     => 'array',
             'tourist_ids'  => 'array',
+            'hotel_vote'     => 'integer',
             'arrival_at'     => 'date',
             'departure_at'   => 'date',
             'price'        => 'float',

@@ -8,11 +8,13 @@ use App\Filament\Resources\ProcessedBooking\Pages\ViewProcessedBooking;
 use App\Models\ProcessedBooking;
 use App\Services\BookingProcessorService;
 use App\Services\HellOotelLookupService;
+use App\Services\HellOotelReservationService;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
@@ -72,6 +74,11 @@ class ProcessedBookingResource extends Resource
                     ->falseColor('gray')
                     ->getStateUsing(fn (ProcessedBooking $r) => (bool) $r->hotel_id),
                 TextColumn::make('hotel_id')->label('hotel_id')->placeholder('—')->searchable(),
+                TextColumn::make('hotel_vote')
+                    ->label('Rating')
+                    ->alignCenter()
+                    ->placeholder('—')
+                    ->formatStateUsing(fn (?int $state) => $state !== null ? str_repeat('★', $state) . str_repeat('☆', 5 - $state) : '—'),
                 TextColumn::make('hotel_name')->label('Hotel (text)')->limit(30)->placeholder('—')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('room_type_id')->label('room_type_id')->placeholder('—'),
                 TextColumn::make('room_type_name')->label('Room type')->limit(25)->placeholder('—'),
@@ -130,6 +137,25 @@ class ProcessedBookingResource extends Resource
                     ->action(function (ProcessedBooking $record): void {
                         static::runMatch($record);
                     }),
+                Action::make('get_vote')
+                    ->label('Get Vote')
+                    ->icon('heroicon-o-star')
+                    ->color('warning')
+                    ->visible(fn (ProcessedBooking $r) => (bool) $r->hotel_id)
+                    ->action(function (ProcessedBooking $record): void {
+                        static::runGetVote($record);
+                    }),
+                Action::make('send_vote')
+                    ->label('Send Vote')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('success')
+                    ->visible(fn (ProcessedBooking $r) => $r->hotel_id && $r->hotel_vote !== null)
+                    ->requiresConfirmation()
+                    ->modalHeading('Send Vote to HellOotel')
+                    ->modalDescription(fn (ProcessedBooking $r) => "Send rating " . str_repeat('★', (int) $r->hotel_vote) . " for hotel #{$r->hotel_id}?")
+                    ->action(function (ProcessedBooking $record): void {
+                        static::runSendVote($record);
+                    }),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
@@ -178,6 +204,27 @@ class ProcessedBookingResource extends Resource
                         ->placeholder('— select hotel —'),
                     TextInput::make('hotel_name')->label('Hotel name (raw from booking)'),
                 ]),
+
+                ToggleButtons::make('hotel_vote')
+                    ->label('Hotel Rating')
+                    ->options([
+                        0 => '—',
+                        1 => '★',
+                        2 => '★★',
+                        3 => '★★★',
+                        4 => '★★★★',
+                        5 => '★★★★★',
+                    ])
+                    ->colors([
+                        0 => 'gray',
+                        1 => 'warning',
+                        2 => 'warning',
+                        3 => 'warning',
+                        4 => 'warning',
+                        5 => 'warning',
+                    ])
+                    ->inline()
+                    ->columnSpanFull(),
 
                 \Filament\Forms\Components\Grid::make(2)->schema([
                     Select::make('room_type_id')
@@ -254,6 +301,10 @@ class ProcessedBookingResource extends Resource
             InfoSection::make('Identifiers')->columns(3)->schema([
                 TextEntry::make('booking_code')->label('booking_code')->badge()->color('success')->placeholder('—'),
                 TextEntry::make('hotel_id')->label('hotel_id')->placeholder('—'),
+                TextEntry::make('hotel_vote')
+                    ->label('Hotel Rating')
+                    ->placeholder('—')
+                    ->formatStateUsing(fn (?int $state) => $state !== null ? str_repeat('★', $state) . str_repeat('☆', 5 - $state) . " ({$state}/5)" : '—'),
                 TextEntry::make('hotel_name')->label('Hotel (text)')->placeholder('—'),
                 TextEntry::make('room_type_id')->label('room_type_id')->placeholder('—'),
                 TextEntry::make('room_type_name')->label('Room type')->placeholder('—'),
@@ -348,6 +399,38 @@ class ProcessedBookingResource extends Resource
                 TextEntry::make('created_at')->label('Processed at')->dateTime('d.m.Y H:i'),
             ]),
         ]);
+    }
+
+    public static function runGetVote(ProcessedBooking $record): void
+    {
+        if (!$record->hotel_id) {
+            Notification::make()->title('No hotel_id')->warning()->send();
+            return;
+        }
+
+        $vote = app(HellOotelLookupService::class)->getHotelVote((int) $record->hotel_id);
+
+        if ($vote === null) {
+            Notification::make()->title('Could not load vote from HellOotel')->warning()->send();
+            return;
+        }
+
+        $record->update(['hotel_vote' => $vote]);
+        $stars = str_repeat('★', $vote) . str_repeat('☆', 5 - $vote);
+        Notification::make()->title("Vote loaded: {$stars} ({$vote}/5)")->success()->send();
+    }
+
+    public static function runSendVote(ProcessedBooking $record): void
+    {
+        $result = app(HellOotelReservationService::class)->sendVote($record);
+
+        if ($result['error']) {
+            Notification::make()->title('HellOotel: ' . $result['error'])->danger()->send();
+            return;
+        }
+
+        $stars = str_repeat('★', (int) $record->hotel_vote) . str_repeat('☆', 5 - (int) $record->hotel_vote);
+        Notification::make()->title("Vote sent: {$stars} ({$record->hotel_vote}/5)")->success()->send();
     }
 
     // Returns true if hotel_id was resolved

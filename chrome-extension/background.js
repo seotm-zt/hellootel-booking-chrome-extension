@@ -100,6 +100,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "GET_HOTEL_VOTE") {
+    (async () => {
+      try {
+        const data = await authedFetch(`/hotels/${message.hotelId}/vote`);
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
   if (message.type === "DELETE_BOOKING") {
     (async () => {
       try {

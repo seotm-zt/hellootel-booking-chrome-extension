@@ -53,6 +53,14 @@
   box-shadow: 0 16px 28px rgba(21, 128, 61, 0.3) !important;
 }
 
+.ttb-save-booking-button--sent {
+  border-color: #166534 !important;
+  background: linear-gradient(180deg, #4ade80 0%, #166534 100%) !important;
+  box-shadow: none !important;
+  opacity: 0.65 !important;
+  cursor: default !important;
+}
+
 .ttb-save-booking-actions {
   display: flex;
   align-items: center;
@@ -286,6 +294,46 @@
   display: grid !important;
   grid-template-columns: 1fr 1fr 1fr !important;
   gap: 8px !important;
+}
+
+/* ── Star rating ── */
+
+.ttb-rating-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-bottom: 8px !important;
+}
+
+.ttb-rating-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: #6b7280 !important;
+  white-space: nowrap !important;
+}
+
+.ttb-stars {
+  display: flex !important;
+  gap: 2px !important;
+}
+
+.ttb-star {
+  font-size: 22px !important;
+  cursor: pointer !important;
+  color: #d1d5db !important;
+  user-select: none !important;
+  line-height: 1 !important;
+  transition: color 0.12s !important;
+}
+
+.ttb-star:hover {
+  color: #f59e0b !important;
+}
+
+.ttb-star--filled {
+  color: #f59e0b !important;
 }
 
 /* ── Tourist rows ── */

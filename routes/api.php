@@ -20,5 +20,6 @@ Route::prefix('v1/extension')->group(function () {
 
         Route::get('hotels',                        [ExtensionController::class, 'hotels']);
         Route::get('hotels/{id}/room-types',        [ExtensionController::class, 'hotelRoomTypes']);
+        Route::get('hotels/{id}/vote',              [ExtensionController::class, 'hotelVote']);
     });
 });

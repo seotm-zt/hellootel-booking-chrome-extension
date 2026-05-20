@@ -44,6 +44,7 @@ class HellOotelReservationService
         Log::info('HellOotel reservation request', [
             'processed_id' => $processed->id,
             'url'          => $url,
+            'token_prefix' => substr($this->token, 0, 8) . '...',
             'payload'      => $payload,
         ]);
 
@@ -83,6 +84,48 @@ class HellOotelReservationService
         $processed->saveQuietly();
 
         return ['id' => $reservationId ? (int) $reservationId : null, 'error' => null];
+    }
+
+    public function sendVote(ProcessedBooking $processed): array
+    {
+        if (!$processed->hotel_id) {
+            return ['error' => 'No hotel_id set'];
+        }
+
+        if ($processed->hotel_vote === null) {
+            return ['error' => 'No rating set'];
+        }
+
+        $url = $this->base . '/hotel/vote?hotel_id=' . $processed->hotel_id;
+
+        Log::info('HellOotel send vote', [
+            'processed_id' => $processed->id,
+            'hotel_id'     => $processed->hotel_id,
+            'vote'         => $processed->hotel_vote,
+        ]);
+
+        try {
+            $response = Http::timeout(15)
+                ->withBasicAuth($this->token, '')
+                ->post($url, ['vote' => $processed->hotel_vote]);
+
+            $body = $response->json() ?? $response->body();
+
+            Log::info('HellOotel vote response', [
+                'processed_id' => $processed->id,
+                'status'       => $response->status(),
+                'body'         => $body,
+            ]);
+
+            if (!$response->successful()) {
+                $errorMsg = is_array($body) ? ($body['message'] ?? json_encode($body)) : (string) $body;
+                return ['error' => $errorMsg ?: "HTTP {$response->status()}"];
+            }
+
+            return ['error' => null];
+        } catch (\Exception $e) {
+            return ['error' => $e->getMessage()];
+        }
     }
 
     private function syncOperatorFromParser(ProcessedBooking $processed): void

@@ -83,7 +83,7 @@ class ExtensionController extends Controller
         $user = Auth::user();
 
         $bookings = ExtensionBooking::where('user_id', $user->id)
-            ->with('processedBooking:id,confirmed_at')
+            ->with('processedBooking:id,confirmed_at,hellootel_reservation_id')
             ->orderByDesc('created_at')
             ->get();
 
@@ -170,7 +170,9 @@ class ExtensionController extends Controller
                 'person_count_adults'   => $processed->person_count_adults,
                 'person_count_children' => $processed->person_count_children,
                 'person_count_teens'    => $processed->person_count_teens,
-                'tourists'              => $processed->tourists ?? [],
+                'tourists'                  => $processed->tourists ?? [],
+                'hotel_vote'                => $processed->hotel_vote,
+                'hellootel_reservation_id'  => $processed->hellootel_reservation_id,
             ] : null,
             'hotel_match' => $hotelMatch,
         ], $booking->wasRecentlyCreated ? 201 : 200);
@@ -205,6 +207,7 @@ class ExtensionController extends Controller
             'children'         => 'nullable|integer|min:0',
             'infants'          => 'nullable|integer|min:0',
             'tourists'         => 'nullable|array',
+            'hotel_vote'       => 'nullable|integer|min:0|max:5',
         ]);
 
         $processed = ProcessedBooking::findOrFail($booking->processed_booking_id);
@@ -218,11 +221,12 @@ class ExtensionController extends Controller
             'hotel_id', 'hotel_name', 'room_type_id', 'room_type_name',
             'booking_code', 'reservation_date', 'reservation_time',
             'arrival_at', 'departure_at', 'price', 'currency_code', 'tourists',
+            'hotel_vote',
         ];
         foreach ($directFields as $field) {
-            if (array_key_exists($field, $data) && $data[$field] !== null) {
-                $processed->$field = $data[$field];
-            }
+            if (!array_key_exists($field, $data)) continue;
+            if ($data[$field] === null && $field !== 'hotel_vote') continue;
+            $processed->$field = $data[$field];
         }
 
         // Person counts use different column names in processed_bookings
@@ -241,6 +245,17 @@ class ExtensionController extends Controller
                 'error'        => $e->getMessage(),
             ]);
             $hellootelResult['error'] = $e->getMessage();
+        }
+
+        if ($processed->hotel_vote !== null && $processed->hotel_id) {
+            try {
+                $reservation->sendVote($processed);
+            } catch (\Throwable $e) {
+                Log::warning('HellOotel vote send failed', [
+                    'processed_id' => $processed->id,
+                    'error'        => $e->getMessage(),
+                ]);
+            }
         }
 
         return response()->json([
@@ -290,6 +305,12 @@ class ExtensionController extends Controller
         usort($result, fn($a, $b) => strcmp($a['name'], $b['name']));
 
         return response()->json(['data' => $result]);
+    }
+
+    public function hotelVote(int $id, HellOotelLookupService $lookup): JsonResponse
+    {
+        $vote = $lookup->getHotelVote($id);
+        return response()->json(['vote' => $vote]);
     }
 
     public function destroy(int $id): JsonResponse
