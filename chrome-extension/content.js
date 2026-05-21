@@ -12,7 +12,7 @@ function getEffectiveLocation() {
   return window.location;
 }
 
-const BUTTON_LABEL     = "Save to database";
+const BUTTON_LABEL     = "Send to HelloOtel";
 const UPDATE_LABEL     = "Update in database";
 const CONFIRMED_LABEL  = "Confirm & send to HelloOtel";
 const SENT_LABEL       = "Sent to HelloOtel ✓";
