@@ -3,26 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HellOotel Booking Saver</title>
+  <title>Dev Reporter</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <main class="popup">
-
-    <!-- Header -->
-    <header class="popup__header">
-      <div class="popup__brand">
-        <img src="icons/icon32.png" class="popup__logo" alt="">
-        <span class="popup__title">HelloOtel<br>Booking Saver</span>
-      </div>
-      <span class="popup__badge" id="bookingCount" hidden>0</span>
-    </header>
+    <div class="popup__header">
+      <div class="popup__eyebrow">Booking Saver</div>
+      <h1>Dev Reporter</h1>
+    </div>
 
     <!-- Login form -->
-    <section id="loginSection" class="popup__login" hidden>
-      <h2>Sign in</h2>
-      <p>Use your HellOotel username and password</p>
-      <form id="loginForm" class="popup__login-form">
+    <section id="loginSection">
+      <p class="popup__hint">Sign in to send pages to the developer.</p>
+      <form id="loginForm">
         <input type="text"     id="loginUsername" class="popup__input" placeholder="Username" required autocomplete="username" />
         <input type="password" id="loginPassword" class="popup__input" placeholder="Password" required autocomplete="current-password" />
         <button type="submit"  id="loginSubmit"   class="popup__button popup__button--primary">Sign in</button>
@@ -35,11 +29,17 @@
         <span id="userNameLabel" class="popup__user-name"></span>
         <button id="logoutButton" class="popup__button popup__button--sm" type="button">Sign out</button>
       </div>
-      <section id="bookingsList" class="popup__list"></section>
+
+      <div class="popup__dev-info">
+        <p>Current page will be sent to the developer so a parser can be created for this site.</p>
+      </div>
+
+      <button id="sendToDev" class="popup__button popup__button--send" type="button">
+        📤 Send to Developer
+      </button>
     </section>
 
     <div id="status" class="popup__status" hidden></div>
-
   </main>
 
   <script src="auth.js"></script>

@@ -1,31 +1,30 @@
+const bookingCount        = document.getElementById("bookingCount");
+const bookingsList        = document.getElementById("bookingsList");
+const statusBox           = document.getElementById("status");
 
-const sendToDevButton = document.getElementById("sendToDev");
-
-const bookingCount = document.getElementById("bookingCount");
-const bookingsList = document.getElementById("bookingsList");
-const statusBox = document.getElementById("status");
-
-const loginSection = document.getElementById("loginSection");
-const loginForm = document.getElementById("loginForm");
-const loginUsername = document.getElementById("loginUsername");
-const loginPassword = document.getElementById("loginPassword");
-const loginSubmit = document.getElementById("loginSubmit");
+const loginSection        = document.getElementById("loginSection");
+const loginForm           = document.getElementById("loginForm");
+const loginUsername       = document.getElementById("loginUsername");
+const loginPassword       = document.getElementById("loginPassword");
+const loginSubmit         = document.getElementById("loginSubmit");
 
 const authenticatedSection = document.getElementById("authenticatedSection");
-const userNameLabel = document.getElementById("userNameLabel");
-const logoutButton = document.getElementById("logoutButton");
-const exportButton = document.getElementById("exportJson");
-const clearButton = document.getElementById("clearBookings");
+const userNameLabel       = document.getElementById("userNameLabel");
+const logoutButton        = document.getElementById("logoutButton");
 
-const confirmModal     = document.getElementById("confirmModal");
-const confirmModalClose = document.getElementById("confirmModalClose");
-const confirmForm      = document.getElementById("confirmForm");
-const confirmSubmit    = document.getElementById("confirmSubmit");
-const confirmError     = document.getElementById("confirmError");
-const currencySelect   = document.getElementById("currencySelect");
+const STATUS_MAP = {
+  "Не подтверждено": "Unconfirmed",
+  "Подтверждено":    "Confirmed",
+  "Оплачено":        "Paid",
+  "Не оплачено":     "Unpaid",
+  "Отменено":        "Cancelled",
+  "Ожидает":         "Pending",
+  "Обработано":      "Processed",
+};
 
-let currencies = [];
-let confirmBookingId = null;
+function translateStatus(s) {
+  return STATUS_MAP[s?.trim()] ?? s;
+}
 
 function normalizeText(value) {
   return (value || "").replace(/\s+/g, " ").trim();
@@ -43,24 +42,38 @@ function hideStatus() {
 }
 
 function formatStatuses(statuses) {
-  return Array.isArray(statuses) ? statuses.filter(Boolean).join(", ") : "";
+  return Array.isArray(statuses)
+    ? statuses.filter(Boolean).map(translateStatus).join(", ")
+    : "";
+}
+
+function safeHttpUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return (parsed.protocol === "https:" || parsed.protocol === "http:") ? url : null;
+  } catch {
+    return null;
+  }
 }
 
 function createMetaRow(label, value) {
-  if (!normalizeText(value)) return "";
-  return `
-    <div class="booking-card__row">
-      <strong>${label}</strong>
-      <span class="booking-card__value">${value}</span>
-    </div>
-  `;
+  if (!normalizeText(value)) return null;
+  const row = document.createElement("div");
+  row.className = "booking-card__row";
+  const strong = document.createElement("strong");
+  strong.textContent = label;
+  const span = document.createElement("span");
+  span.className = "booking-card__value";
+  span.textContent = value;
+  row.append(strong, span);
+  return row;
 }
 
 function renderEmptyState(allConfirmed = false) {
   bookingsList.innerHTML = allConfirmed
     ? '<div class="popup__empty popup__empty--done">✓ All bookings confirmed</div>'
-    : '<div class="popup__empty">No bookings. Click the save button on a booking page.</div>';
-  bookingCount.textContent = "0";
+    : '<div class="popup__empty">No bookings yet. Click the Save button on a booking page.</div>';
+  bookingCount.hidden = true;
 }
 
 async function apiFetch(path, options = {}) {
@@ -71,220 +84,126 @@ async function apiFetch(path, options = {}) {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
-
   return fetch(`${API_BASE}${path}`, { ...options, headers });
 }
 
 async function loadBookings() {
   const response = await apiFetch("/bookings");
-
-  if (!response.ok) {
-    throw new Error("Failed to load bookings");
-  }
-
+  if (!response.ok) throw new Error("Failed to load bookings");
   const json = await response.json();
   return Array.isArray(json.data) ? json.data : [];
 }
 
 async function deleteBookingFromServer(id) {
   const response = await apiFetch(`/bookings/${id}`, { method: "DELETE" });
-
-  if (!response.ok) {
-    throw new Error("Failed to delete booking");
-  }
+  if (!response.ok) throw new Error("Failed to delete booking");
 }
 
-async function loadCurrencies() {
-  if (currencies.length) return;
-  try {
-    const resp = await apiFetch("/currencies");
-    if (!resp.ok) return;
-    const json = await resp.json();
-    const raw = json.data ?? [];
-    // normalise: [{code, name}] or {code: name}
-    if (Array.isArray(raw)) {
-      currencies = raw.map((c) =>
-        typeof c === "object" && c.code
-          ? { code: c.code, name: c.name ?? c.code }
-          : { code: String(c), name: String(c) }
-      );
-    } else {
-      currencies = Object.entries(raw).map(([code, name]) => ({ code, name: `${code} — ${name}` }));
-    }
-    populateCurrencySelect(currencySelect, "");
-  } catch {}
-}
+function buildBookingCard(booking) {
+  const code     = normalizeText(booking.booking_code || "No code");
+  const title    = normalizeText(booking.hotel_name   || "Untitled");
+  const subtitle = normalizeText(booking.subtitle);
+  const safeUrl  = safeHttpUrl(booking.source_url || "");
 
-function populateCurrencySelect(select, selectedCode) {
-  const current = select.value || selectedCode;
-  select.innerHTML = '<option value="">—</option>';
-  for (const c of currencies) {
-    const opt = document.createElement("option");
-    opt.value = c.code;
-    opt.textContent = `${c.code}${c.name && c.name !== c.code ? " — " + c.name : ""}`;
-    if (c.code === current) opt.selected = true;
-    select.appendChild(opt);
-  }
-  if (current) select.value = current;
-}
+  const article = document.createElement("article");
+  article.className = "booking-card";
 
-function openConfirmModal(booking) {
-  confirmBookingId = booking.id;
-  confirmError.hidden = true;
+  // Top row
+  const top = document.createElement("div");
+  top.className = "booking-card__top";
 
-  const pb = booking.processed_booking ?? {};
+  const info = document.createElement("div");
 
-  const set = (name, val) => {
-    const el = confirmForm.elements[name];
-    if (el && val != null) el.value = val;
-  };
+  const codeEl = document.createElement("div");
+  codeEl.className = "booking-card__code";
+  codeEl.textContent = code;
+  info.appendChild(codeEl);
 
-  set("booking_code",  booking.booking_code ?? pb.booking_code ?? "");
-  set("hotel_name",    booking.hotel_name   ?? pb.hotel_name   ?? "");
-  set("room_type_name",pb.room_type_name ?? "");
-  set("price",         pb.price ?? "");
-  set("arrival_at",    pb.arrival_at   ? pb.arrival_at.slice(0, 10)   : "");
-  set("departure_at",  pb.departure_at ? pb.departure_at.slice(0, 10) : "");
-  set("adults",        pb.person_count_adults   ?? booking.adults   ?? "");
-  set("children",      pb.person_count_children ?? booking.children ?? "");
-  set("infants",       pb.person_count_teens    ?? booking.infants  ?? "");
+  const titleEl = document.createElement("div");
+  titleEl.className = "booking-card__title";
+  titleEl.textContent = title;
+  info.appendChild(titleEl);
 
-  populateCurrencySelect(currencySelect, pb.currency_code ?? "");
-
-  confirmModal.hidden = false;
-}
-
-function closeConfirmModal() {
-  confirmModal.hidden = true;
-  confirmBookingId = null;
-}
-
-confirmModalClose.addEventListener("click", closeConfirmModal);
-confirmModal.addEventListener("click", (e) => {
-  if (e.target === confirmModal) closeConfirmModal();
-});
-
-confirmForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  confirmError.hidden = true;
-  confirmSubmit.disabled = true;
-  confirmSubmit.textContent = "Saving...";
-
-  const fd = new FormData(confirmForm);
-  const payload = {};
-  for (const [k, v] of fd.entries()) {
-    if (v !== "") payload[k] = v;
+  if (subtitle) {
+    const subEl = document.createElement("div");
+    subEl.className = "booking-card__subtitle";
+    subEl.textContent = subtitle;
+    info.appendChild(subEl);
   }
 
-  try {
-    const resp = await apiFetch(`/bookings/${confirmBookingId}/confirm`, {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    });
-    const json = await resp.json();
-    if (!resp.ok) throw new Error(json.error || json.message || `HTTP ${resp.status}`);
-    closeConfirmModal();
-    await render();
-    showStatus("Booking confirmed.");
-  } catch (err) {
-    confirmError.textContent = err.message || "Failed to confirm.";
-    confirmError.hidden = false;
-  } finally {
-    confirmSubmit.disabled = false;
-    confirmSubmit.textContent = "Confirm booking";
+  top.appendChild(info);
+
+  if (safeUrl) {
+    const link = document.createElement("a");
+    link.className = "booking-card__goto";
+    link.href = safeUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.title = "Go to booking page";
+    link.textContent = "↗";
+    top.appendChild(link);
   }
-});
+
+  article.appendChild(top);
+
+  // Meta rows
+  const meta = document.createElement("div");
+  meta.className = "booking-card__meta";
+  for (const row of [
+    createMetaRow("Dates",  booking.stay_dates),
+    createMetaRow("Guests", booking.guests),
+    createMetaRow("Status", formatStatuses(booking.statuses)),
+  ]) {
+    if (row) meta.appendChild(row);
+  }
+  article.appendChild(meta);
+
+  // Footer
+  const footer = document.createElement("div");
+  footer.className = "booking-card__footer";
+
+  const price = document.createElement("div");
+  price.className = "booking-card__price";
+  price.textContent = normalizeText(booking.total_price || "—");
+  footer.appendChild(price);
+
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "booking-card__remove";
+  removeBtn.dataset.removeId = booking.id;
+  removeBtn.type = "button";
+  removeBtn.textContent = "Remove";
+  footer.appendChild(removeBtn);
+
+  article.appendChild(footer);
+
+  return article;
+}
 
 function renderBookings(bookings) {
   const unconfirmed = bookings.filter(b => !b.processed_booking?.confirmed_at);
 
-  if (!bookings.length) {
-    renderEmptyState(false);
-    return;
-  }
-
-  if (!unconfirmed.length) {
-    renderEmptyState(true);
-    return;
-  }
+  if (!bookings.length) { renderEmptyState(false); return; }
+  if (!unconfirmed.length) { renderEmptyState(true); return; }
 
   bookingCount.textContent = String(unconfirmed.length);
-  bookingsList.innerHTML = unconfirmed
-    .map((booking) => {
-      const code     = normalizeText(booking.booking_code || "No code");
-      const title    = normalizeText(booking.hotel_name || "Untitled");
-      const subtitle = normalizeText(booking.subtitle);
-      const sourceUrl = booking.source_url || "";
+  bookingCount.hidden = false;
 
-      return `
-        <article class="booking-card" data-booking-id="${booking.id}">
-          <div class="booking-card__top">
-            <div>
-              <div class="booking-card__code">${code}</div>
-              <div class="booking-card__title">${title}</div>
-              ${subtitle ? `<div class="booking-card__subtitle">${subtitle}</div>` : ""}
-            </div>
-            ${sourceUrl ? `<a class="booking-card__goto" href="${sourceUrl}" target="_blank" title="Go to booking page">↗</a>` : ""}
-          </div>
-          <div class="booking-card__meta">
-            ${createMetaRow("Dates", booking.stay_dates)}
-            ${createMetaRow("Guests", booking.guests)}
-            ${createMetaRow("Meal plan", booking.meal_plan)}
-            ${createMetaRow("Status", formatStatuses(booking.statuses))}
-          </div>
-          <div class="booking-card__footer">
-            <div class="booking-card__price">${normalizeText(booking.total_price || "—")}</div>
-            <div style="display:flex;gap:6px">
-              <button class="booking-card__confirm" data-confirm-id="${booking.id}" type="button">Confirm</button>
-              <button class="booking-card__remove" data-remove-id="${booking.id}" type="button">Remove</button>
-            </div>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
+  bookingsList.innerHTML = "";
 
-  const allBookingsMap = Object.fromEntries(bookings.map((b) => [String(b.id), b]));
-
-  for (const button of bookingsList.querySelectorAll("[data-confirm-id]")) {
-    button.addEventListener("click", () => {
-      const booking = allBookingsMap[button.dataset.confirmId];
-      if (booking) openConfirmModal(booking);
-    });
+  for (const booking of unconfirmed) {
+    bookingsList.appendChild(buildBookingCard(booking));
   }
 
   for (const button of bookingsList.querySelectorAll("[data-remove-id]")) {
     button.addEventListener("click", async () => {
-      const id = button.dataset.removeId;
       try {
-        await deleteBookingFromServer(id);
+        await deleteBookingFromServer(button.dataset.removeId);
         await render();
-        showStatus("Booking deleted.");
+        showStatus("Booking removed.");
       } catch {
-        showStatus("Failed to delete booking.", true);
+        showStatus("Failed to remove booking.", true);
       }
     });
-  }
-}
-
-async function exportJson() {
-  try {
-    const bookings = await loadBookings();
-    if (!bookings.length) {
-      showStatus("Nothing to export: database is empty.");
-      return;
-    }
-
-    const blob = new Blob([JSON.stringify(bookings, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `bookings-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    showStatus("JSON exported.");
-  } catch {
-    showStatus("Failed to export.", true);
   }
 }
 
@@ -295,15 +214,13 @@ async function render() {
   if (!auth || !auth.authorized || !auth.token) {
     loginSection.hidden = false;
     authenticatedSection.hidden = true;
-    bookingCount.textContent = "0";
+    bookingCount.hidden = true;
     return;
   }
 
   loginSection.hidden = true;
   authenticatedSection.hidden = false;
   userNameLabel.textContent = auth.user?.name || auth.user?.username || "";
-
-  loadCurrencies().catch(() => {});
 
   try {
     const bookings = await loadBookings();
@@ -313,18 +230,17 @@ async function render() {
   }
 }
 
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
   loginSubmit.disabled = true;
   loginSubmit.textContent = "Signing in...";
   hideStatus();
-
   try {
     await apiLogin(loginUsername.value.trim(), loginPassword.value);
     loginPassword.value = "";
     await render();
-  } catch (error) {
-    showStatus(error.message || "Invalid email or password.", true);
+  } catch (err) {
+    showStatus(err.message || "Invalid credentials.", true);
   } finally {
     loginSubmit.disabled = false;
     loginSubmit.textContent = "Sign in";
@@ -336,77 +252,11 @@ logoutButton.addEventListener("click", async () => {
   await render();
 });
 
-exportButton.addEventListener("click", exportJson);
-
-clearButton.addEventListener("click", async () => {
-  if (!confirm("Delete all bookings from the server database?")) return;
-
-  try {
-    const bookings = await loadBookings();
-    await Promise.all(bookings.map((b) => deleteBookingFromServer(b.id)));
-    await render();
-    showStatus("Database cleared.");
-  } catch {
-    showStatus("Failed to clear the database.", true);
-  }
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes[AUTH_STATE_KEY]) render().catch(console.error);
 });
 
-async function sendPageReport() {
-  sendToDevButton.disabled = true;
-  sendToDevButton.textContent = "Sending...";
-  hideStatus();
-
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-    if (!tab || !tab.id) {
-      showStatus("No active tab found.", true);
-      return;
-    }
-
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: () => document.documentElement.outerHTML,
-    });
-
-    const html = results?.[0]?.result || "";
-
-    const response = await fetch(`${API_BASE}/page-report`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        url: tab.url || "",
-        title: tab.title || "",
-        html,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    showStatus("Page sent to developer. Thank you!");
-  } catch (err) {
-    showStatus(`Failed to send: ${err.message || "error"}`, true);
-  } finally {
-    sendToDevButton.disabled = false;
-    sendToDevButton.textContent = "Send to Developer";
-  }
-}
-
-sendToDevButton.addEventListener("click", sendPageReport);
-
-
-chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === "local" && changes[AUTH_STATE_KEY]) {
-    render().catch(console.error);
-  }
-});
-
-render().catch((error) => {
-  console.error("popup render failed", error);
+render().catch((err) => {
+  console.error("popup render failed", err);
   showStatus("Failed to load data.", true);
 });

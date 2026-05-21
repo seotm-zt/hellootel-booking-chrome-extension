@@ -38,6 +38,11 @@ class ExtensionController extends Controller
 
         if (!$hellootel->successful()) {
             $error = $hellootel->json('error') ?: $hellootel->json('message') ?: 'Invalid credentials';
+            Log::warning('HellOotel login failed', [
+                'status' => $hellootel->status(),
+                'body'   => $hellootel->body(),
+                'url'    => config('services.hellootel.base') . '/auth/login',
+            ]);
             return response()->json(['error' => $error], 401);
         }
 

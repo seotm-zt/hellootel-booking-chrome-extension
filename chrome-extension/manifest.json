@@ -1,16 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Booking Saver",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "Saves bookings from supported sites to the database.",
   "background": {
     "service_worker": "background.js"
   },
   "permissions": [
     "storage",
-    "activeTab",
-    "scripting",
-    "tabs"
+    "activeTab"
   ],
   "icons": {
     "16": "icons/icon16.png",
@@ -19,7 +17,10 @@
     "128": "icons/icon128.png"
   },
   "host_permissions": [
-    "<all_urls>"
+    "https://booking-configurator.hellootel.com/*",
+    "https://demo.velikolepniy-vek.com/*",
+    "https://coralagency.ru/*",
+    "https://agency.pegast.ru/MyAccount/Bookings/*"
   ],
   "action": {
     "default_title": "Booking Saver",
@@ -34,11 +35,9 @@
   "content_scripts": [
     {
       "matches": [
-        "<all_urls>"
-      ],
-      "exclude_matches": [
-        "http://booking.localhost/*",
-        "https://booking.localhost/*"
+        "https://demo.velikolepniy-vek.com/hotel/book/history*",
+        "https://coralagency.ru/reservation/search*",
+        "https://agency.pegast.ru/*"
       ],
       "js": [
         "auth.js",
@@ -54,8 +53,7 @@
     },
     {
       "matches": [
-        "http://booking.localhost/admin/extension/page-reports/*",
-        "https://booking.localhost/admin/extension/page-reports/*"
+        "https://booking-configurator.hellootel.com/admin/extension/page-reports/*"
       ],
       "js": [
         "auth.js",

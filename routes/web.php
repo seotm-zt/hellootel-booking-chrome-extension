@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Route;
 // Redirect root to admin panel
 Route::get('/', fn () => redirect('/admin'));
 
+// Chrome Web Store — Privacy Policy
+Route::get('/privacy', fn () => view('privacy'))->name('privacy');
+
 // HellOotel operator portal
 Route::prefix('portal')->name('portal.')->middleware('web')->group(function () {
     Route::get('/',         [HellOotelPortalController::class, 'login'])->name('login');
