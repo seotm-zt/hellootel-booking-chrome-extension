@@ -91,10 +91,10 @@
       <h2>2. How we use the data</h2>
       <ul>
         <li>To save booking records to the operator's private database at <strong>booking-configurator.hellootel.com</strong>.</li>
-        <li>To send confirmed bookings to the HellOotel reservation system on behalf of the operator.</li>
+        <li>To send confirmed bookings to the HelloOtel reservation system on behalf of the operator.</li>
         <li>To display saved and confirmed bookings in the Extension popup for review.</li>
       </ul>
-      <p>We do not sell, rent, or share your data with any third parties except HellOotel (the reservation platform that is the explicit purpose of this tool).</p>
+      <p>We do not sell, rent, or share your data with any third parties except HelloOtel (the reservation platform that is the explicit purpose of this tool).</p>
 
       <h2>3. Data storage</h2>
       <ul>
@@ -143,10 +143,10 @@
       <h2>2. Wie wir die Daten verwenden</h2>
       <ul>
         <li>Zum Speichern von Buchungsdatensätzen in der privaten Datenbank des Betreibers unter <strong>booking-configurator.hellootel.com</strong>.</li>
-        <li>Zum Übermitteln bestätigter Buchungen an das HellOotel-Reservierungssystem im Auftrag des Betreibers.</li>
+        <li>Zum Übermitteln bestätigter Buchungen an das HelloOtel-Reservierungssystem im Auftrag des Betreibers.</li>
         <li>Zur Anzeige gespeicherter und bestätigter Buchungen im Erweiterungs-Popup.</li>
       </ul>
-      <p>Wir verkaufen, vermieten oder teilen Ihre Daten nicht mit Dritten, außer mit HellOotel (dem Reservierungssystem, das der ausdrückliche Zweck dieses Tools ist).</p>
+      <p>Wir verkaufen, vermieten oder teilen Ihre Daten nicht mit Dritten, außer mit HelloOtel (dem Reservierungssystem, das der ausdrückliche Zweck dieses Tools ist).</p>
 
       <h2>3. Datenspeicherung</h2>
       <ul>
@@ -195,10 +195,10 @@
       <h2>2. Verileri nasıl kullanıyoruz</h2>
       <ul>
         <li>Rezervasyon kayıtlarını operatörün <strong>booking-configurator.hellootel.com</strong> adresindeki özel veritabanına kaydetmek için.</li>
-        <li>Onaylanan rezervasyonları operatör adına HellOotel rezervasyon sistemine iletmek için.</li>
+        <li>Onaylanan rezervasyonları operatör adına HelloOtel rezervasyon sistemine iletmek için.</li>
         <li>Kaydedilen ve onaylanan rezervasyonları Uzantı açılır penceresinde görüntülemek için.</li>
       </ul>
-      <p>Verilerinizi HellOotel (bu aracın açık amacı olan rezervasyon platformu) dışında hiçbir üçüncü tarafla satmıyor, kiralamıyor veya paylaşmıyoruz.</p>
+      <p>Verilerinizi HelloOtel (bu aracın açık amacı olan rezervasyon platformu) dışında hiçbir üçüncü tarafla satmıyor, kiralamıyor veya paylaşmıyoruz.</p>
 
       <h2>3. Veri depolama</h2>
       <ul>
@@ -247,10 +247,10 @@
       <h2>2. Как мы используем данные</h2>
       <ul>
         <li>Для сохранения записей о бронированиях в частной базе данных оператора на <strong>booking-configurator.hellootel.com</strong>.</li>
-        <li>Для передачи подтверждённых бронирований в систему резервирования HellOotel от имени оператора.</li>
+        <li>Для передачи подтверждённых бронирований в систему резервирования HelloOtel от имени оператора.</li>
         <li>Для отображения сохранённых и подтверждённых бронирований в попапе Расширения.</li>
       </ul>
-      <p>Мы не продаём, не сдаём в аренду и не передаём ваши данные третьим лицам, кроме HellOotel (платформы резервирования, являющейся прямым назначением этого инструмента).</p>
+      <p>Мы не продаём, не сдаём в аренду и не передаём ваши данные третьим лицам, кроме HelloOtel (платформы резервирования, являющейся прямым назначением этого инструмента).</p>
 
       <h2>3. Хранение данных</h2>
       <ul>
@@ -299,10 +299,10 @@
       <h2>2. Як ми використовуємо дані</h2>
       <ul>
         <li>Для збереження записів бронювань у приватній базі даних оператора на <strong>booking-configurator.hellootel.com</strong>.</li>
-        <li>Для передачі підтверджених бронювань до системи резервування HellOotel від імені оператора.</li>
+        <li>Для передачі підтверджених бронювань до системи резервування HelloOtel від імені оператора.</li>
         <li>Для відображення збережених і підтверджених бронювань у спливаючому вікні Розширення.</li>
       </ul>
-      <p>Ми не продаємо, не здаємо в оренду та не передаємо ваші дані третім особам, крім HellOotel (платформи резервування, що є прямим призначенням цього інструменту).</p>
+      <p>Ми не продаємо, не здаємо в оренду та не передаємо ваші дані третім особам, крім HelloOtel (платформи резервування, що є прямим призначенням цього інструменту).</p>
 
       <h2>3. Зберігання даних</h2>
       <ul>

@@ -46,7 +46,7 @@ function showHellootelErrorDialog(message) {
     dialog.innerHTML = `
       <div class="ttb-he-box">
         <div class="ttb-he-icon">⚠️</div>
-        <div class="ttb-he-title">HellOotel send error</div>
+        <div class="ttb-he-title">HelloOtel send error</div>
         <div class="ttb-he-message"></div>
         <div class="ttb-he-actions">
           <button class="ttb-he-btn ttb-he-btn--fix" type="button">✎ Fix</button>
@@ -553,7 +553,7 @@ async function showConfirmModal(saveResult) {
           const choice = await showHellootelErrorDialog(result.hellootel.error);
           if (choice === "ignore") {
             destroyModal();
-            showToast("Booking confirmed ✓ (HellOotel skipped)");
+            showToast("Booking confirmed ✓ (HelloOtel skipped)");
             resolve(true);
           }
           // "fix" → modal stays open, user can edit and retry
@@ -562,7 +562,7 @@ async function showConfirmModal(saveResult) {
 
         destroyModal();
         const wasSent = !!result?.hellootel?.id;
-        showToast(wasSent ? "Booking sent to HellOotel ✓" : "Booking confirmed ✓");
+        showToast(wasSent ? "Booking sent to HelloOtel ✓" : "Booking confirmed ✓");
         resolve(wasSent ? "sent" : true);
       } catch (err) {
         confirmBtn.disabled    = false;
@@ -570,7 +570,7 @@ async function showConfirmModal(saveResult) {
         const choice = await showHellootelErrorDialog(err.message || "Connection error");
         if (choice === "ignore") {
           destroyModal();
-          showToast("Booking confirmed ✓ (HellOotel skipped)");
+          showToast("Booking confirmed ✓ (HelloOtel skipped)");
           resolve(true);
         }
         // "fix" → modal stays open
