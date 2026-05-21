@@ -282,17 +282,17 @@ async function showConfirmModal(saveResult) {
           <ul class="ttb-modal__suggestions" id="ttb-hotel-suggestions" hidden></ul>
         </div>
 
-        <label class="ttb-modal__label">Room type <span class="ttb-required">*</span></label>
-        <select class="ttb-modal__select" id="ttb-room-select" ${pre.hotelId ? "" : "disabled"}>
-          <option value="">${pre.hotelId ? "— select room type —" : "— select hotel first —"}</option>
-        </select>
-
         <div class="ttb-rating-row">
           <span class="ttb-rating-label">Hotel rating <span class="ttb-required">*</span></span>
           <div class="ttb-stars" id="ttb-stars">
             ${[1,2,3,4,5,6,7,8,9,10].map(i => `<span class="ttb-star" data-vote="${i}">☆</span>`).join("")}
           </div>
         </div>
+
+        <label class="ttb-modal__label">Room type <span class="ttb-required">*</span></label>
+        <select class="ttb-modal__select" id="ttb-room-select" ${pre.hotelId ? "" : "disabled"}>
+          <option value="">${pre.hotelId ? "— select room type —" : "— select hotel first —"}</option>
+        </select>
 
         <div class="ttb-modal__section-title">Booking details</div>
 
