@@ -682,7 +682,9 @@ async function injectButton(card, parser) {
       btn.textContent = prev;
       showToast(`Failed to save: ${err.message || "error"}`);
     } finally {
-      btn.disabled = false;
+      if (!btn.classList.contains("ttb-save-booking-button--sent")) {
+        btn.disabled = false;
+      }
     }
   });
 }

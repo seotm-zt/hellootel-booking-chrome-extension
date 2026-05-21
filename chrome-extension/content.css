@@ -57,8 +57,9 @@
   border-color: #15803d !important;
   background: linear-gradient(180deg, #22c55e 0%, #15803d 100%) !important;
   box-shadow: none !important;
-  opacity: 0.75 !important;
+  opacity: 1 !important;
   cursor: default !important;
+  pointer-events: none !important;
 }
 
 .ttb-save-booking-actions {
