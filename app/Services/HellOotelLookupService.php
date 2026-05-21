@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class HellOotelLookupService
 {
@@ -33,14 +34,11 @@ class HellOotelLookupService
     // Returns [id => name]
     public function getRoomTypes(int $hotelId): array
     {
-        $url = $this->base . '/hotel/bonus-room-types?hotel_ids[]=' . $hotelId . '&language=en';
-        $items = $this->http()->get($url)->json() ?? [];
+        $url   = $this->base . '/hotel/bonus-room-types?hotel_ids[]=' . $hotelId . '&language=en';
+        $body  = $this->http()->get($url)->json() ?? [];
+        $items = $body['results'] ?? (is_array($body) && isset($body[0]) ? $body : []);
 
-        if (is_array($items) && !empty($items) && is_array(reset($items))) {
-            return collect($items)->mapWithKeys(fn($t) => [$t['id'] => $t['name']])->all();
-        }
-
-        return $items;
+        return collect($items)->mapWithKeys(fn($t) => [$t['id'] => $t['text'] ?? $t['name'] ?? ''])->all();
     }
 
     // Returns ['id' => int, 'name' => string, 'score' => int] or null
