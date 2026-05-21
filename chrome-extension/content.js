@@ -354,7 +354,7 @@ async function showConfirmModal(saveResult) {
       </div>
 
       <div class="ttb-modal__footer">
-        <button class="ttb-modal__btn ttb-modal__btn--delete"  type="button">Delete from database</button>
+        <button class="ttb-modal__btn ttb-modal__btn--delete"  type="button">Cancel Send</button>
         <div style="flex:1"></div>
         <button class="ttb-modal__btn ttb-modal__btn--cancel"  type="button">Cancel</button>
         <button class="ttb-modal__btn ttb-modal__btn--confirm" type="button" disabled>Confirm</button>
