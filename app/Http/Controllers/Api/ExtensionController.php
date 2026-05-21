@@ -72,12 +72,15 @@ class ExtensionController extends Controller
             $user->assignRole(Role::OPERATOR->value);
         }
 
+        $loginNumber = $payload['id'] ?? $payload['number'] ?? $payload['login_number'] ?? null;
+
         return response()->json([
             'token' => $user->access_token,
             'user'  => [
-                'id'       => $user->id,
-                'name'     => $user->name,
-                'username' => $username,
+                'id'           => $user->id,
+                'name'         => $user->name,
+                'username'     => $username,
+                'login_number' => $loginNumber ? str_pad((string) $loginNumber, 7, '0', STR_PAD_LEFT) : null,
             ],
         ]);
     }

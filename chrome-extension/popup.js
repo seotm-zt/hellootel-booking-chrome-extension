@@ -220,7 +220,9 @@ async function render() {
 
   loginSection.hidden = true;
   authenticatedSection.hidden = false;
-  userNameLabel.textContent = auth.user?.name || auth.user?.username || "";
+  const displayName = auth.user?.name || auth.user?.username || "";
+  const loginNum    = auth.user?.login_number;
+  userNameLabel.textContent = loginNum ? `${displayName} (${loginNum})` : displayName;
 
   try {
     const bookings = await loadBookings();
