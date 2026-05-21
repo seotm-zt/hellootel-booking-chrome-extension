@@ -33,12 +33,8 @@ class HellOotelLookupService
     // Returns [id => name]
     public function getRoomTypes(int $hotelId): array
     {
-        $items = $this->http()
-            ->get($this->base . '/hotel/bonus-room-types', [
-                'hotel_id' => $hotelId,
-                'language' => 'en',
-            ])
-            ->json() ?? [];
+        $url = $this->base . '/hotel/bonus-room-types?hotel_ids[]=' . $hotelId . '&language=en';
+        $items = $this->http()->get($url)->json() ?? [];
 
         if (is_array($items) && !empty($items) && is_array(reset($items))) {
             return collect($items)->mapWithKeys(fn($t) => [$t['id'] => $t['name']])->all();
