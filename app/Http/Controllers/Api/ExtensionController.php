@@ -212,7 +212,7 @@ class ExtensionController extends Controller
             'children'         => 'nullable|integer|min:0',
             'infants'          => 'nullable|integer|min:0',
             'tourists'         => 'nullable|array',
-            'hotel_vote'       => 'nullable|integer|min:0|max:5',
+            'hotel_vote'       => 'nullable|integer|min:0|max:100',
         ]);
 
         $processed = ProcessedBooking::findOrFail($booking->processed_booking_id);
