@@ -353,6 +353,7 @@ async function showConfirmModal(saveResult) {
 
       </div>
 
+      <p class="ttb-modal__send-note">You are sending booking information directly to the hotel manager via the HelloOtel system.</p>
       <div class="ttb-modal__footer">
         <button class="ttb-modal__btn ttb-modal__btn--delete"  type="button">Cancel Send</button>
         <div style="flex:1"></div>
