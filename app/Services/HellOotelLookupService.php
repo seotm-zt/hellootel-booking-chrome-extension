@@ -34,10 +34,9 @@ class HellOotelLookupService
     public function getRoomTypes(int $hotelId): array
     {
         $items = $this->http()
-            ->get($this->base . '/hotel/room-types', [
-                'hotel_id'               => $hotelId,
-                'bonus_reservation_mode' => 0,
-                'language'               => 'en',
+            ->get($this->base . '/hotel/bonus-room-types', [
+                'hotel_id' => $hotelId,
+                'language' => 'en',
             ])
             ->json() ?? [];
 
