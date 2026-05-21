@@ -44,20 +44,20 @@
 }
 
 .ttb-save-booking-button--confirmed {
-  border-color: #15803d !important;
-  background: linear-gradient(180deg, #22c55e 0%, #15803d 100%) !important;
-  box-shadow: 0 10px 20px rgba(21, 128, 61, 0.22) !important;
+  border-color: #c2410c !important;
+  background: linear-gradient(180deg, #f97316 0%, #ea580c 100%) !important;
+  box-shadow: 0 10px 20px rgba(194, 65, 12, 0.22) !important;
 }
 
 .ttb-save-booking-button--confirmed:hover {
-  box-shadow: 0 16px 28px rgba(21, 128, 61, 0.3) !important;
+  box-shadow: 0 16px 28px rgba(194, 65, 12, 0.3) !important;
 }
 
 .ttb-save-booking-button--sent {
-  border-color: #166534 !important;
-  background: linear-gradient(180deg, #4ade80 0%, #166534 100%) !important;
+  border-color: #15803d !important;
+  background: linear-gradient(180deg, #22c55e 0%, #15803d 100%) !important;
   box-shadow: none !important;
-  opacity: 0.65 !important;
+  opacity: 0.75 !important;
   cursor: default !important;
 }
 
@@ -320,7 +320,7 @@
 }
 
 .ttb-star {
-  font-size: 22px !important;
+  font-size: 18px !important;
   cursor: pointer !important;
   color: #d1d5db !important;
   user-select: none !important;
@@ -334,6 +334,17 @@
 
 .ttb-star--filled {
   color: #f59e0b !important;
+}
+
+.ttb-required {
+  color: #ef4444 !important;
+  font-weight: 700 !important;
+}
+
+.ttb-modal__required-note {
+  margin: 10px 0 0 !important;
+  font-size: 11px !important;
+  color: #9ca3af !important;
 }
 
 /* ── Tourist rows ── */
@@ -452,4 +463,85 @@
   background: linear-gradient(180deg, #22c55e 0%, #15803d 100%) !important;
   color: #ffffff !important;
   box-shadow: 0 4px 12px rgba(21, 128, 61, 0.25) !important;
+}
+
+/* ── HellOotel error dialog ── */
+
+.ttb-he-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(0, 0, 0, 0.65) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.ttb-he-box {
+  width: 340px !important;
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  padding: 24px 22px 20px !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25) !important;
+  text-align: center !important;
+}
+
+.ttb-he-icon {
+  font-size: 36px !important;
+  line-height: 1 !important;
+  margin-bottom: 10px !important;
+}
+
+.ttb-he-title {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+  margin-bottom: 10px !important;
+}
+
+.ttb-he-message {
+  font-size: 13px !important;
+  color: #6b7280 !important;
+  line-height: 1.5 !important;
+  margin-bottom: 20px !important;
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  text-align: left !important;
+  word-break: break-word !important;
+}
+
+.ttb-he-actions {
+  display: flex !important;
+  gap: 10px !important;
+}
+
+.ttb-he-btn {
+  flex: 1 !important;
+  min-height: 40px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+.ttb-he-btn--fix {
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+.ttb-he-btn--fix:hover {
+  background: #1e40af !important;
+}
+
+.ttb-he-btn--ignore {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+}
+
+.ttb-he-btn--ignore:hover {
+  background: #e5e7eb !important;
 }

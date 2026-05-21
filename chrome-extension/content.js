@@ -39,6 +39,35 @@ function showToast(message) {
   showToast._tid = window.setTimeout(() => { toast.dataset.visible = "false"; }, 2500);
 }
 
+function showHellootelErrorDialog(message) {
+  return new Promise((resolve) => {
+    const dialog = document.createElement("div");
+    dialog.className = "ttb-he-overlay";
+    dialog.innerHTML = `
+      <div class="ttb-he-box">
+        <div class="ttb-he-icon">⚠️</div>
+        <div class="ttb-he-title">HellOotel send error</div>
+        <div class="ttb-he-message"></div>
+        <div class="ttb-he-actions">
+          <button class="ttb-he-btn ttb-he-btn--fix" type="button">✎ Fix</button>
+          <button class="ttb-he-btn ttb-he-btn--ignore" type="button">Ignore</button>
+        </div>
+      </div>
+    `;
+    dialog.querySelector(".ttb-he-message").textContent = message;
+    document.body.appendChild(dialog);
+
+    dialog.querySelector(".ttb-he-btn--fix").addEventListener("click", () => {
+      dialog.remove();
+      resolve("fix");
+    });
+    dialog.querySelector(".ttb-he-btn--ignore").addEventListener("click", () => {
+      dialog.remove();
+      resolve("ignore");
+    });
+  });
+}
+
 // ── API helpers ──────────────────────────────────────────────────────
 
 function sendMessage(msg) {
@@ -241,7 +270,7 @@ async function showConfirmModal(saveResult) {
       <div class="ttb-modal__body">
 
         <label class="ttb-modal__label">
-          Hotel
+          Hotel <span class="ttb-required">*</span>
           ${hotelMatch ? `<span class="ttb-modal__match-badge">Auto-matched · <strong>${hotelMatch.score}%</strong></span>` : ""}
         </label>
         <div class="ttb-modal__autocomplete">
@@ -251,15 +280,15 @@ async function showConfirmModal(saveResult) {
           <ul class="ttb-modal__suggestions" id="ttb-hotel-suggestions" hidden></ul>
         </div>
 
-        <label class="ttb-modal__label">Room type</label>
+        <label class="ttb-modal__label">Room type <span class="ttb-required">*</span></label>
         <select class="ttb-modal__select" id="ttb-room-select" ${pre.hotelId ? "" : "disabled"}>
           <option value="">${pre.hotelId ? "— select room type —" : "— select hotel first —"}</option>
         </select>
 
         <div class="ttb-rating-row">
-          <span class="ttb-rating-label">Hotel rating</span>
+          <span class="ttb-rating-label">Hotel rating <span class="ttb-required">*</span></span>
           <div class="ttb-stars" id="ttb-stars">
-            ${[1,2,3,4,5].map(i => `<span class="ttb-star" data-vote="${i}">☆</span>`).join("")}
+            ${[1,2,3,4,5,6,7,8,9,10].map(i => `<span class="ttb-star" data-vote="${i}">☆</span>`).join("")}
           </div>
         </div>
 
@@ -322,6 +351,8 @@ async function showConfirmModal(saveResult) {
         <div id="ttb-tourists-list"></div>
         <button class="ttb-modal__add-tourist" type="button" id="ttb-add-tourist">+ Add guest</button>
 
+        <p class="ttb-modal__required-note"><span class="ttb-required">*</span> Required fields</p>
+
       </div>
 
       <div class="ttb-modal__footer">
@@ -352,7 +383,8 @@ async function showConfirmModal(saveResult) {
 
   let selectedHotelId   = pre.hotelId;
   let selectedHotelName = pre.hotelName;
-  let selectedVote      = pre.hotelVote ?? null;
+  // DB stores 0-5 (API scale); UI uses 1-10 (×2)
+  let selectedVote      = pre.hotelVote ? pre.hotelVote * 2 : null;
 
   // ── Star rating ───────────────────────────────────────────────────
   const starBtns = overlay.querySelectorAll(".ttb-star");
@@ -364,16 +396,16 @@ async function showConfirmModal(saveResult) {
       btn.textContent = filled ? "★" : "☆";
       btn.classList.toggle("ttb-star--filled", filled);
     });
+    updateConfirmState();
   }
   starBtns.forEach(btn => btn.addEventListener("click", () => {
-    const v = parseInt(btn.dataset.vote, 10);
-    updateStars(v === selectedVote ? 0 : v); // click active star = reset
+    updateStars(parseInt(btn.dataset.vote, 10));
   }));
-  if (selectedVote !== null && selectedVote > 0) updateStars(selectedVote);
+  updateStars(selectedVote ?? 0);
 
   // ── Confirm button state ──────────────────────────────────────────
   function updateConfirmState() {
-    confirmBtn.disabled = !selectedHotelId || !roomSelect.value;
+    confirmBtn.disabled = !selectedHotelId || !roomSelect.value || !(selectedVote > 0);
   }
 
   roomSelect.addEventListener("change", updateConfirmState);
@@ -383,7 +415,9 @@ async function showConfirmModal(saveResult) {
     await loadRoomTypes(pre.hotelId, roomSelect, pre.roomTypeId);
     updateConfirmState();
     if (selectedVote === null) {
-      getHotelVoteFromServer(pre.hotelId).then(v => { updateStars(v ?? 0); }).catch(() => {});
+      getHotelVoteFromServer(pre.hotelId).then(v => {
+        if (selectedVote === null) updateStars(v ? v * 2 : 0);
+      }).catch(() => {});
     }
   }
 
@@ -417,7 +451,7 @@ async function showConfirmModal(saveResult) {
         hideSuggestions();
         await loadRoomTypes(h.id, roomSelect, null);
         updateConfirmState();
-        getHotelVoteFromServer(h.id).then(v => { updateStars(v ?? 0); }).catch(() => {});
+        getHotelVoteFromServer(h.id).then(v => { updateStars(v ? v * 2 : 0); }).catch(() => {});
       });
       suggestions.appendChild(li);
     }
@@ -508,13 +542,19 @@ async function showConfirmModal(saveResult) {
           children: overlay.querySelector("#ttb-children").value !== "" ? parseInt(overlay.querySelector("#ttb-children").value, 10) : null,
           infants:  overlay.querySelector("#ttb-infants").value  !== "" ? parseInt(overlay.querySelector("#ttb-infants").value,  10) : null,
           tourists:    tourists.length ? tourists : null,
-          hotel_vote:  selectedVote !== null ? selectedVote : undefined,
+          hotel_vote:  selectedVote !== null ? Math.ceil(selectedVote / 2) : undefined,
         });
 
         if (result?.hellootel?.error) {
-          showApiError("HellOotel: " + result.hellootel.error);
           confirmBtn.disabled    = false;
           confirmBtn.textContent = "Retry";
+          const choice = await showHellootelErrorDialog(result.hellootel.error);
+          if (choice === "ignore") {
+            destroyModal();
+            showToast("Booking confirmed ✓ (HellOotel skipped)");
+            resolve(true);
+          }
+          // "fix" → modal stays open, user can edit and retry
           return;
         }
 
@@ -523,9 +563,15 @@ async function showConfirmModal(saveResult) {
         showToast(wasSent ? "Booking sent to HellOotel ✓" : "Booking confirmed ✓");
         resolve(wasSent ? "sent" : true);
       } catch (err) {
-        destroyModal();
-        showToast(`Confirm failed: ${err.message}`);
-        resolve(false);
+        confirmBtn.disabled    = false;
+        confirmBtn.textContent = "Retry";
+        const choice = await showHellootelErrorDialog(err.message || "Connection error");
+        if (choice === "ignore") {
+          destroyModal();
+          showToast("Booking confirmed ✓ (HellOotel skipped)");
+          resolve(true);
+        }
+        // "fix" → modal stays open
       }
     });
   });
