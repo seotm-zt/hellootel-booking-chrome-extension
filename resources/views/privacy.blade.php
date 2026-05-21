@@ -121,7 +121,7 @@
 
       <div class="contact">
         <strong>Contact</strong><br>
-        If you have questions about this Privacy Policy, please contact us at <a href="mailto:shuraztf@gmail.com">shuraztf@gmail.com</a>.
+        If you have questions about this Privacy Policy, please contact us at <a href="mailto:info@hellootel.app">info@hellootel.app</a>.
       </div>
     </section>
 
@@ -173,7 +173,7 @@
 
       <div class="contact">
         <strong>Kontakt</strong><br>
-        Bei Fragen zu dieser Datenschutzerklärung kontaktieren Sie uns bitte unter <a href="mailto:shuraztf@gmail.com">shuraztf@gmail.com</a>.
+        Bei Fragen zu dieser Datenschutzerklärung kontaktieren Sie uns bitte unter <a href="mailto:info@hellootel.app">info@hellootel.app</a>.
       </div>
     </section>
 
@@ -225,7 +225,7 @@
 
       <div class="contact">
         <strong>İletişim</strong><br>
-        Bu Gizlilik Politikası hakkında sorularınız için lütfen <a href="mailto:shuraztf@gmail.com">shuraztf@gmail.com</a> adresine yazın.
+        Bu Gizlilik Politikası hakkında sorularınız için lütfen <a href="mailto:info@hellootel.app">info@hellootel.app</a> adresine yazın.
       </div>
     </section>
 
@@ -277,7 +277,7 @@
 
       <div class="contact">
         <strong>Контакты</strong><br>
-        По вопросам, связанным с настоящей Политикой конфиденциальности, обращайтесь по адресу: <a href="mailto:shuraztf@gmail.com">shuraztf@gmail.com</a>.
+        По вопросам, связанным с настоящей Политикой конфиденциальности, обращайтесь по адресу: <a href="mailto:info@hellootel.app">info@hellootel.app</a>.
       </div>
     </section>
 
@@ -329,7 +329,7 @@
 
       <div class="contact">
         <strong>Контакти</strong><br>
-        З питань, пов'язаних із цією Політикою конфіденційності, звертайтесь на адресу: <a href="mailto:shuraztf@gmail.com">shuraztf@gmail.com</a>.
+        З питань, пов'язаних із цією Політикою конфіденційності, звертайтесь на адресу: <a href="mailto:info@hellootel.app">info@hellootel.app</a>.
       </div>
     </section>
 
