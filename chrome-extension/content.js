@@ -14,7 +14,7 @@ function getEffectiveLocation() {
 
 const BUTTON_LABEL     = "Save to database";
 const UPDATE_LABEL     = "Update in database";
-const CONFIRMED_LABEL  = "Confirmed ✓";
+const CONFIRMED_LABEL  = "Confirm & send to HelloOtel";
 const SENT_LABEL       = "Sent to HelloOtel ✓";
 const SAVING_LABEL     = "Saving...";
 
