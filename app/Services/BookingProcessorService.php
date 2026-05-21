@@ -57,7 +57,6 @@ class BookingProcessorService
             'operator_id'           => $parser?->operator_id,
             'operator_name'         => $parser?->operator_name ?? $this->resolveField($booking, $fieldMap, 'operator_name', null),
             'reservation_date'       => $this->tryParseDate($this->extractDatePart($booking->reservation_at ?? '')),
-            'reservation_time'       => $this->extractTimePart($booking->reservation_at ?? ''),
             'arrival_at'            => $arrival,
             'departure_at'          => $departure,
             'nights'                => $this->resolveField($booking, $fieldMap, 'nights', $booking->nights ?? $this->calcNights($arrival, $departure)),

@@ -199,9 +199,6 @@ class HellOotelReservationService
         $operatorReservationAt = null;
         if ($processed->reservation_date) {
             $operatorReservationAt = $processed->reservation_date;
-            if ($processed->reservation_time) {
-                $operatorReservationAt .= ' ' . $processed->reservation_time;
-            }
         }
 
         $payload = [

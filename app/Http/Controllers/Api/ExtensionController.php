@@ -170,7 +170,6 @@ class ExtensionController extends Controller
                 'confirmed_at'          => $processed->confirmed_at,
                 'booking_code'          => $processed->booking_code,
                 'reservation_date'      => $processed->reservation_date,
-                'reservation_time'      => $processed->reservation_time,
                 'arrival_at'            => $processed->arrival_at?->format('Y-m-d'),
                 'departure_at'          => $processed->departure_at?->format('Y-m-d'),
                 'price'                 => $processed->price,
@@ -206,7 +205,6 @@ class ExtensionController extends Controller
             'room_type_name'   => 'nullable|string|max:500',
             'booking_code'     => 'nullable|string|max:255',
             'reservation_date' => 'nullable|date_format:Y-m-d',
-            'reservation_time' => 'nullable|string|max:5',
             'arrival_at'       => 'nullable|date_format:Y-m-d',
             'departure_at'     => 'nullable|date_format:Y-m-d',
             'price'            => 'nullable|numeric',
@@ -227,7 +225,7 @@ class ExtensionController extends Controller
         // Data fields — write only if present in request
         $directFields = [
             'hotel_id', 'hotel_name', 'room_type_id', 'room_type_name',
-            'booking_code', 'reservation_date', 'reservation_time',
+            'booking_code', 'reservation_date',
             'arrival_at', 'departure_at', 'price', 'currency_code', 'tourists',
             'hotel_vote',
         ];

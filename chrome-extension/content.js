@@ -245,7 +245,7 @@ async function showConfirmModal(saveResult) {
     roomTypeId:  processed?.room_type_id   ?? null,
     bookingCode: processed?.booking_code   ?? raw.booking_code ?? "",
     reservDate:  processed?.reservation_date ?? "",
-    reservTime:  processed?.reservation_time ?? "",
+    reservTime:  null,
     arrivalAt:   processed?.arrival_at     ?? "",
     departureAt: processed?.departure_at   ?? "",
     price:       processed?.price          ?? "",
@@ -303,10 +303,6 @@ async function showConfirmModal(saveResult) {
           <div>
             <label class="ttb-modal__label">Booking date</label>
             <input class="ttb-modal__input" id="ttb-reserv-date" type="date" value="${esc(pre.reservDate)}" />
-          </div>
-          <div>
-            <label class="ttb-modal__label">Time</label>
-            <input class="ttb-modal__input" id="ttb-reserv-time" type="text" placeholder="17:03" maxlength="5" value="${esc(pre.reservTime)}" />
           </div>
         </div>
 
@@ -535,7 +531,6 @@ async function showConfirmModal(saveResult) {
           room_type_name:   selectedRoomId ? selectedRoomName : null,
           booking_code:     overlay.querySelector("#ttb-booking-code").value.trim() || null,
           reservation_date: overlay.querySelector("#ttb-reserv-date").value  || null,
-          reservation_time: overlay.querySelector("#ttb-reserv-time").value.trim() || null,
           arrival_at:       overlay.querySelector("#ttb-arrival").value   || null,
           departure_at:     overlay.querySelector("#ttb-departure").value  || null,
           price:            overlay.querySelector("#ttb-price").value.trim() || null,

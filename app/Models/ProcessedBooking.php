@@ -21,7 +21,6 @@ class ProcessedBooking extends Model
         'operator_id',
         'operator_name',
         'reservation_date',
-        'reservation_time',
         'arrival_at',
         'departure_at',
         'nights',

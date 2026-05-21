@@ -106,7 +106,6 @@ class ProcessedBookingResource extends Resource
                 TextColumn::make('agency_id')->label('agency_id')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('agency_name')->label('Agency')->placeholder('—')->searchable(),
                 TextColumn::make('reservation_date')->label('Res. date')->date('d.m.Y')->sortable()->placeholder('—'),
-                TextColumn::make('reservation_time')->label('Time')->placeholder('—'),
                 TextColumn::make('arrival_at')->label('Check-in')->date('d.m.Y')->sortable()->placeholder('—'),
                 TextColumn::make('departure_at')->label('Check-out')->date('d.m.Y')->placeholder('—'),
                 TextColumn::make('nights')->label('Nights')->alignCenter()->placeholder('—'),
@@ -256,9 +255,8 @@ class ProcessedBookingResource extends Resource
                 TextInput::make('status')->label('status')->columnSpanFull(),
             ]),
 
-            Section::make('Dates')->columns(4)->schema([
+            Section::make('Dates')->columns(3)->schema([
                 DatePicker::make('reservation_date')->label('Reservation date')->displayFormat('d.m.Y'),
-                TextInput::make('reservation_time')->label('Reservation time')->placeholder('HH:MM')->maxLength(5),
                 DatePicker::make('arrival_at')->label('Check-in')->displayFormat('d.m.Y'),
                 DatePicker::make('departure_at')->label('Check-out')->displayFormat('d.m.Y'),
                 TextInput::make('nights')->label('Nights')->numeric()->minValue(0),
@@ -315,9 +313,8 @@ class ProcessedBookingResource extends Resource
                 TextEntry::make('agency_name')->label('Agency')->placeholder('—'),
             ]),
 
-            InfoSection::make('Dates')->columns(5)->schema([
+            InfoSection::make('Dates')->columns(4)->schema([
                 TextEntry::make('reservation_date')->label('Reservation date')->date('d.m.Y')->placeholder('—'),
-                TextEntry::make('reservation_time')->label('Reservation time')->placeholder('—'),
                 TextEntry::make('arrival_at')->label('Check-in')->date('d.m.Y')->placeholder('—'),
                 TextEntry::make('departure_at')->label('Check-out')->date('d.m.Y')->placeholder('—'),
                 TextEntry::make('nights')->label('Nights')->placeholder('—'),
