@@ -422,7 +422,6 @@
   justify-content: flex-end !important;
   gap: 10px !important;
   padding: 14px 20px !important;
-  border-top: 1px solid #f0f0f0 !important;
 }
 
 .ttb-modal__api-error {
