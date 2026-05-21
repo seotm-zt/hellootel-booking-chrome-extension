@@ -383,8 +383,8 @@ async function showConfirmModal(saveResult) {
 
   let selectedHotelId   = pre.hotelId;
   let selectedHotelName = pre.hotelName;
-  // DB/our API stores 1-10 (star count); HellOotel API uses 0-5 (converted server-side)
-  let selectedVote      = pre.hotelVote ?? null;
+  // DB/API stores 10-100 (stars×10); divide by 10 to get star count for display
+  let selectedVote      = pre.hotelVote ? Math.round(pre.hotelVote / 10) : null;
 
   // ── Star rating ───────────────────────────────────────────────────
   const starBtns = overlay.querySelectorAll(".ttb-star");
@@ -416,7 +416,7 @@ async function showConfirmModal(saveResult) {
     updateConfirmState();
     if (selectedVote === null) {
       getHotelVoteFromServer(pre.hotelId).then(v => {
-        if (selectedVote === null) updateStars(v ?? 0);
+        if (selectedVote === null) updateStars(v ? Math.round(v / 10) : 0);
       }).catch(() => {});
     }
   }
@@ -451,7 +451,7 @@ async function showConfirmModal(saveResult) {
         hideSuggestions();
         await loadRoomTypes(h.id, roomSelect, null);
         updateConfirmState();
-        getHotelVoteFromServer(h.id).then(v => { updateStars(v ?? 0); }).catch(() => {});
+        getHotelVoteFromServer(h.id).then(v => { updateStars(v ? Math.round(v / 10) : 0); }).catch(() => {});
       });
       suggestions.appendChild(li);
     }
@@ -542,7 +542,7 @@ async function showConfirmModal(saveResult) {
           children: overlay.querySelector("#ttb-children").value !== "" ? parseInt(overlay.querySelector("#ttb-children").value, 10) : null,
           infants:  overlay.querySelector("#ttb-infants").value  !== "" ? parseInt(overlay.querySelector("#ttb-infants").value,  10) : null,
           tourists:    tourists.length ? tourists : null,
-          hotel_vote:  selectedVote !== null ? selectedVote : undefined,
+          hotel_vote:  selectedVote !== null ? selectedVote * 10 : undefined,
         });
 
         if (result?.hellootel?.error) {
