@@ -4,10 +4,10 @@
   justify-content: center;
   min-height: 38px;
   padding: 0 16px;
-  border: 1px solid #c02626;
+  border: 1px solid #1d4ed8;
   border-radius: 11px;
-  background: linear-gradient(180deg, #ef4444 0%, #c81e1e 100%);
-  box-shadow: 0 10px 20px rgba(200, 30, 30, 0.18);
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  box-shadow: 0 10px 20px rgba(29, 78, 216, 0.18);
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
@@ -18,7 +18,7 @@
 
 .ttb-save-booking-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 16px 28px rgba(200, 30, 30, 0.24);
+  box-shadow: 0 16px 28px rgba(29, 78, 216, 0.3);
 }
 
 .ttb-save-booking-button:disabled {
