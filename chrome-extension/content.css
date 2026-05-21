@@ -273,6 +273,11 @@
   font-weight: 700 !important;
 }
 
+.ttb-modal__match-badge--notfound {
+  color: #dc2626 !important;
+  font-weight: 600 !important;
+}
+
 .ttb-modal__section-title {
   font-size: 10px !important;
   font-weight: 700 !important;
