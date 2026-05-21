@@ -107,7 +107,7 @@ class HellOotelReservationService
         try {
             $response = Http::timeout(15)
                 ->withBasicAuth($this->token, '')
-                ->post($url, ['vote' => $processed->hotel_vote]);
+                ->post($url, ['vote' => (int) ceil($processed->hotel_vote / 2)]);
 
             $body = $response->json() ?? $response->body();
 

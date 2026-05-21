@@ -86,17 +86,17 @@ class HellOotelLookupService
         return ($bestScore >= 55) ? $best : null;
     }
 
-    // Returns current vote (0-5) for a hotel, or null on failure.
-    // HellOotel returns a plain integer body (e.g. "5"), not a JSON object.
+    // Returns current vote in 1-10 scale (HellOotel API uses 0-5, we multiply by 2).
     public function getHotelVote(int $hotelId): ?int
     {
         try {
             $response = $this->http()->get($this->base . '/hotel/vote', ['hotel_id' => $hotelId]);
             if (!$response->successful()) return null;
             $body = $response->json();
-            if (is_int($body) || is_float($body)) return (int) $body;
-            if (is_array($body) && isset($body['vote'])) return (int) $body['vote'];
-            return null;
+            $raw = null;
+            if (is_int($body) || is_float($body)) $raw = (int) $body;
+            elseif (is_array($body) && isset($body['vote'])) $raw = (int) $body['vote'];
+            return $raw !== null ? $raw * 2 : null;
         } catch (\Exception) {
             return null;
         }
