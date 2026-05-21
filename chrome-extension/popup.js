@@ -221,7 +221,7 @@ async function render() {
   loginSection.hidden = true;
   authenticatedSection.hidden = false;
   const displayName = auth.user?.name || auth.user?.username || "";
-  const loginNum    = auth.user?.login_number;
+  const loginNum    = auth.user?.username;
   userNameLabel.textContent = loginNum ? `${displayName} (${loginNum})` : displayName;
 
   try {
