@@ -6,7 +6,6 @@ use App\Models\ExtensionPageReport;
 use App\Models\ExtensionParser;
 use App\Models\ProcessedBooking;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class HellOotelReservationService
 {
@@ -27,7 +26,6 @@ class HellOotelReservationService
     public function send(ProcessedBooking $processed): array
     {
         if (!$processed->hotel_id) {
-            Log::info('HellOotel reservation skipped: no hotel_id', ['id' => $processed->id]);
             return ['id' => null, 'error' => null];
         }
 
@@ -41,24 +39,11 @@ class HellOotelReservationService
 
         $url = $this->base . '/reservation/create?hotel_id=' . $processed->hotel_id;
 
-        Log::info('HellOotel reservation request', [
-            'processed_id' => $processed->id,
-            'url'          => $url,
-            'token_prefix' => substr($this->token, 0, 8) . '...',
-            'payload'      => $payload,
-        ]);
-
         $response = Http::timeout(15)
             ->withBasicAuth($this->token, '')
             ->post($url, $payload);
 
         $body = $response->json() ?? $response->body();
-
-        Log::info('HellOotel reservation response', [
-            'processed_id' => $processed->id,
-            'status'       => $response->status(),
-            'body'         => $body,
-        ]);
 
         $responseJson = is_array($body)
             ? json_encode($body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
@@ -98,24 +83,12 @@ class HellOotelReservationService
 
         $url = $this->base . '/hotel/vote?hotel_id=' . $processed->hotel_id;
 
-        Log::info('HellOotel send vote', [
-            'processed_id' => $processed->id,
-            'hotel_id'     => $processed->hotel_id,
-            'vote'         => $processed->hotel_vote,
-        ]);
-
         try {
             $response = Http::timeout(15)
                 ->withBasicAuth($this->token, '')
                 ->post($url, ['vote' => $processed->hotel_vote]);
 
             $body = $response->json() ?? $response->body();
-
-            Log::info('HellOotel vote response', [
-                'processed_id' => $processed->id,
-                'status'       => $response->status(),
-                'body'         => $body,
-            ]);
 
             if (!$response->successful()) {
                 $errorMsg = is_array($body) ? ($body['message'] ?? json_encode($body)) : (string) $body;
