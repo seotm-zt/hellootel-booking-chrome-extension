@@ -263,7 +263,7 @@ async function showConfirmModal(saveResult) {
     <div class="ttb-modal" role="dialog" aria-modal="true">
 
       <div class="ttb-modal__header">
-        <span class="ttb-modal__title">Confirm booking</span>
+        <span class="ttb-modal__title">Confirm sending to HelloOtel</span>
         <button class="ttb-modal__close" type="button" aria-label="Close">✕</button>
       </div>
 
