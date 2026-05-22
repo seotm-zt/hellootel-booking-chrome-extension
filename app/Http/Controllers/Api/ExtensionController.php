@@ -228,7 +228,6 @@ class ExtensionController extends Controller
         ];
         foreach ($directFields as $field) {
             if (!array_key_exists($field, $data)) continue;
-            if ($data[$field] === null && $field !== 'hotel_vote') continue;
             $processed->$field = $data[$field];
         }
 

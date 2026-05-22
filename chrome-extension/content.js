@@ -539,7 +539,7 @@ async function showConfirmModal(saveResult) {
           adults:   overlay.querySelector("#ttb-adults").value   !== "" ? parseInt(overlay.querySelector("#ttb-adults").value,   10) : null,
           children: overlay.querySelector("#ttb-children").value !== "" ? parseInt(overlay.querySelector("#ttb-children").value, 10) : null,
           infants:  overlay.querySelector("#ttb-infants").value  !== "" ? parseInt(overlay.querySelector("#ttb-infants").value,  10) : null,
-          tourists:    tourists.length ? tourists : null,
+          tourists:    tourists,
           hotel_vote:  selectedVote !== null ? selectedVote * 10 : undefined,
         });
 
