@@ -12,11 +12,12 @@ function getEffectiveLocation() {
   return window.location;
 }
 
-const BUTTON_LABEL     = "Send to HelloOtel";
-const UPDATE_LABEL     = "Update in database";
-const CONFIRMED_LABEL  = "Confirm & send to HelloOtel";
-const SENT_LABEL       = "Sent to HelloOtel ✓";
-const SAVING_LABEL     = "Saving...";
+const BUTTON_LABEL          = "Send to HelloOtel";
+const CONFIRMED_LABEL       = "Confirm & send to HelloOtel";
+const HOTEL_NOT_FOUND_LABEL = "Hotel not found in HelloOtel";
+const FAILED_LABEL          = "Failed to send booking";
+const SENT_LABEL            = "Sent to HelloOtel ✓";
+const SAVING_LABEL          = "Saving...";
 
 let scanQueued = false;
 let toastElement = null;
@@ -89,6 +90,29 @@ const getHotelVoteFromServer  = (hotelId)            => sendMessage({ type: "GET
 
 // ── Currency list cache ───────────────────────────────────────────────
 let _currencies = null; // null = not yet fetched
+let _operators  = null; // null = not yet fetched
+
+async function ensureOperators() {
+  if (_operators !== null) return _operators;
+  try {
+    const json = await sendMessage({ type: "GET_OPERATORS" });
+    _operators = json?.data ?? [];
+  } catch {
+    _operators = [];
+  }
+  return _operators;
+}
+
+function populateOperatorSelect(selectEl, preselectedId) {
+  selectEl.innerHTML = '<option value="">— select operator —</option>';
+  for (const op of (_operators || [])) {
+    const opt = document.createElement("option");
+    opt.value       = op.id;
+    opt.textContent = op.name;
+    if (op.id === preselectedId) opt.selected = true;
+    selectEl.appendChild(opt);
+  }
+}
 
 async function ensureCurrencies() {
   if (_currencies !== null) return _currencies;
@@ -132,9 +156,10 @@ function populateCurrencySelectEl(select, selectedCode) {
 
 // ── Booking state caches ──────────────────────────────────────────────
 // Key format: "domain:booking_code"
-let sentCodes      = new Set(); // confirmed + accepted by HellOotel
-let confirmedCodes = new Set(); // confirmed but not yet sent to HellOotel
-let savedCodes     = new Set(); // saved but not yet confirmed
+let sentCodes           = new Set(); // hellootel_reservation_id set → green
+let failedCodes         = new Set(); // confirmed_at set, no reservation_id → orange
+let savedMatchedCodes   = new Set(); // not confirmed, hotel_id set → yellow "Confirm & send"
+let savedUnmatchedCodes = new Set(); // not confirmed, no hotel_id → yellow "Hotel not found"
 
 async function refreshConfirmedCodes() {
   try {
@@ -144,14 +169,19 @@ async function refreshConfirmedCodes() {
         .filter(b => b.processed_booking?.hellootel_reservation_id)
         .map(b => b.booking_code)
     );
-    confirmedCodes = new Set(
+    failedCodes = new Set(
       bookings
         .filter(b => b.processed_booking?.confirmed_at && !b.processed_booking?.hellootel_reservation_id)
         .map(b => b.booking_code)
     );
-    savedCodes = new Set(
+    savedMatchedCodes = new Set(
       bookings
-        .filter(b => !b.processed_booking?.confirmed_at)
+        .filter(b => !b.processed_booking?.confirmed_at && b.processed_booking?.hotel_id)
+        .map(b => b.booking_code)
+    );
+    savedUnmatchedCodes = new Set(
+      bookings
+        .filter(b => !b.processed_booking?.confirmed_at && !b.processed_booking?.hotel_id)
         .map(b => b.booking_code)
     );
   } catch { /* non-critical */ }
@@ -255,6 +285,7 @@ async function showConfirmModal(saveResult) {
     infants:     processed?.person_count_teens    ?? raw.infants  ?? "",
     tourists:    processed?.tourists ?? raw.tourists ?? [],
     hotelVote:   processed?.hotel_vote ?? null,
+    operatorId:  processed?.operator_id ?? null,
   };
 
   const overlay = document.createElement("div");
@@ -296,10 +327,16 @@ async function showConfirmModal(saveResult) {
 
         <div class="ttb-modal__section-title">Booking details</div>
 
-        <label class="ttb-modal__label">Booking number</label>
-        <input class="ttb-modal__input" id="ttb-booking-code" type="text" value="${esc(pre.bookingCode)}" placeholder="ORD-123456" />
+        <label class="ttb-modal__label">Operator</label>
+        <select class="ttb-modal__select" id="ttb-operator-select">
+          <option value="">— select operator —</option>
+        </select>
 
         <div class="ttb-modal__row-2">
+          <div>
+            <label class="ttb-modal__label">Booking number</label>
+            <input class="ttb-modal__input" id="ttb-booking-code" type="text" value="${esc(pre.bookingCode)}" placeholder="ORD-123456" />
+          </div>
           <div>
             <label class="ttb-modal__label">Booking date</label>
             <input class="ttb-modal__input" id="ttb-reserv-date" type="date" value="${esc(pre.reservDate)}" />
@@ -372,6 +409,12 @@ async function showConfirmModal(saveResult) {
   ensureCurrencies().then(() => {
     const currSelect = overlay.querySelector("#ttb-currency");
     if (currSelect) populateCurrencySelectEl(currSelect, pre.currency);
+  });
+
+  // Populate operator select
+  ensureOperators().then(() => {
+    const opSelect = overlay.querySelector("#ttb-operator-select");
+    if (opSelect) populateOperatorSelect(opSelect, pre.operatorId);
   });
 
   const hotelInput   = overlay.querySelector("#ttb-hotel-input");
@@ -525,6 +568,9 @@ async function showConfirmModal(saveResult) {
           dob:        row.querySelector(".ttb-tourist__dob").value.trim(),
         })).filter(t => t.last_name || t.first_name);
 
+        const operatorSelectEl = overlay.querySelector("#ttb-operator-select");
+        const selectedOperatorId = operatorSelectEl?.value ? parseInt(operatorSelectEl.value, 10) : null;
+
         const result = await confirmBookingOnServer(raw.id, {
           hotel_id:         selectedHotelId || null,
           hotel_name:       selectedHotelName || null,
@@ -541,6 +587,7 @@ async function showConfirmModal(saveResult) {
           infants:  overlay.querySelector("#ttb-infants").value  !== "" ? parseInt(overlay.querySelector("#ttb-infants").value,  10) : null,
           tourists:    tourists,
           hotel_vote:  selectedVote !== null ? selectedVote * 10 : undefined,
+          operator_id: selectedOperatorId,
         });
 
         if (result?.hellootel?.error) {
@@ -587,17 +634,21 @@ async function injectButton(card, parser) {
 
   // Check booking state from previous sessions
   const parsedCode = parser.parseCard(card)?.booking_code;
+  if (parsedCode) btn.dataset.bookingCode = parsedCode;
 
   if (parsedCode && sentCodes.has(parsedCode)) {
     btn.textContent = SENT_LABEL;
     btn.classList.add("ttb-save-booking-button--sent");
     btn.disabled = true;
-  } else if (parsedCode && confirmedCodes.has(parsedCode)) {
-    btn.textContent = CONFIRMED_LABEL;
+  } else if (parsedCode && failedCodes.has(parsedCode)) {
+    btn.textContent = FAILED_LABEL;
     btn.classList.add("ttb-save-booking-button--confirmed");
-  } else if (parsedCode && savedCodes.has(parsedCode)) {
-    btn.textContent = UPDATE_LABEL;
+  } else if (parsedCode && savedMatchedCodes.has(parsedCode)) {
+    btn.textContent = CONFIRMED_LABEL;
     btn.classList.add("ttb-save-booking-button--saved");
+  } else if (parsedCode && savedUnmatchedCodes.has(parsedCode)) {
+    btn.textContent = HOTEL_NOT_FOUND_LABEL;
+    btn.classList.add("ttb-save-booking-button--notfound");
   } else {
     btn.textContent = BUTTON_LABEL;
   }
@@ -635,46 +686,49 @@ async function injectButton(card, parser) {
 
       // Reflect state from previous sessions immediately
       const alreadySent      = !!result.processed?.hellootel_reservation_id;
-      const alreadyConfirmed = !!result.processed?.confirmed_at;
+      const alreadyFailed    = !!result.processed?.confirmed_at && !alreadySent;
+      const hasHotelId       = !!result.processed?.hotel_id;
+
       if (alreadySent) {
         btn.textContent = SENT_LABEL;
         btn.classList.add("ttb-save-booking-button--sent");
         btn.disabled = true;
-      } else if (alreadyConfirmed) {
-        btn.textContent = CONFIRMED_LABEL;
-        btn.classList.add("ttb-save-booking-button--confirmed");
-      } else {
-        btn.textContent = UPDATE_LABEL;
+        return;
       }
 
-      if (alreadySent) return; // already in final state, skip modal
+      if (alreadyFailed) {
+        btn.textContent = FAILED_LABEL;
+        btn.classList.remove("ttb-save-booking-button--saved");
+        btn.classList.add("ttb-save-booking-button--confirmed");
+      } else if (hasHotelId) {
+        btn.textContent = CONFIRMED_LABEL;
+        btn.classList.remove("ttb-save-booking-button--confirmed");
+        btn.classList.add("ttb-save-booking-button--saved");
+      } else {
+        btn.textContent = HOTEL_NOT_FOUND_LABEL;
+        btn.classList.remove("ttb-save-booking-button--confirmed", "ttb-save-booking-button--saved");
+        btn.classList.add("ttb-save-booking-button--notfound");
+      }
 
       const modalResult = await showConfirmModal(result);
 
       if (modalResult === "deleted") {
         btn.textContent = BUTTON_LABEL;
         btn.disabled = false;
-        btn.classList.remove("ttb-save-booking-button--sent");
-        btn.classList.remove("ttb-save-booking-button--confirmed");
-        btn.classList.remove("ttb-save-booking-button--saved");
+        btn.classList.remove("ttb-save-booking-button--sent", "ttb-save-booking-button--confirmed", "ttb-save-booking-button--saved", "ttb-save-booking-button--notfound");
       } else if (modalResult === "sent") {
         btn.textContent = SENT_LABEL;
         btn.disabled = true;
-        btn.classList.remove("ttb-save-booking-button--confirmed");
-        btn.classList.remove("ttb-save-booking-button--saved");
+        btn.classList.remove("ttb-save-booking-button--confirmed", "ttb-save-booking-button--saved");
         btn.classList.add("ttb-save-booking-button--sent");
       } else if (modalResult === true) {
-        btn.textContent = CONFIRMED_LABEL;
+        // confirmed but not sent to HellOotel (no hotel or send failed)
+        btn.textContent = FAILED_LABEL;
         btn.disabled = false;
-        btn.classList.remove("ttb-save-booking-button--saved");
-        btn.classList.remove("ttb-save-booking-button--sent");
+        btn.classList.remove("ttb-save-booking-button--saved", "ttb-save-booking-button--sent");
         btn.classList.add("ttb-save-booking-button--confirmed");
-      } else if (!alreadyConfirmed) {
-        btn.textContent = UPDATE_LABEL;
-        btn.disabled = false;
-        btn.classList.remove("ttb-save-booking-button--confirmed");
-        btn.classList.add("ttb-save-booking-button--saved");
       }
+      // else (modal cancelled) → button label already set above, no change needed
     } catch (err) {
       console.error("[TTB] save failed", err);
       btn.textContent = prev;
@@ -723,6 +777,7 @@ async function boot() {
     ParserRegistry.loadRules(),
     refreshConfirmedCodes(),
     ensureCurrencies(),
+    ensureOperators(),
   ]);
   queueScan();
 }
@@ -741,3 +796,17 @@ window.addEventListener("pagehide", destroyModal);
 document.addEventListener("livewire:navigate", destroyModal);
 
 installObserver();
+
+// ── Popup → content messaging ─────────────────────────────────────────
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === "BOOKING_DELETED" && message.bookingCode) {
+    const btn = document.querySelector(`.ttb-save-booking-button[data-booking-code="${message.bookingCode}"]`);
+    if (btn) {
+      btn.textContent = BUTTON_LABEL;
+      btn.disabled    = false;
+      btn.className   = "ttb-save-booking-button";
+    }
+    // Refresh state sets so MutationObserver rescans don't restore old state
+    refreshConfirmedCodes();
+  }
+});

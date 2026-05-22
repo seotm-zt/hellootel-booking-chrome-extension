@@ -139,6 +139,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "GET_OPERATORS") {
+    (async () => {
+      try {
+        const data = await authedFetch("/operators");
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
   if (message.type === "LOAD_CURRENCIES") {
     (async () => {
       try {

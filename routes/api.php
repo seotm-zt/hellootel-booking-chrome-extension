@@ -19,6 +19,8 @@ Route::prefix('v1/extension')->group(function () {
         Route::patch('bookings/{id}/confirm',       [ExtensionController::class, 'confirm']);
         Route::delete('bookings/{id}',              [ExtensionController::class, 'destroy']);
 
+        Route::get('operators',                     [ExtensionController::class, 'operators']);
+
         Route::get('hotels',                        [ExtensionController::class, 'hotels']);
         Route::get('hotels/{id}/room-types',        [ExtensionController::class, 'hotelRoomTypes']);
         Route::get('hotels/{id}/vote',              [ExtensionController::class, 'hotelVote']);

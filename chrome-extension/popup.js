@@ -124,7 +124,7 @@ function buildBookingCard(booking) {
   titleEl.textContent = title;
   info.appendChild(titleEl);
 
-  if (subtitle) {
+  if (subtitle && booking.processed_booking?.hotel_id) {
     const subEl = document.createElement("div");
     subEl.className = "booking-card__subtitle";
     subEl.textContent = subtitle;
@@ -152,11 +152,19 @@ function buildBookingCard(booking) {
   for (const row of [
     createMetaRow("Dates",  booking.stay_dates),
     createMetaRow("Guests", booking.guests),
-    createMetaRow("Status", formatStatuses(booking.statuses)),
   ]) {
     if (row) meta.appendChild(row);
   }
   article.appendChild(meta);
+
+  // HelloOtel status badge
+  const status = getBookingStatus(booking);
+  if (status) {
+    const badge = document.createElement("div");
+    badge.className = `popup__status-badge ${status.cls}`;
+    badge.textContent = status.label;
+    article.appendChild(badge);
+  }
 
   // Footer
   const footer = document.createElement("div");
@@ -169,7 +177,8 @@ function buildBookingCard(booking) {
 
   const removeBtn = document.createElement("button");
   removeBtn.className = "booking-card__remove";
-  removeBtn.dataset.removeId = booking.id;
+  removeBtn.dataset.removeId   = booking.id;
+  removeBtn.dataset.bookingCode = booking.booking_code || "";
   removeBtn.type = "button";
   removeBtn.textContent = "Remove";
   footer.appendChild(removeBtn);
@@ -179,27 +188,44 @@ function buildBookingCard(booking) {
   return article;
 }
 
+function getBookingStatus(booking) {
+  const pb = booking.processed_booking;
+  if (!pb) return { label: "Not processed", cls: "" };
+  if (pb.hellootel_reservation_id) return null; // sent — not shown
+  if (pb.confirmed_at) return { label: "Failed to send booking", cls: "popup__status-badge--failed" };
+  if (pb.hotel_id)     return { label: "Confirm & send to HelloOtel", cls: "popup__status-badge--ready" };
+  return { label: "Hotel not found in HelloOtel", cls: "popup__status-badge--notfound" };
+}
+
 function renderBookings(bookings) {
-  const unconfirmed = bookings.filter(b => !b.processed_booking?.confirmed_at);
+  const pending = bookings.filter(b => !b.processed_booking?.hellootel_reservation_id);
 
   if (!bookings.length) { renderEmptyState(false); return; }
-  if (!unconfirmed.length) { renderEmptyState(true); return; }
+  if (!pending.length)  { renderEmptyState(true);  return; }
 
-  bookingCount.textContent = String(unconfirmed.length);
+  bookingCount.textContent = String(pending.length);
   bookingCount.hidden = false;
 
   bookingsList.innerHTML = "";
 
-  for (const booking of unconfirmed) {
+  for (const booking of pending) {
     bookingsList.appendChild(buildBookingCard(booking));
   }
 
   for (const button of bookingsList.querySelectorAll("[data-remove-id]")) {
     button.addEventListener("click", async () => {
       try {
+        const bookingCode = button.dataset.bookingCode;
         await deleteBookingFromServer(button.dataset.removeId);
         await render();
         showStatus("Booking removed.");
+        // Notify content script on the active tab to reset the button
+        if (bookingCode) {
+          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (tab?.id) {
+            chrome.tabs.sendMessage(tab.id, { type: "BOOKING_DELETED", bookingCode }).catch(() => {});
+          }
+        }
       } catch {
         showStatus("Failed to remove booking.", true);
       }

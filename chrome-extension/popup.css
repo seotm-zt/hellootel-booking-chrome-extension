@@ -251,6 +251,33 @@ body {
 .booking-card__row strong { color: #111827; font-weight: 700; }
 .booking-card__value { text-align: right; color: #374151; }
 
+/* ── HelloOtel status badge ── */
+.popup__status-badge {
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.popup__status-badge--ready {
+  background: #fefce8;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.popup__status-badge--failed {
+  background: #fff4f0;
+  color: #c44520;
+  border: 1px solid #fcd9c8;
+}
+
+.popup__status-badge--notfound {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
 .booking-card__footer {
   display: flex;
   justify-content: space-between;

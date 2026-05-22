@@ -88,7 +88,7 @@ class ExtensionController extends Controller
         $user = Auth::user();
 
         $bookings = ExtensionBooking::where('user_id', $user->id)
-            ->with('processedBooking:id,confirmed_at,hellootel_reservation_id')
+            ->with('processedBooking:id,confirmed_at,hellootel_reservation_id,hotel_id')
             ->orderByDesc('created_at')
             ->get();
 
@@ -177,6 +177,8 @@ class ExtensionController extends Controller
                 'tourists'                  => $processed->tourists ?? [],
                 'hotel_vote'                => $processed->hotel_vote,
                 'hellootel_reservation_id'  => $processed->hellootel_reservation_id,
+                'operator_id'               => $processed->operator_id,
+                'operator_name'             => $processed->operator_name,
             ] : null,
             'hotel_match' => $hotelMatch,
         ], $booking->wasRecentlyCreated ? 201 : 200);
@@ -211,6 +213,7 @@ class ExtensionController extends Controller
             'infants'          => 'nullable|integer|min:0',
             'tourists'         => 'nullable|array',
             'hotel_vote'       => 'nullable|integer|min:10|max:100',
+            'operator_id'      => 'nullable|integer',
         ]);
 
         $processed = ProcessedBooking::findOrFail($booking->processed_booking_id);
@@ -230,7 +233,7 @@ class ExtensionController extends Controller
             'hotel_id', 'hotel_name', 'room_type_id', 'room_type_name',
             'booking_code', 'reservation_date',
             'arrival_at', 'departure_at', 'price', 'currency_code', 'tourists',
-            'hotel_vote',
+            'hotel_vote', 'operator_id',
         ];
         foreach ($directFields as $field) {
             if (!array_key_exists($field, $data)) continue;
@@ -313,6 +316,21 @@ class ExtensionController extends Controller
         usort($result, fn($a, $b) => strcmp($a['name'], $b['name']));
 
         return response()->json(['data' => $result]);
+    }
+
+    public function operators(HellOotelLookupService $lookup): JsonResponse
+    {
+        $operators = $lookup->getOperators(); // [id => name]
+
+        $result = array_map(
+            fn($id, $name) => ['id' => (int) $id, 'name' => $name],
+            array_keys($operators),
+            array_values($operators)
+        );
+
+        usort($result, fn($a, $b) => strcmp($a['name'], $b['name']));
+
+        return response()->json(['data' => array_values($result)]);
     }
 
     public function hotelVote(int $id, HellOotelLookupService $lookup): JsonResponse
