@@ -283,7 +283,7 @@ async function showConfirmModal(saveResult) {
         </div>
 
         <div class="ttb-rating-row">
-          <span class="ttb-rating-label">Hotel rating <span class="ttb-required">*</span></span>
+          <span class="ttb-rating-label">Your hotel rating <span class="ttb-required">*</span></span>
           <div class="ttb-stars" id="ttb-stars">
             ${[1,2,3,4,5,6,7,8,9,10].map(i => `<span class="ttb-star" data-vote="${i}">☆</span>`).join("")}
           </div>

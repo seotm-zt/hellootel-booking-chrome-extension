@@ -213,8 +213,8 @@
 
 .ttb-modal__input:focus,
 .ttb-modal__select:focus {
-  border-color: #ef4444 !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+  border-color: #111827 !important;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.1) !important;
 }
 
 .ttb-modal__select:disabled {
