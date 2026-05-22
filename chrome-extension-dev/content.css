@@ -1,0 +1,574 @@
+.ttb-save-booking-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid #1d4ed8;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  box-shadow: 0 10px 20px rgba(29, 78, 216, 0.18);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+
+.ttb-save-booking-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(29, 78, 216, 0.3);
+}
+
+.ttb-save-booking-button:disabled {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+.ttb-save-booking-button[data-saved="true"] {
+  border-color: #9f1239;
+  background: linear-gradient(180deg, #e11d48 0%, #9f1239 100%);
+  box-shadow: 0 12px 24px rgba(159, 18, 57, 0.22);
+}
+
+.ttb-save-booking-button--saved {
+  border-color: #b45309;
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 10px 20px rgba(180, 83, 9, 0.22);
+  color: #ffffff;
+}
+
+.ttb-save-booking-button--saved:hover {
+  box-shadow: 0 16px 28px rgba(180, 83, 9, 0.3);
+}
+
+.ttb-save-booking-button--notfound {
+  border-color: #9ca3af;
+  background: linear-gradient(180deg, #d1d5db 0%, #9ca3af 100%);
+  box-shadow: 0 10px 20px rgba(107, 114, 128, 0.18);
+  color: #374151;
+}
+
+.ttb-save-booking-button--notfound:hover {
+  box-shadow: 0 16px 28px rgba(107, 114, 128, 0.26);
+}
+
+.ttb-save-booking-button--confirmed {
+  border-color: #c2410c !important;
+  background: linear-gradient(180deg, #f97316 0%, #ea580c 100%) !important;
+  box-shadow: 0 10px 20px rgba(194, 65, 12, 0.22) !important;
+}
+
+.ttb-save-booking-button--confirmed:hover {
+  box-shadow: 0 16px 28px rgba(194, 65, 12, 0.3) !important;
+}
+
+.ttb-save-booking-button--sent {
+  border-color: #15803d !important;
+  background: linear-gradient(180deg, #22c55e 0%, #15803d 100%) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.ttb-save-booking-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ttb-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 999999;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(20, 24, 38, 0.94);
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1.45;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.ttb-toast[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 575.98px) {
+  .ttb-save-booking-button {
+    width: 100%;
+  }
+
+  .ttb-save-booking-actions {
+    width: 100%;
+  }
+}
+
+/* ── Confirmation modal ─────────────────────────────────────────────── */
+
+.ttb-modal-overlay {
+  all: initial;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(0, 0, 0, 0.55) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.ttb-modal {
+  all: initial;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(580px, calc(100vw - 32px)) !important;
+  max-height: calc(100vh - 48px) !important;
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3) !important;
+  overflow: hidden !important;
+  font-family: inherit !important;
+}
+
+.ttb-modal__header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 12px 16px 10px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.ttb-modal__title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.ttb-modal__close {
+  all: initial !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  background: #f3f4f6 !important;
+  color: #6b7280 !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+}
+
+.ttb-modal__close:hover {
+  background: #e5e7eb !important;
+  color: #374151 !important;
+}
+
+
+.ttb-modal__body {
+  padding: 10px 16px !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+
+.ttb-modal__label {
+  display: block !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: #9ca3af !important;
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+}
+
+.ttb-modal__label:first-child {
+  margin-top: 0 !important;
+}
+
+.ttb-modal__autocomplete {
+  position: relative !important;
+}
+
+.ttb-modal__input,
+.ttb-modal__select {
+  all: initial !important;
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 7px 10px !important;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  font-size: 13px !important;
+  font-family: inherit !important;
+  line-height: 1.4 !important;
+  transition: border-color 0.15s !important;
+  outline: none !important;
+}
+
+.ttb-modal__input:focus,
+.ttb-modal__select:focus {
+  border-color: #111827 !important;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.1) !important;
+}
+
+.ttb-modal__select:disabled {
+  color: #9ca3af !important;
+  background: #f9fafb !important;
+  cursor: not-allowed !important;
+}
+
+.ttb-modal__suggestions[hidden] {
+  display: none !important;
+}
+
+.ttb-modal__suggestions {
+  all: initial !important;
+  position: absolute !important;
+  top: calc(100% + 4px) !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 10 !important;
+  background: #ffffff !important;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  overflow: hidden !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 4px 0 !important;
+}
+
+.ttb-modal__suggestion {
+  all: initial !important;
+  display: block !important;
+  padding: 9px 12px !important;
+  font-size: 13px !important;
+  color: #111827 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  transition: background 0.1s !important;
+}
+
+.ttb-modal__suggestion:hover {
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+}
+
+.ttb-modal__match-badge {
+  float: right !important;
+  font-size: 11px !important;
+  color: #16a34a !important;
+  font-weight: 400 !important;
+}
+
+.ttb-modal__match-badge strong {
+  font-weight: 700 !important;
+}
+
+.ttb-modal__match-badge--notfound {
+  color: #dc2626 !important;
+  font-weight: 600 !important;
+}
+
+.ttb-modal__section-title {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: #6b7280 !important;
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 4px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.ttb-modal__row-2 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+}
+
+.ttb-modal__row-3 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1fr !important;
+  gap: 8px !important;
+}
+
+/* ── Star rating ── */
+
+.ttb-rating-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-bottom: 0 !important;
+}
+
+.ttb-rating-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: #6b7280 !important;
+  white-space: nowrap !important;
+}
+
+.ttb-stars {
+  display: flex !important;
+  gap: 2px !important;
+}
+
+.ttb-star {
+  font-size: 18px !important;
+  cursor: pointer !important;
+  color: #d1d5db !important;
+  user-select: none !important;
+  line-height: 1 !important;
+  transition: color 0.12s !important;
+}
+
+.ttb-star:hover {
+  color: #f59e0b !important;
+}
+
+.ttb-star--filled {
+  color: #f59e0b !important;
+}
+
+.ttb-required {
+  color: #ef4444 !important;
+  font-weight: 700 !important;
+}
+
+.ttb-modal__required-note {
+  margin: 10px 0 0 !important;
+  font-size: 11px !important;
+  color: #9ca3af !important;
+}
+
+.ttb-modal__send-note {
+  margin: 0 16px 0 !important;
+  padding: 10px 12px !important;
+  font-size: 11px !important;
+  color: #374151 !important;
+  background: #f0f9ff !important;
+  border: 1px solid #bae6fd !important;
+  border-radius: 8px !important;
+  text-align: center !important;
+}
+
+/* ── Tourist rows ── */
+
+.ttb-tourist-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1fr auto !important;
+  gap: 6px !important;
+  align-items: center !important;
+  margin-bottom: 4px !important;
+}
+
+.ttb-tourist__remove {
+  all: initial !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 50% !important;
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  font-size: 11px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  font-family: inherit !important;
+}
+
+.ttb-tourist__remove:hover {
+  background: #fecaca !important;
+}
+
+.ttb-modal__add-tourist {
+  all: initial !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  border: 1.5px dashed #d1d5db !important;
+  background: transparent !important;
+  color: #6b7280 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  margin-top: 4px !important;
+  transition: border-color 0.15s, color 0.15s !important;
+}
+
+.ttb-modal__add-tourist:hover {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+.ttb-modal__footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  padding: 14px 20px !important;
+}
+
+.ttb-modal__api-error {
+  margin: 0 20px 14px !important;
+  padding: 10px 14px !important;
+  background: #fef2f2 !important;
+  border: 1px solid #fca5a5 !important;
+  border-radius: 6px !important;
+  color: #b91c1c !important;
+  font-size: 13px !important;
+  font-family: sans-serif !important;
+  line-height: 1.4 !important;
+  word-break: break-word !important;
+}
+
+.ttb-modal__api-error[hidden] {
+  display: none !important;
+}
+
+.ttb-modal__btn {
+  all: initial !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 36px !important;
+  padding: 0 18px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  transition: opacity 0.15s, transform 0.15s !important;
+}
+
+.ttb-modal__btn:hover { opacity: 0.85 !important; }
+.ttb-modal__btn:active { transform: scale(0.97) !important; }
+.ttb-modal__btn:disabled { opacity: 0.55 !important; cursor: not-allowed !important; }
+
+.ttb-modal__btn--delete {
+  background: transparent !important;
+  color: #b91c1c !important;
+  border: 1px solid rgba(185, 28, 28, 0.3) !important;
+}
+
+.ttb-modal__btn--delete:hover {
+  background: #fef2f2 !important;
+}
+
+.ttb-modal__btn--cancel {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+}
+
+.ttb-modal__btn--confirm {
+  background: linear-gradient(180deg, #22c55e 0%, #15803d 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(21, 128, 61, 0.25) !important;
+}
+
+/* ── HellOotel error dialog ── */
+
+.ttb-he-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(0, 0, 0, 0.65) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.ttb-he-box {
+  width: 340px !important;
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  padding: 24px 22px 20px !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25) !important;
+  text-align: center !important;
+}
+
+.ttb-he-icon {
+  font-size: 36px !important;
+  line-height: 1 !important;
+  margin-bottom: 10px !important;
+}
+
+.ttb-he-title {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+  margin-bottom: 10px !important;
+}
+
+.ttb-he-message {
+  font-size: 13px !important;
+  color: #6b7280 !important;
+  line-height: 1.5 !important;
+  margin-bottom: 20px !important;
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  text-align: left !important;
+  word-break: break-word !important;
+}
+
+.ttb-he-actions {
+  display: flex !important;
+  gap: 10px !important;
+}
+
+.ttb-he-btn {
+  flex: 1 !important;
+  min-height: 40px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+.ttb-he-btn--fix {
+  background: #f0592b !important;
+  color: #ffffff !important;
+}
+
+.ttb-he-btn--fix:hover {
+  background: #d44d23 !important;
+}
+
+.ttb-he-btn--ignore {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+}
+
+.ttb-he-btn--ignore:hover {
+  background: #e5e7eb !important;
+}
