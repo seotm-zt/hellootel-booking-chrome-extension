@@ -72,7 +72,7 @@ function createMetaRow(label, value) {
 function renderEmptyState(allConfirmed = false) {
   bookingsList.innerHTML = allConfirmed
     ? '<div class="popup__empty popup__empty--done">✓ All bookings confirmed</div>'
-    : '<div class="popup__empty">No bookings yet. Click the Save button on a booking page.</div>';
+    : '<div class="popup__empty">No bookings yet. Click the “Send to HelloOtel” button on the booking history page.</div>';
   bookingCount.hidden = true;
 }
 
@@ -164,7 +164,7 @@ function buildBookingCard(booking) {
 
   const price = document.createElement("div");
   price.className = "booking-card__price";
-  price.textContent = normalizeText(booking.total_price || "—");
+  price.textContent = (normalizeText(booking.total_price || "—").split("/")[0]).trim() || "—";
   footer.appendChild(price);
 
   const removeBtn = document.createElement("button");
@@ -222,7 +222,16 @@ async function render() {
   authenticatedSection.hidden = false;
   const displayName = auth.user?.name || auth.user?.username || "";
   const loginNum    = auth.user?.username;
-  userNameLabel.textContent = loginNum ? `${displayName} (${loginNum})` : displayName;
+  userNameLabel.textContent = "";
+  const nameNode = document.createTextNode(displayName);
+  userNameLabel.appendChild(nameNode);
+  if (loginNum) {
+    userNameLabel.appendChild(document.createTextNode(" "));
+    const loginSpan = document.createElement("span");
+    loginSpan.className = "popup__user-login";
+    loginSpan.textContent = `(${loginNum})`;
+    userNameLabel.appendChild(loginSpan);
+  }
 
   try {
     const bookings = await loadBookings();

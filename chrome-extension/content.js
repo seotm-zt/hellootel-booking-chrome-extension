@@ -49,8 +49,8 @@ function showHellootelErrorDialog(message) {
         <div class="ttb-he-title">HelloOtel send error</div>
         <div class="ttb-he-message"></div>
         <div class="ttb-he-actions">
-          <button class="ttb-he-btn ttb-he-btn--fix" type="button">✎ Fix</button>
-          <button class="ttb-he-btn ttb-he-btn--ignore" type="button">Ignore</button>
+          <button class="ttb-he-btn ttb-he-btn--fix" type="button">✎ Edit Booking</button>
+          <button class="ttb-he-btn ttb-he-btn--ignore" type="button">Cancel send</button>
         </div>
       </div>
     `;

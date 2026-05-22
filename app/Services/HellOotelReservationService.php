@@ -6,6 +6,7 @@ use App\Models\ExtensionPageReport;
 use App\Models\ExtensionParser;
 use App\Models\ProcessedBooking;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class HellOotelReservationService
 {
@@ -39,11 +40,41 @@ class HellOotelReservationService
 
         $url = $this->base . '/reservation/create?hotel_id=' . $processed->hotel_id;
 
+        Log::info('HellOotel reservation send', [
+            'processed_id' => $processed->id,
+            'url'          => $url,
+            'payload'      => $payload,
+            'db_state'     => [
+                'hotel_id'              => $processed->hotel_id,
+                'hotel_name'            => $processed->hotel_name,
+                'room_type_id'          => $processed->room_type_id,
+                'room_type_name'        => $processed->room_type_name,
+                'arrival_at'            => $processed->arrival_at?->format('Y-m-d'),
+                'departure_at'          => $processed->departure_at?->format('Y-m-d'),
+                'person_count_adults'   => $processed->person_count_adults,
+                'person_count_children' => $processed->person_count_children,
+                'person_count_teens'    => $processed->person_count_teens,
+                'tourists'              => $processed->tourists,
+                'booking_code'          => $processed->booking_code,
+                'price'                 => $processed->price,
+                'currency_code'         => $processed->currency_code,
+                'hotel_vote'            => $processed->hotel_vote,
+                'operator_id'           => $processed->operator_id,
+                'guest_info'            => $processed->guest_info,
+            ],
+        ]);
+
         $response = Http::timeout(15)
             ->withBasicAuth($this->token, '')
             ->post($url, $payload);
 
         $body = $response->json() ?? $response->body();
+
+        Log::info('HellOotel reservation response', [
+            'processed_id' => $processed->id,
+            'status'       => $response->status(),
+            'body'         => $body,
+        ]);
 
         $responseJson = is_array($body)
             ? json_encode($body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
@@ -152,19 +183,15 @@ class HellOotelReservationService
 
     private function buildGuestName(ProcessedBooking $processed): ?string
     {
-        if ($processed->guest_info) {
-            return $processed->guest_info;
-        }
-
         $tourists = $processed->tourists ?? [];
-        if (empty($tourists)) {
-            return null;
+        if (!empty($tourists)) {
+            return collect($tourists)
+                ->map(fn($t) => trim(($t['last_name'] ?? '') . ' ' . ($t['first_name'] ?? '')))
+                ->filter()
+                ->implode(', ') ?: null;
         }
 
-        return collect($tourists)
-            ->map(fn($t) => trim(($t['last_name'] ?? '') . ' ' . ($t['first_name'] ?? '')))
-            ->filter()
-            ->implode(', ') ?: null;
+        return $processed->guest_info ?: null;
     }
 
     private function buildPayload(ProcessedBooking $processed): array

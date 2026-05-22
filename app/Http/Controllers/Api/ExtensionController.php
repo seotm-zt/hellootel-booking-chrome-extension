@@ -215,6 +215,12 @@ class ExtensionController extends Controller
 
         $processed = ProcessedBooking::findOrFail($booking->processed_booking_id);
 
+        Log::info('HellOotel confirm: incoming form data', [
+            'booking_id'   => $id,
+            'processed_id' => $processed->id,
+            'form_data'    => $data,
+        ]);
+
         // Confirmation stamp — always written
         $processed->confirmed_by_user_id = $user->id;
         $processed->confirmed_at         = now();

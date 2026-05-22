@@ -58,17 +58,17 @@ body {
   height: 32px;
   padding: 0 8px;
   border-radius: 999px;
-  background: #ef4444;
+  background: #f0592b;
   color: #fff;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   flex-shrink: 0;
 }
 
 /* ── Login ── */
 .popup__login {
   padding: 16px;
-  border: 1px solid rgba(185, 28, 28, 0.12);
+  border: 1px solid rgba(240, 89, 43, 0.15);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 8px 24px rgba(17, 24, 39, 0.06);
@@ -102,7 +102,7 @@ body {
   transition: border-color 0.15s;
 }
 
-.popup__input:focus { border-color: #b91c1c; }
+.popup__input:focus { border-color: #f0592b; }
 
 .popup__button {
   min-height: 40px;
@@ -116,8 +116,8 @@ body {
   transition: opacity 0.15s;
 }
 
-.popup__button--primary { background: #b91c1c; }
-.popup__button--primary:hover { background: #991b1b; }
+.popup__button--primary { background: #f0592b; }
+.popup__button--primary:hover { background: #d44d23; }
 
 .popup__button--sm {
   min-height: 28px;
@@ -138,16 +138,20 @@ body {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 10px;
-  background: rgba(239, 68, 68, 0.07);
+  background: #f5f5f5;
 }
 
 .popup__user-name {
   font-size: 13px;
   font-weight: 700;
-  color: #b91c1c;
+  color: #111827;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.popup__user-login {
+  color: #f0592b;
 }
 
 /* ── Booking list ── */
@@ -193,16 +197,16 @@ body {
   display: inline-flex;
   padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(239, 68, 68, 0.1);
-  color: #b91c1c;
+  background: #f0592b;
+  color: #fff;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .booking-card__title {
   margin-top: 5px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.25;
 }
 
@@ -220,13 +224,14 @@ body {
   width: 26px;
   height: 26px;
   border-radius: 7px;
-  background: rgba(239, 68, 68, 0.08);
-  color: #b91c1c;
+  background: #f0592b;
+  color: #fff;
   font-size: 13px;
+  font-weight: 700;
   text-decoration: none;
 }
 
-.booking-card__goto:hover { background: rgba(239, 68, 68, 0.18); }
+.booking-card__goto:hover { background: #d44d23; }
 
 .booking-card__meta {
   display: grid;
@@ -257,24 +262,24 @@ body {
 }
 
 .booking-card__price {
-  color: #b91c1c;
+  color: #f0592b;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .booking-card__remove {
   min-height: 26px;
   padding: 0 10px;
-  border: 1px solid rgba(185, 28, 28, 0.18);
+  border: 1px solid rgba(240, 89, 43, 0.2);
   border-radius: 8px;
-  background: #fff1f2;
-  color: #9f1239;
+  background: #fff4f0;
+  color: #c44520;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
 }
 
-.booking-card__remove:hover { background: #ffe4e6; }
+.booking-card__remove:hover { background: #ffe8df; }
 
 /* ── Status bar ── */
 .popup__status {
@@ -285,4 +290,4 @@ body {
   font-size: 13px;
 }
 
-.popup__status--error { background: #b91c1c; }
+.popup__status--error { background: #f0592b; }
