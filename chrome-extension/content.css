@@ -69,8 +69,7 @@
   background: linear-gradient(180deg, #22c55e 0%, #15803d 100%) !important;
   box-shadow: none !important;
   opacity: 1 !important;
-  cursor: default !important;
-  pointer-events: none !important;
+  cursor: pointer !important;
 }
 
 .ttb-save-booking-actions {
@@ -450,6 +449,38 @@
 
 .ttb-modal__api-error[hidden] {
   display: none !important;
+}
+
+.ttb-modal__reservation-badge {
+  padding: 8px 12px !important;
+  background: #f0fdf4 !important;
+  border: 1px solid #bbf7d0 !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #15803d !important;
+  text-align: center !important;
+  margin-bottom: 4px !important;
+}
+
+.ttb-modal__static-value {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  min-height: 34px !important;
+  padding: 6px 10px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  background: #f9fafb !important;
+  font-size: 13px !important;
+  color: #111827 !important;
+  font-family: inherit !important;
+  line-height: 1.4 !important;
+  word-break: break-word !important;
+}
+
+.ttb-stars--readonly {
+  pointer-events: none !important;
 }
 
 .ttb-modal__btn {

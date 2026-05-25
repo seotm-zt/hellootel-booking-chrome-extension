@@ -102,36 +102,6 @@ class HellOotelReservationService
         return ['id' => $reservationId ? (int) $reservationId : null, 'error' => null];
     }
 
-    public function sendVote(ProcessedBooking $processed): array
-    {
-        if (!$processed->hotel_id) {
-            return ['error' => 'No hotel_id set'];
-        }
-
-        if ($processed->hotel_vote === null) {
-            return ['error' => 'No rating set'];
-        }
-
-        $url = $this->base . '/hotel/vote?hotel_id=' . $processed->hotel_id;
-
-        try {
-            $response = Http::timeout(15)
-                ->withBasicAuth($this->token, '')
-                ->post($url, ['vote' => $processed->hotel_vote]);
-
-            $body = $response->json() ?? $response->body();
-
-            if (!$response->successful()) {
-                $errorMsg = is_array($body) ? ($body['message'] ?? json_encode($body)) : (string) $body;
-                return ['error' => $errorMsg ?: "HTTP {$response->status()}"];
-            }
-
-            return ['error' => null];
-        } catch (\Exception $e) {
-            return ['error' => $e->getMessage()];
-        }
-    }
-
     private function syncOperatorFromParser(ProcessedBooking $processed): void
     {
         if ($processed->operator_id) {
@@ -214,6 +184,7 @@ class HellOotelReservationService
             'service_number'             => $processed->booking_code,
             'tour_price_native'          => $processed->price,
             'tour_price_native_currency' => $processed->currency_code,
+            'vote'                       => $processed->hotel_vote,
         ];
 
         // Remove null/empty values — only send fields that are actually set

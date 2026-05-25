@@ -71,7 +71,7 @@ function createMetaRow(label, value) {
 
 function renderEmptyState(allConfirmed = false) {
   bookingsList.innerHTML = allConfirmed
-    ? '<div class="popup__empty popup__empty--done">✓ All bookings confirmed</div>'
+    ? '<div class="popup__empty">No bookings yet. Click the "Send to HelloOtel" button on the booking history page.</div>'
     : '<div class="popup__empty">No bookings yet. Click the “Send to HelloOtel” button on the booking history page.</div>';
   bookingCount.hidden = true;
 }
@@ -231,6 +231,71 @@ function renderBookings(bookings) {
       }
     });
   }
+}
+
+
+function showSentDataOverlay(processed, hellootel) {
+  const existing = document.querySelector(".popup-overlay");
+  if (existing) existing.remove();
+
+  const overlay = document.createElement("div");
+  overlay.className = "popup-overlay";
+
+  const header = document.createElement("div");
+  header.className = "popup-overlay__header";
+
+  const title = document.createElement("div");
+  title.className = "popup-overlay__title";
+  title.textContent = "Sent to HelloOtel";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "popup-overlay__close";
+  closeBtn.textContent = "✕";
+  closeBtn.addEventListener("click", () => overlay.remove());
+
+  header.append(title, closeBtn);
+  overlay.appendChild(header);
+
+  if (hellootel?.id || processed.hellootel_reservation_id) {
+    const rid = document.createElement("div");
+    rid.className = "popup-overlay__reservation-id";
+    rid.innerHTML = `Reservation ID <span>#${hellootel?.id ?? processed.hellootel_reservation_id}</span>`;
+    overlay.appendChild(rid);
+  } else if (hellootel?.error) {
+    const err = document.createElement("div");
+    err.className = "popup-overlay__error";
+    err.textContent = `Error: ${hellootel.error}`;
+    overlay.appendChild(err);
+  }
+
+  const body = document.createElement("div");
+  body.className = "popup-overlay__body";
+
+  const rows = [
+    ["Hotel",        processed.hotel_name],
+    ["Room type",    processed.room_type_name],
+    ["Check-in",     processed.arrival_at],
+    ["Check-out",    processed.departure_at],
+    ["Adults",       processed.person_count_adults],
+    ["Children",     processed.person_count_children],
+    ["Infants",      processed.person_count_teens],
+    ["Price",        processed.price ? `${processed.price} ${processed.currency_code || ""}`.trim() : null],
+    ["Booking #",    processed.booking_code],
+    ["Operator",     processed.operator_name || (processed.operator_id ? `#${processed.operator_id}` : null)],
+    ["Booking date", processed.reservation_date],
+    ["Vote",         processed.hotel_vote != null ? processed.hotel_vote : null],
+  ];
+
+  for (const [label, value] of rows) {
+    if (value == null || value === "") continue;
+    const row = document.createElement("div");
+    row.className = "popup-overlay__row";
+    row.innerHTML = `<strong>${label}</strong><span>${value}</span>`;
+    body.appendChild(row);
+  }
+
+  overlay.appendChild(body);
+  document.body.appendChild(overlay);
 }
 
 async function render() {

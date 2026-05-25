@@ -88,7 +88,7 @@ class ExtensionController extends Controller
         $user = Auth::user();
 
         $bookings = ExtensionBooking::where('user_id', $user->id)
-            ->with('processedBooking:id,confirmed_at,hellootel_reservation_id,hotel_id')
+            ->with('processedBooking:id,confirmed_at,hellootel_reservation_id,hotel_id,hotel_name,room_type_name,arrival_at,departure_at,person_count_adults,person_count_children,person_count_teens,price,currency_code,booking_code,operator_name,operator_id,reservation_date,hotel_vote,tourists')
             ->orderByDesc('created_at')
             ->get();
 
@@ -258,17 +258,6 @@ class ExtensionController extends Controller
             $hellootelResult['error'] = $e->getMessage();
         }
 
-        if ($processed->hotel_vote !== null && $processed->hotel_id) {
-            try {
-                $reservation->sendVote($processed);
-            } catch (\Throwable $e) {
-                Log::warning('HellOotel vote send failed', [
-                    'processed_id' => $processed->id,
-                    'error'        => $e->getMessage(),
-                ]);
-            }
-        }
-
         return response()->json([
             'data'      => $processed,
             'hellootel' => $hellootelResult,
@@ -303,9 +292,9 @@ class ExtensionController extends Controller
         return response()->json(['data' => array_values(array_slice($result, 0, 30))]);
     }
 
-    public function hotelRoomTypes(int $id, HellOotelLookupService $lookup): JsonResponse
+    public function hotelRoomTypes(int $id, HellOotelLookupService $lookup, Request $request): JsonResponse
     {
-        $types  = $lookup->getRoomTypes($id); // [id => name]
+        $types  = $lookup->getRoomTypes($id, $request->query('arrival_at'), $request->query('departure_at')); // [id => name]
 
         $result = array_map(
             fn($typeId, $name) => ['id' => (int) $typeId, 'name' => $name],

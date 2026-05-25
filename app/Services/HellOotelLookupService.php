@@ -31,13 +31,22 @@ class HellOotelLookupService
     }
 
     // Returns [id => name]
-    public function getRoomTypes(int $hotelId): array
+    public function getRoomTypes(int $hotelId, ?string $arrivalAt = null, ?string $departureAt = null): array
     {
-        $url   = $this->base . '/hotel/bonus-room-types?hotel_ids[]=' . $hotelId . '&language=en';
-        $body  = $this->http()->get($url)->json() ?? [];
-        $items = $body['results'] ?? (is_array($body) && isset($body[0]) ? $body : []);
+        $arrivalAt   ??= now()->subDay()->format('Y-m-d');
+        $departureAt ??= now()->format('Y-m-d');
 
-        return collect($items)->mapWithKeys(fn($t) => [$t['id'] => $t['text'] ?? $t['name'] ?? ''])->all();
+        $url  = $this->base . '/hotel/room-types';
+        $body = $this->http()->get($url, [
+            'hotel_id'              => $hotelId,
+            'bonus_reservation_mode' => 0,
+            'arrival_at'            => $arrivalAt,
+            'departure_at'          => $departureAt,
+            'language'              => 'en',
+        ])->json() ?? [];
+
+        // Response is a flat {id: name} map
+        return is_array($body) ? $body : [];
     }
 
     // Returns ['id' => int, 'name' => string, 'score' => int] or null
@@ -60,9 +69,9 @@ class HellOotelLookupService
     }
 
     // Returns ['id' => int, 'name' => string] or null
-    public function findRoomType(int $hotelId, string $rawName): ?array
+    public function findRoomType(int $hotelId, string $rawName, ?string $arrivalAt = null, ?string $departureAt = null): ?array
     {
-        $types     = $this->getRoomTypes($hotelId);
+        $types     = $this->getRoomTypes($hotelId, $arrivalAt, $departureAt);
         $needle    = $this->normalize($rawName);
         $best      = null;
         $bestScore = 0;

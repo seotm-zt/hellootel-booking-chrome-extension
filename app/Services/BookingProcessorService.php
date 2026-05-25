@@ -95,9 +95,11 @@ class BookingProcessorService
             if ($hotel) {
                 $hotelId = $hotel['id'];
 
+                [$arrivalStr, $departureStr] = $this->parseStayDates($booking->stay_dates);
+
                 $roomCandidate = $this->resolveField($booking, $fieldMap, 'room_type_name', $booking->subtitle ?? $booking->meal_plan ?? null);
                 if ($roomCandidate) {
-                    $room = $this->lookup->findRoomType($hotelId, $roomCandidate);
+                    $room = $this->lookup->findRoomType($hotelId, $roomCandidate, $arrivalStr, $departureStr);
                     if ($room) {
                         $roomTypeId   = $room['id'];
                         $roomTypeName = $room['name'];

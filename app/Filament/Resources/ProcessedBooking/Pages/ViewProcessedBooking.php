@@ -26,18 +26,6 @@ class ViewProcessedBooking extends ViewRecord
                     $this->refreshFormData(['hotel_vote']);
                 }),
 
-            Action::make('send_vote')
-                ->label('Send Vote')
-                ->icon('heroicon-o-paper-airplane')
-                ->color('success')
-                ->visible(fn () => $this->record->hotel_id && $this->record->hotel_vote !== null)
-                ->requiresConfirmation()
-                ->modalHeading('Send Vote to HellOotel')
-                ->modalDescription(fn () => 'Send rating ' . str_repeat('★', (int) $this->record->hotel_vote) . " for hotel #{$this->record->hotel_id}?")
-                ->action(function (): void {
-                    ProcessedBookingResource::runSendVote($this->record);
-                }),
-
             EditAction::make(),
             DeleteAction::make(),
         ];

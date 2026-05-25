@@ -287,6 +287,17 @@ body {
   border: 1px solid #fde68a;
 }
 
+.popup__status-badge--sent {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  cursor: pointer;
+}
+
+.popup__status-badge--sent:hover {
+  background: #dcfce7;
+}
+
 .popup__status-badge--failed {
   background: #fff4f0;
   color: #c44520;
@@ -328,6 +339,105 @@ body {
 }
 
 .booking-card__remove:hover { background: #ffe8df; }
+
+/* ── Sent data overlay ── */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.popup-overlay__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+  gap: 8px;
+}
+
+.popup-overlay__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.popup-overlay__close {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popup-overlay__close:hover { background: #e5e7eb; }
+
+.popup-overlay__reservation-id {
+  margin: 12px 14px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  font-size: 12px;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.popup-overlay__reservation-id span {
+  font-size: 15px;
+  display: block;
+  margin-top: 2px;
+}
+
+.popup-overlay__error {
+  margin: 12px 14px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff4f0;
+  border: 1px solid #fcd9c8;
+  font-size: 12px;
+  color: #c44520;
+  font-weight: 600;
+}
+
+.popup-overlay__body {
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.popup-overlay__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.05);
+}
+
+.popup-overlay__row:last-child { border-bottom: 0; }
+
+.popup-overlay__row strong {
+  color: #6b7280;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.popup-overlay__row span {
+  color: #111827;
+  text-align: right;
+}
 
 /* ── Status bar ── */
 .popup__status {

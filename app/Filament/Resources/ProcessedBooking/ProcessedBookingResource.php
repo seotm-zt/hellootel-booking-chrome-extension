@@ -144,17 +144,6 @@ class ProcessedBookingResource extends Resource
                     ->action(function (ProcessedBooking $record): void {
                         static::runGetVote($record);
                     }),
-                Action::make('send_vote')
-                    ->label('Send Vote')
-                    ->icon('heroicon-o-paper-airplane')
-                    ->color('success')
-                    ->visible(fn (ProcessedBooking $r) => $r->hotel_id && $r->hotel_vote !== null)
-                    ->requiresConfirmation()
-                    ->modalHeading('Send Vote to HellOotel')
-                    ->modalDescription(fn (ProcessedBooking $r) => "Send rating " . str_repeat('★', (int) $r->hotel_vote) . " for hotel #{$r->hotel_id}?")
-                    ->action(function (ProcessedBooking $record): void {
-                        static::runSendVote($record);
-                    }),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
@@ -415,19 +404,6 @@ class ProcessedBookingResource extends Resource
         $record->update(['hotel_vote' => $vote]);
         $stars = str_repeat('★', $vote) . str_repeat('☆', 5 - $vote);
         Notification::make()->title("Vote loaded: {$stars} ({$vote}/5)")->success()->send();
-    }
-
-    public static function runSendVote(ProcessedBooking $record): void
-    {
-        $result = app(HellOotelReservationService::class)->sendVote($record);
-
-        if ($result['error']) {
-            Notification::make()->title('HellOotel: ' . $result['error'])->danger()->send();
-            return;
-        }
-
-        $stars = str_repeat('★', (int) $record->hotel_vote) . str_repeat('☆', 5 - (int) $record->hotel_vote);
-        Notification::make()->title("Vote sent: {$stars} ({$record->hotel_vote}/5)")->success()->send();
     }
 
     // Returns true if hotel_id was resolved

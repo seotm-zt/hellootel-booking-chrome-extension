@@ -160,6 +160,7 @@ let sentCodes           = new Set(); // hellootel_reservation_id set → green
 let failedCodes         = new Set(); // confirmed_at set, no reservation_id → orange
 let savedMatchedCodes   = new Set(); // not confirmed, hotel_id set → yellow "Confirm & send"
 let savedUnmatchedCodes = new Set(); // not confirmed, no hotel_id → yellow "Hotel not found"
+let sentBookingProcessed = new Map(); // booking_code → processed_booking for sent bookings
 
 async function refreshConfirmedCodes() {
   try {
@@ -169,6 +170,9 @@ async function refreshConfirmedCodes() {
         .filter(b => b.processed_booking?.hellootel_reservation_id)
         .map(b => b.booking_code)
     );
+    bookings
+      .filter(b => b.processed_booking?.hellootel_reservation_id)
+      .forEach(b => sentBookingProcessed.set(b.booking_code, b.processed_booking));
     failedCodes = new Set(
       bookings
         .filter(b => b.processed_booking?.confirmed_at && !b.processed_booking?.hellootel_reservation_id)
@@ -258,6 +262,50 @@ async function loadRoomTypes(hotelId, selectEl, preselectedId) {
     selectEl.innerHTML = '<option value="">— loading error —</option>';
     selectEl.disabled  = false;
   }
+}
+
+function showSentDataModal(processed) {
+  destroyModal();
+
+  const overlay = document.createElement("div");
+  overlay.className = "ttb-modal-overlay";
+
+  const rows = [
+    ["Reservation ID",  processed.hellootel_reservation_id ? `#${processed.hellootel_reservation_id}` : null],
+    ["Hotel",           processed.hotel_name],
+    ["Room type",       processed.room_type_name],
+    ["Check-in",        processed.arrival_at],
+    ["Check-out",       processed.departure_at],
+    ["Adults",          processed.person_count_adults],
+    ["Children",        processed.person_count_children],
+    ["Infants",         processed.person_count_teens],
+    ["Price",           processed.price ? `${processed.price} ${processed.currency_code || ""}`.trim() : null],
+    ["Booking #",       processed.booking_code],
+    ["Operator",        processed.operator_name || (processed.operator_id ? `#${processed.operator_id}` : null)],
+    ["Booking date",    processed.reservation_date],
+    ["Vote",            processed.hotel_vote != null ? processed.hotel_vote : null],
+  ].filter(([, v]) => v != null && v !== "");
+
+  overlay.innerHTML = `
+    <div class="ttb-modal" role="dialog" aria-modal="true">
+      <div class="ttb-modal__header">
+        <span class="ttb-modal__title">Sent to HelloOtel ✓</span>
+        <button class="ttb-modal__close" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="ttb-modal__body">
+        <dl class="ttb-sent-data">
+          ${rows.map(([label, value]) => `
+            <dt>${label}</dt>
+            <dd>${value}</dd>
+          `).join("")}
+        </dl>
+      </div>
+    </div>
+  `;
+
+  overlay.querySelector(".ttb-modal__close").addEventListener("click", () => overlay.remove());
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 // Returns Promise<boolean> — true if user confirmed, false if cancelled
@@ -636,10 +684,31 @@ async function injectButton(card, parser) {
   const parsedCode = parser.parseCard(card)?.booking_code;
   if (parsedCode) btn.dataset.bookingCode = parsedCode;
 
+  const wrap = document.createElement("div");
+  wrap.className = "ttb-save-booking-actions";
+
   if (parsedCode && sentCodes.has(parsedCode)) {
     btn.textContent = SENT_LABEL;
     btn.classList.add("ttb-save-booking-button--sent");
-    btn.disabled = true;
+    btn.addEventListener("click", async () => {
+      let processed = sentBookingProcessed.get(parsedCode);
+      if (!processed) {
+        try {
+          const bookings = await loadBookingsFromServer();
+          const match = bookings.find(b => b.booking_code === parsedCode && b.processed_booking?.hellootel_reservation_id);
+          processed = match?.processed_booking ?? null;
+          if (processed) sentBookingProcessed.set(parsedCode, processed);
+        } catch {}
+      }
+      if (processed) showSentDataModal(processed);
+    });
+    wrap.append(btn);
+    const container = parser.getButtonContainer(card);
+    const placement = parser.buttonPlacement ?? "inside";
+    if (placement === "before") container.parentNode?.insertBefore(wrap, container);
+    else if (placement === "after") container.parentNode?.insertBefore(wrap, container.nextSibling);
+    else container.appendChild(wrap);
+    return;
   } else if (parsedCode && failedCodes.has(parsedCode)) {
     btn.textContent = FAILED_LABEL;
     btn.classList.add("ttb-save-booking-button--confirmed");
@@ -652,9 +721,6 @@ async function injectButton(card, parser) {
   } else {
     btn.textContent = BUTTON_LABEL;
   }
-
-  const wrap = document.createElement("div");
-  wrap.className = "ttb-save-booking-actions";
   wrap.append(btn);
 
   const container = parser.getButtonContainer(card);
@@ -692,7 +758,8 @@ async function injectButton(card, parser) {
       if (alreadySent) {
         btn.textContent = SENT_LABEL;
         btn.classList.add("ttb-save-booking-button--sent");
-        btn.disabled = true;
+        if (parsedCode) sentBookingProcessed.set(parsedCode, result.processed);
+        showSentDataModal(result.processed);
         return;
       }
 
@@ -718,9 +785,9 @@ async function injectButton(card, parser) {
         btn.classList.remove("ttb-save-booking-button--sent", "ttb-save-booking-button--confirmed", "ttb-save-booking-button--saved", "ttb-save-booking-button--notfound");
       } else if (modalResult === "sent") {
         btn.textContent = SENT_LABEL;
-        btn.disabled = true;
         btn.classList.remove("ttb-save-booking-button--confirmed", "ttb-save-booking-button--saved");
         btn.classList.add("ttb-save-booking-button--sent");
+        if (parsedCode && result.processed) sentBookingProcessed.set(parsedCode, result.processed);
       } else if (modalResult === true) {
         // confirmed but not sent to HellOotel (no hotel or send failed)
         btn.textContent = FAILED_LABEL;
