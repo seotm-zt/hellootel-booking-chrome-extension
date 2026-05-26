@@ -1,4 +1,4 @@
-# Booking Saver
+# Booking Saver for HelloOtel
 
 Система для сохранения броней через Chrome-расширение.
 
@@ -59,7 +59,7 @@ php artisan key:generate
 Отредактировать `.env`:
 
 ```env
-APP_NAME="Booking Saver"
+APP_NAME="Booking Saver for HelloOtel"
 APP_ENV=production
 APP_URL=https://your-domain.com
 

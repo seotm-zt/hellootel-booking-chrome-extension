@@ -1,14 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "Booking Saver",
+  "name": "Booking Saver for HelloOtel",
   "version": "1.0.0",
-  "description": "Saves bookings from supported sites to the database.",
+  "description": "Capture bookings from supported travel agency sites and send them to HelloOtel with one click.",
   "background": {
     "service_worker": "background.js"
   },
   "permissions": [
-    "storage",
-    "activeTab"
+    "storage"
   ],
   "icons": {
     "16": "icons/icon16.png",
@@ -19,41 +18,17 @@
   "host_permissions": [
     "https://booking-configurator.hellootel.com/*",
     "https://demo.velikolepniy-vek.com/*",
-    "https://coralagency.ru/*",
-    "https://agency.pegast.ru/MyAccount/Bookings/*"
+    "https://coralagency.ru/*"
   ],
   "action": {
-    "default_title": "Booking Saver",
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "32": "icons/icon32.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
+    "default_title": "Booking Saver for HelloOtel",
+    "default_popup": "popup.html"
   },
   "content_scripts": [
     {
       "matches": [
         "https://demo.velikolepniy-vek.com/hotel/book/history*",
-        "https://coralagency.ru/reservation/search*",
-        "https://agency.pegast.ru/*"
-      ],
-      "js": [
-        "auth.js",
-        "parsers/currency-utils.js",
-        "parsers/registry.js",
-        "parsers/config-engine.js",
-        "content.js"
-      ],
-      "css": [
-        "content.css"
-      ],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "https://booking-configurator.hellootel.com/admin/extension/page-reports/*"
+        "https://coralagency.ru/reservation/search*"
       ],
       "js": [
         "auth.js",

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy — Booking Saver</title>
+  <title>Privacy Policy — Booking Saver for HelloOtel</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -77,7 +77,7 @@
     <section class="lang-section visible" id="lang-en">
       <h1>Privacy Policy</h1>
       <p class="updated">Last updated: {{ date('F j, Y') }}</p>
-      <p>This Privacy Policy describes how the <strong>Booking Saver</strong> Chrome extension ("Extension") collects, uses, and stores information when you use it.</p>
+      <p>This Privacy Policy describes how the <strong>Booking Saver for HelloOtel</strong> Chrome extension ("Extension") collects, uses, and stores information when you use it.</p>
 
       <h2>1. What data we collect</h2>
       <p>The Extension collects only the data required to save and process hotel booking information:</p>
@@ -100,13 +100,11 @@
       <ul>
         <li>Your authentication token is stored locally in <code>chrome.storage.local</code> and never transmitted except as a Bearer header to our API.</li>
         <li>Booking records are stored on our secure server and accessible only to authorised operators.</li>
-        <li>HTML snapshots of booking pages ("Page Reports") are automatically deleted after 60 days.</li>
       </ul>
 
       <h2>4. Permissions used</h2>
       <ul>
         <li><strong>storage</strong> — to store your session token locally.</li>
-        <li><strong>activeTab</strong> — to read the current page URL and inject the Save button on supported booking pages.</li>
         <li><strong>Host permissions</strong> (specific domains only) — to communicate with our API and inject the Save button on supported travel agency websites.</li>
       </ul>
 
@@ -129,7 +127,7 @@
     <section class="lang-section" id="lang-de">
       <h1>Datenschutzerklärung</h1>
       <p class="updated">Zuletzt aktualisiert: {{ date('d.m.Y') }}</p>
-      <p>Diese Datenschutzerklärung beschreibt, wie die Chrome-Erweiterung <strong>Booking Saver</strong> („Erweiterung") Informationen erfasst, verwendet und speichert.</p>
+      <p>Diese Datenschutzerklärung beschreibt, wie die Chrome-Erweiterung <strong>Booking Saver for HelloOtel</strong> („Erweiterung") Informationen erfasst, verwendet und speichert.</p>
 
       <h2>1. Welche Daten wir erheben</h2>
       <p>Die Erweiterung erhebt ausschließlich Daten, die zur Speicherung und Verarbeitung von Hotelbuchungen erforderlich sind:</p>
@@ -152,13 +150,11 @@
       <ul>
         <li>Ihr Authentifizierungstoken wird lokal in <code>chrome.storage.local</code> gespeichert und nur als Bearer-Header an unsere API übertragen.</li>
         <li>Buchungsdatensätze werden auf unserem sicheren Server gespeichert und sind nur autorisierten Betreibern zugänglich.</li>
-        <li>HTML-Schnappschüsse von Buchungsseiten („Seitenberichte") werden nach 60 Tagen automatisch gelöscht.</li>
       </ul>
 
       <h2>4. Verwendete Berechtigungen</h2>
       <ul>
         <li><strong>storage</strong> — zur lokalen Speicherung des Sitzungstokens.</li>
-        <li><strong>activeTab</strong> — zum Lesen der aktuellen Seiten-URL und Einfügen der Speichern-Schaltfläche.</li>
         <li><strong>Host-Berechtigungen</strong> (nur bestimmte Domains) — zur Kommunikation mit unserer API und zur Einbindung der Schaltfläche auf unterstützten Reisebüro-Seiten.</li>
       </ul>
 
@@ -181,7 +177,7 @@
     <section class="lang-section" id="lang-tr">
       <h1>Gizlilik Politikası</h1>
       <p class="updated">Son güncelleme: {{ date('d.m.Y') }}</p>
-      <p>Bu Gizlilik Politikası, <strong>Booking Saver</strong> Chrome uzantısının ("Uzantı") kullanım sırasında hangi bilgileri topladığını, kullandığını ve sakladığını açıklamaktadır.</p>
+      <p>Bu Gizlilik Politikası, <strong>Booking Saver for HelloOtel</strong> Chrome uzantısının ("Uzantı") kullanım sırasında hangi bilgileri topladığını, kullandığını ve sakladığını açıklamaktadır.</p>
 
       <h2>1. Hangi verileri topluyoruz</h2>
       <p>Uzantı yalnızca otel rezervasyonlarını kaydetmek ve işlemek için gereken verileri toplar:</p>
@@ -204,13 +200,11 @@
       <ul>
         <li>Kimlik doğrulama jetonunuz yerel olarak <code>chrome.storage.local</code>'da saklanır ve yalnızca API'mize Bearer başlığı olarak iletilir.</li>
         <li>Rezervasyon kayıtları güvenli sunucumuzda saklanır ve yalnızca yetkili operatörler tarafından erişilebilir.</li>
-        <li>Rezervasyon sayfalarının HTML anlık görüntüleri ("Sayfa Raporları") 60 gün sonra otomatik olarak silinir.</li>
       </ul>
 
       <h2>4. Kullanılan izinler</h2>
       <ul>
         <li><strong>storage</strong> — oturum jetonunu yerel olarak saklamak için.</li>
-        <li><strong>activeTab</strong> — mevcut sayfa URL'sini okumak ve Kaydet düğmesini eklemek için.</li>
         <li><strong>Ana bilgisayar izinleri</strong> (yalnızca belirli alan adları) — API'mizle iletişim kurmak ve desteklenen seyahat acentesi sitelerinde düğmeyi göstermek için.</li>
       </ul>
 
@@ -233,7 +227,7 @@
     <section class="lang-section" id="lang-ru">
       <h1>Политика конфиденциальности</h1>
       <p class="updated">Последнее обновление: {{ date('d.m.Y') }}</p>
-      <p>Настоящая Политика конфиденциальности описывает, какие данные собирает, использует и хранит расширение Chrome <strong>Booking Saver</strong> («Расширение») при его использовании.</p>
+      <p>Настоящая Политика конфиденциальности описывает, какие данные собирает, использует и хранит расширение Chrome <strong>Booking Saver for HelloOtel</strong> («Расширение») при его использовании.</p>
 
       <h2>1. Какие данные мы собираем</h2>
       <p>Расширение собирает только данные, необходимые для сохранения и обработки бронирований отелей:</p>
@@ -256,13 +250,11 @@
       <ul>
         <li>Токен аутентификации хранится локально в <code>chrome.storage.local</code> и передаётся только в виде Bearer-заголовка в наш API.</li>
         <li>Записи о бронированиях хранятся на нашем защищённом сервере и доступны только авторизованным операторам.</li>
-        <li>HTML-снимки страниц с бронированиями («Отчёты о страницах») автоматически удаляются через 60 дней.</li>
       </ul>
 
       <h2>4. Используемые разрешения</h2>
       <ul>
         <li><strong>storage</strong> — для локального хранения токена сессии.</li>
-        <li><strong>activeTab</strong> — для чтения URL текущей страницы и внедрения кнопки сохранения.</li>
         <li><strong>Разрешения для хостов</strong> (только конкретные домены) — для связи с нашим API и отображения кнопки на поддерживаемых сайтах.</li>
       </ul>
 
@@ -285,7 +277,7 @@
     <section class="lang-section" id="lang-uk">
       <h1>Політика конфіденційності</h1>
       <p class="updated">Останнє оновлення: {{ date('d.m.Y') }}</p>
-      <p>Ця Політика конфіденційності описує, які дані збирає, використовує та зберігає розширення Chrome <strong>Booking Saver</strong> («Розширення») під час його використання.</p>
+      <p>Ця Політика конфіденційності описує, які дані збирає, використовує та зберігає розширення Chrome <strong>Booking Saver for HelloOtel</strong> («Розширення») під час його використання.</p>
 
       <h2>1. Які дані ми збираємо</h2>
       <p>Розширення збирає лише дані, необхідні для збереження та обробки бронювань готелів:</p>
@@ -308,13 +300,11 @@
       <ul>
         <li>Токен автентифікації зберігається локально в <code>chrome.storage.local</code> і передається лише як Bearer-заголовок до нашого API.</li>
         <li>Записи бронювань зберігаються на нашому захищеному сервері та доступні лише авторизованим операторам.</li>
-        <li>HTML-знімки сторінок бронювань («Звіти сторінок») автоматично видаляються через 60 днів.</li>
       </ul>
 
       <h2>4. Використані дозволи</h2>
       <ul>
         <li><strong>storage</strong> — для локального зберігання токена сесії.</li>
-        <li><strong>activeTab</strong> — для зчитування URL поточної сторінки та впровадження кнопки збереження.</li>
         <li><strong>Дозволи для хостів</strong> (лише конкретні домени) — для зв'язку з нашим API та відображення кнопки на підтримуваних сайтах.</li>
       </ul>
 
