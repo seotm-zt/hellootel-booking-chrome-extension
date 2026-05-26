@@ -704,13 +704,15 @@ async function showConfirmModal(saveResult) {
 
   hotelInput.addEventListener("blur", () => setTimeout(hideSuggestions, 150));
 
-  // ── Return Promise resolving to true / false / "deleted" ─────────
+  // ── Return Promise resolving to { status, processed? } ──────────
+  // status: "sent" | "confirmed_only" | "deleted" | "cancelled"
+  // processed: fresh ProcessedBooking from /confirm response, when available
   return new Promise((resolve) => {
 
     function closeCancel() {
       destroyModal();
       showToast("Booking saved. Not yet confirmed.");
-      resolve(false);
+      resolve({ status: "cancelled" });
     }
 
     overlay.querySelector(".ttb-modal__close").addEventListener("click", closeCancel);
@@ -729,7 +731,7 @@ async function showConfirmModal(saveResult) {
         await deleteBookingFromServer(raw.id);
         destroyModal();
         showToast("Booking deleted from database.");
-        resolve("deleted");
+        resolve({ status: "deleted" });
       } catch (err) {
         deleteBtn.disabled    = false;
         deleteBtn.textContent = "Delete from database";
@@ -788,7 +790,7 @@ async function showConfirmModal(saveResult) {
           if (choice === "ignore") {
             destroyModal();
             showToast("Failed to send HelloOtel ! (Booking confirmed)");
-            resolve(true);
+            resolve({ status: "confirmed_only", processed: result?.data ?? null });
           }
           // "fix" → modal stays open, user can edit and retry
           return;
@@ -797,7 +799,10 @@ async function showConfirmModal(saveResult) {
         destroyModal();
         const wasSent = !!result?.hellootel?.id;
         showToast(wasSent ? "Booking sent to HelloOtel ✓" : "Booking confirmed ✓");
-        resolve(wasSent ? "sent" : true);
+        resolve({
+          status:    wasSent ? "sent" : "confirmed_only",
+          processed: result?.data ?? null,
+        });
       } catch (err) {
         confirmBtn.disabled    = false;
         confirmBtn.textContent = "Retry";
@@ -805,7 +810,7 @@ async function showConfirmModal(saveResult) {
         if (choice === "ignore") {
           destroyModal();
           showToast("Failed to send HelloOtel ! (Booking confirmed)");
-          resolve(true);
+          resolve({ status: "confirmed_only", processed: null });
         }
         // "fix" → modal stays open
       }
@@ -815,11 +820,39 @@ async function showConfirmModal(saveResult) {
 
 // ── Inject save button ────────────────────────────────────────────────
 
+// Swap a button's click handler to "show sent data" mode.
+// Clones the node when it's already in the DOM to drop prior listeners.
+// Returns the (possibly new) node — callers must reassign their reference.
+function attachSentClickHandler(btn, parsedCode) {
+  const inDom  = !!btn.parentNode;
+  const target = inDom ? btn.cloneNode(true) : btn;
+  if (inDom) btn.replaceWith(target);
+  target.disabled = false;
+  target.addEventListener("click", async () => {
+    target.disabled = true;
+    try {
+      let processed = parsedCode ? sentBookingProcessed.get(parsedCode) : null;
+      if (!processed && parsedCode) {
+        const bookings = await loadBookingsFromServer();
+        const match = bookings.find(b => b.booking_code === parsedCode && b.processed_booking?.hellootel_reservation_id);
+        processed = match?.processed_booking ?? null;
+        if (processed) sentBookingProcessed.set(parsedCode, processed);
+      }
+      if (processed) showSentDataModal(processed);
+    } catch (e) {
+      console.error("[TTB] failed to load sent booking", e);
+    } finally {
+      target.disabled = false;
+    }
+  });
+  return target;
+}
+
 async function injectButton(card, parser) {
   if (card.hasAttribute(ENHANCED_ATTR)) return;
   card.setAttribute(ENHANCED_ATTR, "true");
 
-  const btn = document.createElement("button");
+  let btn = document.createElement("button");
   btn.type      = "button";
   btn.className = "ttb-save-booking-button";
 
@@ -834,18 +867,7 @@ async function injectButton(card, parser) {
   if (parsedCode && sentCodes.has(parsedCode)) {
     btn.textContent = SENT_LABEL;
     btn.classList.add("ttb-save-booking-button--sent");
-    btn.addEventListener("click", async () => {
-      btn.disabled = true;
-      try {
-        const bookings = await loadBookingsFromServer();
-        const match = bookings.find(b => b.booking_code === parsedCode && b.processed_booking?.hellootel_reservation_id);
-        if (match?.processed_booking) showSentDataModal(match.processed_booking);
-      } catch (e) {
-        console.error("[TTB] failed to load sent booking", e);
-      } finally {
-        btn.disabled = false;
-      }
-    });
+    btn = attachSentClickHandler(btn, parsedCode);
     wrap.append(btn);
     const container = parser.getButtonContainer(card);
     const placement = parser.buttonPlacement ?? "inside";
@@ -904,6 +926,7 @@ async function injectButton(card, parser) {
         btn.classList.add("ttb-save-booking-button--sent");
         if (parsedCode) sentBookingProcessed.set(parsedCode, result.processed);
         showSentDataModal(result.processed);
+        btn = attachSentClickHandler(btn, parsedCode);
         return;
       }
 
@@ -922,17 +945,22 @@ async function injectButton(card, parser) {
       }
 
       const modalResult = await showConfirmModal(result);
+      const modalStatus = modalResult?.status;
+      // Server returns the up-to-date ProcessedBooking from /confirm; fall back
+      // to the pre-confirm snapshot only if the modal couldn't capture it.
+      const freshProcessed = modalResult?.processed ?? result.processed ?? null;
 
-      if (modalResult === "deleted") {
+      if (modalStatus === "deleted") {
         btn.textContent = BUTTON_LABEL;
         btn.disabled = false;
         btn.classList.remove("ttb-save-booking-button--sent", "ttb-save-booking-button--confirmed", "ttb-save-booking-button--saved", "ttb-save-booking-button--notfound");
-      } else if (modalResult === "sent") {
+      } else if (modalStatus === "sent") {
         btn.textContent = SENT_LABEL;
         btn.classList.remove("ttb-save-booking-button--confirmed", "ttb-save-booking-button--saved");
         btn.classList.add("ttb-save-booking-button--sent");
-        if (parsedCode && result.processed) sentBookingProcessed.set(parsedCode, result.processed);
-      } else if (modalResult === true) {
+        if (parsedCode && freshProcessed) sentBookingProcessed.set(parsedCode, freshProcessed);
+        btn = attachSentClickHandler(btn, parsedCode);
+      } else if (modalStatus === "confirmed_only") {
         // confirmed but not sent to HellOotel (no hotel or send failed)
         btn.textContent = FAILED_LABEL;
         btn.disabled = false;
