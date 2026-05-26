@@ -83,7 +83,8 @@ function sendMessage(msg) {
 const loadBookingsFromServer = ()                   => sendMessage({ type: "LOAD_BOOKINGS" }).then(d => d?.data ?? []);
 const saveBookingToServer    = (booking)            => sendMessage({ type: "SAVE_BOOKING",    payload: booking });
 const searchHotelsOnServer   = (query)              => sendMessage({ type: "SEARCH_HOTELS",   query }).then(d => d?.data ?? []);
-const getRoomTypesFromServer = (hotelId)            => sendMessage({ type: "GET_ROOM_TYPES",  hotelId }).then(d => d?.data ?? []);
+const getRoomTypesFromServer = (hotelId, arrivalAt, departureAt) =>
+  sendMessage({ type: "GET_ROOM_TYPES", hotelId, arrivalAt, departureAt }).then(d => d?.data ?? []);
 const confirmBookingOnServer  = (bookingId, payload) => sendMessage({ type: "CONFIRM_BOOKING",  bookingId, payload });
 const deleteBookingFromServer = (bookingId)          => sendMessage({ type: "DELETE_BOOKING",   bookingId });
 const getHotelVoteFromServer  = (hotelId)            => sendMessage({ type: "GET_HOTEL_VOTE",   hotelId }).then(d => d?.vote ?? null);
@@ -244,17 +245,18 @@ function buildTouristRow(t = {}) {
   return div;
 }
 
-async function loadRoomTypes(hotelId, selectEl, preselectedId) {
+async function loadRoomTypes(hotelId, selectEl, preselectedId, arrivalAt, departureAt) {
   selectEl.disabled = true;
   selectEl.innerHTML = '<option value="">Loading...</option>';
   try {
-    const types = await getRoomTypesFromServer(hotelId);
+    const types = await getRoomTypesFromServer(hotelId, arrivalAt, departureAt);
     selectEl.innerHTML = '<option value="">— select room type —</option>';
+    const wanted = preselectedId != null ? String(preselectedId) : "";
     for (const t of types) {
       const opt = document.createElement("option");
       opt.value       = t.id;
       opt.textContent = t.name;
-      if (preselectedId && t.id === preselectedId) opt.selected = true;
+      if (wanted && String(t.id) === wanted) opt.selected = true;
       selectEl.appendChild(opt);
     }
     selectEl.disabled = false;
@@ -623,9 +625,27 @@ async function showConfirmModal(saveResult) {
 
   roomSelect.addEventListener("change", updateConfirmState);
 
+  const arrivalInput   = overlay.querySelector("#ttb-arrival");
+  const departureInput = overlay.querySelector("#ttb-departure");
+
+  function reloadRoomTypesForDates() {
+    if (!selectedHotelId) return;
+    const keepSelected = roomSelect.value || null;
+    return loadRoomTypes(
+      selectedHotelId,
+      roomSelect,
+      keepSelected,
+      arrivalInput.value || null,
+      departureInput.value || null,
+    ).then(updateConfirmState);
+  }
+
+  arrivalInput.addEventListener("change", reloadRoomTypesForDates);
+  departureInput.addEventListener("change", reloadRoomTypesForDates);
+
   // ── Pre-load room types and vote if hotel already matched ────────
   if (pre.hotelId) {
-    await loadRoomTypes(pre.hotelId, roomSelect, pre.roomTypeId);
+    await loadRoomTypes(pre.hotelId, roomSelect, pre.roomTypeId, pre.arrivalAt || null, pre.departureAt || null);
     updateConfirmState();
     if (selectedVote === null) {
       getHotelVoteFromServer(pre.hotelId).then(v => {
@@ -662,7 +682,7 @@ async function showConfirmModal(saveResult) {
         selectedHotelName = h.name;
         hotelInput.value  = h.name;
         hideSuggestions();
-        await loadRoomTypes(h.id, roomSelect, null);
+        await loadRoomTypes(h.id, roomSelect, null, arrivalInput.value || null, departureInput.value || null);
         updateConfirmState();
         getHotelVoteFromServer(h.id).then(v => { updateStars(v ? Math.round(v / 10) : 0); }).catch(() => {});
       });

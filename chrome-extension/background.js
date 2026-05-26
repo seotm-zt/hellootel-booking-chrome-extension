@@ -91,7 +91,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "GET_ROOM_TYPES") {
     (async () => {
       try {
-        const data = await authedFetch(`/hotels/${message.hotelId}/room-types`);
+        const qs = new URLSearchParams();
+        if (message.arrivalAt)   qs.set("arrival_at",   message.arrivalAt);
+        if (message.departureAt) qs.set("departure_at", message.departureAt);
+        const suffix = qs.toString() ? `?${qs.toString()}` : "";
+        const data = await authedFetch(`/hotels/${message.hotelId}/room-types${suffix}`);
         sendResponse({ ok: true, data });
       } catch (err) {
         sendResponse({ ok: false, error: err.message });
