@@ -87,8 +87,16 @@
  * ─── tourist_blocks ───────────────────────────────────────────────────────────
  *
  *   Extracts an array of tourist/passenger objects into result.tourists (DB column).
- *   Each matching item element is one tourist; fields matched via label text:
- *   { item, label?, value?, fields: { last_name: ["last name", "surname"], first_name: ["first name", "name"], dob: [...] } }
+ *   Each matching item element is one tourist. Two modes (can be mixed):
+ *
+ *   Label mode (legacy) — value is found by matching a <label> text:
+ *     { item, label?, value?, fields: { last_name: ["last name", "surname"], dob: [...] } }
+ *
+ *   CSS mode — value is found by selector inside the item element.
+ *   Each field spec accepts the same keys as `fields` entries
+ *   (sel, attr, data, multi, strip_prefix, strip_pattern, strip_icons):
+ *     { item, fields: { last_name: { sel: ".person-name", strip_pattern: "[ ].*$" },
+ *                       dob:       { sel: ".row__birth" } } }
  *
  * ─── type: "form" ─────────────────────────────────────────────────────────────
  *
@@ -528,34 +536,60 @@ const ConfigParserEngine = (() => {
   }
 
   function _extractTouristBlocks(card, cfg) {
+    // Split field specs into CSS-mode (object with selector keys) and
+    // label-mode (legacy: array of keyword strings).
+    const cssFields   = {};
+    const labelFields = {};
+    for (const [field, spec] of Object.entries(cfg.fields || {})) {
+      if (Array.isArray(spec)) {
+        labelFields[field] = spec;
+      } else if (spec && typeof spec === "object") {
+        cssFields[field] = spec;
+      }
+    }
+    const hasLabelMode = Object.keys(labelFields).length > 0;
+
     const tourists = [];
     for (const itemEl of card.querySelectorAll(cfg.item)) {
       const tourist = {};
-      for (const colEl of itemEl.children) {
-        const labelEl = colEl.querySelector(cfg.label || "label");
-        if (!labelEl) continue;
-        const labelText = _norm(labelEl.textContent).toLowerCase();
 
-        let valueText;
-        if (cfg.td_text) {
-          // value is a bare text node inside the cell (after the label span)
-          valueText = Array.from(colEl.childNodes)
-            .filter((n) => n.nodeType === Node.TEXT_NODE)
-            .map((n) => n.textContent.trim())
-            .filter(Boolean)
-            .join(" ")
-            .trim();
-          if (!valueText) continue;
-        } else {
-          const valueEl = colEl.querySelector(cfg.value || "span");
-          if (!valueEl) continue;
-          valueText = _norm(valueEl.textContent);
-        }
-
-        for (const [field, keywords] of Object.entries(cfg.fields || {})) {
-          if (keywords.some((kw) => labelText.includes(kw))) tourist[field] = valueText;
+      // ── CSS mode: extract each field directly via _extractField ──────────
+      for (const [field, spec] of Object.entries(cssFields)) {
+        const val = _extractField(itemEl, spec);
+        if (val !== null && val !== undefined && val !== "" &&
+            !(Array.isArray(val) && val.length === 0)) {
+          tourist[field] = val;
         }
       }
+
+      // ── Label mode: original label→value mapping (legacy) ────────────────
+      if (hasLabelMode) {
+        for (const colEl of itemEl.children) {
+          const labelEl = colEl.querySelector(cfg.label || "label");
+          if (!labelEl) continue;
+          const labelText = _norm(labelEl.textContent).toLowerCase();
+
+          let valueText;
+          if (cfg.td_text) {
+            valueText = Array.from(colEl.childNodes)
+              .filter((n) => n.nodeType === Node.TEXT_NODE)
+              .map((n) => n.textContent.trim())
+              .filter(Boolean)
+              .join(" ")
+              .trim();
+            if (!valueText) continue;
+          } else {
+            const valueEl = colEl.querySelector(cfg.value || "span");
+            if (!valueEl) continue;
+            valueText = _norm(valueEl.textContent);
+          }
+
+          for (const [field, keywords] of Object.entries(labelFields)) {
+            if (keywords.some((kw) => labelText.includes(kw))) tourist[field] = valueText;
+          }
+        }
+      }
+
       if (Object.keys(tourist).length) tourists.push(tourist);
     }
     return tourists;

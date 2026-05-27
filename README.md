@@ -187,27 +187,43 @@ booking_saver/
 │   ├── Enums/User/Role.php                  — роли (admin, operator)
 │   ├── Http/Controllers/Api/
 │   │   └── ExtensionController.php          — API для расширения
-│   ├── Http/Middleware/ApiTokenAuth.php      — авторизация по Bearer-токену
+│   ├── Http/Middleware/ApiTokenAuth.php     — авторизация по Bearer-токену
 │   ├── Models/
-│   │   ├── ExtensionBooking.php             — сохранённые брони
+│   │   ├── ExtensionBooking.php             — сырые брони
+│   │   ├── ProcessedBooking.php             — обработанные брони (для HelloOtel)
 │   │   ├── ExtensionParser.php              — конфиги парсеров
 │   │   ├── ExtensionParserRule.php          — правила доменов
-│   │   └── ExtensionPageReport.php          — отчёты страниц
+│   │   └── ExtensionPageReport.php          — HTML-снимки страниц
+│   ├── Services/
+│   │   ├── BookingProcessorService.php      — сырая бронь → ProcessedBooking
+│   │   ├── HellOotelLookupService.php       — справочники HelloOtel (отели, типы номеров)
+│   │   ├── HellOotelReservationService.php  — отправка брони в HelloOtel
+│   │   └── ParserEngineSimulator.php        — PHP-порт config-engine для тестов
+│   ├── Console/Commands/
+│   │   └── TestParserCommand.php            — artisan parser:test
 │   └── Filament/Resources/                  — интерфейс adminки
-├── chrome-extension/                        — код Chrome-расширения
+├── chrome-extension/                        — публичная сборка для Chrome Web Store
 │   ├── manifest.json
 │   ├── auth.js                              — URL API и авторизация
 │   ├── background.js                        — service worker
-│   ├── content.js / content.css             — инъекция кнопок Save на страницы
+│   ├── content.js / content.css             — инъекция кнопок на страницы
 │   ├── popup.html / popup.js / popup.css    — попап расширения
 │   └── parsers/
 │       ├── registry.js                      — реестр парсеров
 │       └── config-engine.js                 — движок DB-парсеров
+├── chrome-extension-dev/                    — dev-сборка (<all_urls>, "Send to Developer")
+│   ├── ... (всё что у prod, синхронизируется через cp)
+│   ├── dev-reporter.css
+│   ├── dev-reporter-popup.js                — кнопка «📤 Send to Developer»
+│   └── dev-reporter-bg.js                   — handler SEND_PAGE_REPORT в SW
 ├── database/migrations/
-└── routes/
-    ├── web.php                              — веб-маршруты
-    └── api.php                              — API-маршруты
+├── routes/
+│   ├── web.php                              — веб-маршруты
+│   └── api.php                              — API-маршруты
+└── .docs/                                   — внутренняя документация (architecture, парсеры, CWS)
 ```
+
+См. [.docs/architecture.md](.docs/architecture.md) — про разделение prod/dev сборок и поток обработки брони.
 
 ---
 
@@ -300,6 +316,24 @@ Adminка → раздел **Chrome Extension**
 4. Создать новый парсер в **Parsers** с нужным JSON-конфигом
 5. Расширение подхватит парсер автоматически при следующей загрузке страницы 
 
+### Поля брони
+
+> **Правило:** парсер извлекает **только** поля, которые отправляются в HelloOtel. Ничего «на всякий случай», ничего «для контекста в админке» — `meta_fields` блок не нужен, пока для него нет явно сформулированной задачи. Лишние поля не помогают — они увеличивают шанс валидационных ошибок (как было с `nights: "9 ночей"`, не integer) и усложняют отладку.
+
+Обязательный набор ([.docs/send_booking.md](.docs/send_booking.md)):
+
+| Поле | Назначение |
+|------|-----------|
+| `booking_code` | Номер заявки → `service_number` в HelloOtel |
+| `hotel_name` | Используется для авто-сопоставления `hotel_id` |
+| `subtitle` | Название типа номера → авто-сопоставление `room_type_id` |
+| `stay_dates` | Парсится в `arrival_at` / `departure_at` |
+| `reservation_at` | Дата создания брони → `operator_reservation_at` |
+| `total_price` | Сумма (валюта определяется по символу) → `tour_price_native` + `tour_price_native_currency` |
+| `tourists` | Массив `{ last_name, first_name, dob }` → `guest_name` + person_count_* |
+
+`nights`, `meal_plan`, `transfer`, `statuses`, `details_link`, `thumbnail`, `guests` как текст и `meta_fields` блок не нужны — сервер не отправляет их в HelloOtel, person_count_* считаются из массива `tourists`, nights вычисляется из дат.
+
 ### Типы парсеров
 
 **`card`** (по умолчанию) — список карточек броней:
@@ -309,24 +343,32 @@ Adminка → раздел **Chrome Extension**
   "card": "article.booking-card",
   "button": ".card-footer",
   "fields": {
-    "booking_code": { "sel": ".ref-code" },
-    "hotel_name":   { "sel": "h3.hotel-name" },
-    "total_price":  { "sel": ".price" },
-    "statuses":     { "sel": ".status-badge", "multi": true }
+    "booking_code":   { "sel": ".ref-code" },
+    "hotel_name":     { "sel": "h3.hotel-name" },
+    "subtitle":       { "sel": ".room-type" },
+    "total_price":    { "sel": ".price" },
+    "reservation_at": { "sel": ".booked-on" }
   },
   "label_maps": [{
     "item": ".detail-row",
     "label": ".label",
     "value": ".value",
     "fields": {
-      "stay_dates": ["stay", "date"],
-      "guests":     ["guest"],
-      "meal_plan":  ["meal", "board"],
-      "transfer":   ["transfer"]
+      "stay_dates": ["stay", "date"]
     }
-  }]
+  }],
+  "tourist_blocks": {
+    "item": ".passenger-row",
+    "fields": {
+      "last_name":  { "sel": ".surname" },
+      "first_name": { "sel": ".name" },
+      "dob":        { "sel": ".birth-date" }
+    }
+  }
 }
 ```
+
+`tourist_blocks` поддерживает два режима. Выше — **CSS-режим** (новый): значение каждого поля туриста берётся CSS-селектором, поддерживает `sel`, `attr`, `strip_prefix`, `strip_pattern` и т.д. Старый **label-режим** (`fields: { last_name: ["фамилия"], ... }`) тоже работает — выбирается автоматически по типу spec'а.
 
 **`form`** — страница одной брони (форма с подписями полей):
 
@@ -338,12 +380,9 @@ Adminка → раздел **Chrome Extension**
   "fields": {
     "booking_code": { "label_match": ["booking ref", "ref"] },
     "hotel_name":   { "label_match": ["hotel", "property"] },
+    "subtitle":     { "label_match": ["room type", "room"] },
     "stay_dates":   { "label_match": ["stay dates", "dates"] },
-    "guests":       { "label_match": ["guests", "pax"] },
-    "meal_plan":    { "label_match": ["meal plan", "board"] },
-    "transfer":     { "label_match": ["transfer"] },
-    "total_price":  { "label_match": ["total price", "amount"] },
-    "statuses":     { "label_match": ["status"], "as_array": true }
+    "total_price":  { "label_match": ["total price", "amount"] }
   }
 }
 ```
@@ -358,15 +397,39 @@ Adminка → раздел **Chrome Extension**
   "fields": {
     "booking_code": ["booking ref", "ref", "code"],
     "hotel_name":   ["hotel", "property"],
+    "subtitle":     ["room type", "room"],
     "stay_dates":   ["stay dates", "dates"],
-    "guests":       ["guests", "pax"],
-    "meal_plan":    ["meal plan", "meal"],
-    "transfer":     ["transfer"],
-    "total_price":  ["total price", "price", "total"],
-    "statuses":     { "keywords": ["status"], "as_array": true }
+    "total_price":  ["total price", "price", "total"]
   }
 }
 ```
+
+---
+
+## Тестирование парсеров
+
+Команда `php artisan parser:test` прогоняет парсер из БД против сохранённых **Page Reports** (HTML-снимков) без браузера. Использует PHP-порт `config-engine.js` в [app/Services/ParserEngineSimulator.php](app/Services/ParserEngineSimulator.php).
+
+```bash
+# Один отчёт (по id из таблицы extension_page_reports)
+php artisan parser:test 11
+
+# Все отчёты в БД
+php artisan parser:test --all
+
+# Принудительно использовать конкретный парсер
+php artisan parser:test 11 --parser=pegast
+
+# Только заголовки, без распечатки броней (быстрая проверка кол-ва)
+php artisan parser:test --all --limit=0
+
+# Полный JSON-результат
+php artisan parser:test 11 --json
+```
+
+Полезно после правок JSON-конфига: сразу видно, какие поля извлеклись из реальной страницы, без необходимости перезагружать расширение и кликать в браузере. Поддерживается тип `card` и все shared-секции конфига (`fields`, `meta_fields`, `label_maps`, `dl_maps`, `tourist_blocks` в обоих режимах). Типы `form` и `table` пока не реализованы в симуляторе — для них используйте реальное расширение.
+
+Подбор парсера в команде идентичен `ParserRegistry.find()` в JS: ищется по `domain` среди активных, выбирается самый длинный совпадающий `path_match`; если не нашлось — fallback в `extension_parser_rules`.
 
 ---
 

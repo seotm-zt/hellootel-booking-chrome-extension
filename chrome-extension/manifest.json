@@ -17,8 +17,9 @@
   },
   "host_permissions": [
     "https://booking-configurator.hellootel.com/*",
-    "https://demo.velikolepniy-vek.com/*",
-    "https://coralagency.ru/*"
+    "https://demo.velikolepniy-vek.com/hotel/book/history*",
+    "https://coralagency.ru/reservation/search*",
+    "https://agency.pegast.ru/MyAccount/Bookings*"
   ],
   "action": {
     "default_title": "Booking Saver for HelloOtel",
@@ -28,7 +29,8 @@
     {
       "matches": [
         "https://demo.velikolepniy-vek.com/hotel/book/history*",
-        "https://coralagency.ru/reservation/search*"
+        "https://coralagency.ru/reservation/search*",
+        "https://agency.pegast.ru/MyAccount/Bookings*"
       ],
       "js": [
         "auth.js",
