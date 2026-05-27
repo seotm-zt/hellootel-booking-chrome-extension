@@ -1,4 +1,14 @@
+/**
+ * Background service worker.
+ *
+ * Handles API requests on behalf of content scripts.
+ * Fetch from a service worker is not subject to Chrome's Private Network
+ * Access restriction that blocks non-secure-context pages from reaching
+ * loopback addresses (tour.localhost).
+ */
+
 importScripts("auth.js");
+importScripts("dev-reporter-bg.js");
 
 async function authedFetch(path, options = {}) {
   const token = await getToken();
@@ -82,7 +92,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "GET_ROOM_TYPES") {
     (async () => {
       try {
-        const data = await authedFetch(`/hotels/${message.hotelId}/room-types`);
+        const qs = new URLSearchParams();
+        if (message.arrivalAt)   qs.set("arrival_at",   message.arrivalAt);
+        if (message.departureAt) qs.set("departure_at", message.departureAt);
+        const suffix = qs.toString() ? `?${qs.toString()}` : "";
+        const data = await authedFetch(`/hotels/${message.hotelId}/room-types${suffix}`);
         sendResponse({ ok: true, data });
       } catch (err) {
         sendResponse({ ok: false, error: err.message });
@@ -95,18 +109,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     (async () => {
       try {
         const data = await authedFetch(`/hotels/${message.hotelId}/vote`);
-        sendResponse({ ok: true, data });
-      } catch (err) {
-        sendResponse({ ok: false, error: err.message });
-      }
-    })();
-    return true;
-  }
-
-  if (message.type === "GET_OPERATORS") {
-    (async () => {
-      try {
-        const data = await authedFetch("/operators");
         sendResponse({ ok: true, data });
       } catch (err) {
         sendResponse({ ok: false, error: err.message });
@@ -142,6 +144,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "GET_OPERATORS") {
+    (async () => {
+      try {
+        const data = await authedFetch("/operators");
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
   if (message.type === "LOAD_CURRENCIES") {
     (async () => {
       try {
@@ -162,26 +176,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
         const data = resp.ok ? await resp.json() : null;
         sendResponse({ ok: resp.ok, data });
-      } catch (err) {
-        sendResponse({ ok: false, error: err.message });
-      }
-    })();
-    return true;
-  }
-
-  // Dev only: send current page HTML to server as a page report
-  if (message.type === "SEND_PAGE_REPORT") {
-    (async () => {
-      try {
-        const data = await authedFetch("/page-report", {
-          method: "POST",
-          body: JSON.stringify({
-            url:   message.url   || "",
-            title: message.title || "",
-            html:  message.html  || "",
-          }),
-        });
-        sendResponse({ ok: true, data });
       } catch (err) {
         sendResponse({ ok: false, error: err.message });
       }

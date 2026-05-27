@@ -11,7 +11,6 @@ const loginSubmit         = document.getElementById("loginSubmit");
 const authenticatedSection = document.getElementById("authenticatedSection");
 const userNameLabel       = document.getElementById("userNameLabel");
 const logoutButton        = document.getElementById("logoutButton");
-const sendToDevButton     = document.getElementById("sendToDev");
 
 const STATUS_MAP = {
   "Не подтверждено": "Unconfirmed",
@@ -73,7 +72,7 @@ function createMetaRow(label, value) {
 function renderEmptyState(allConfirmed = false) {
   bookingsList.innerHTML = allConfirmed
     ? '<div class="popup__empty">No bookings yet. Click the "Send to HelloOtel" button on the booking history page.</div>'
-    : '<div class="popup__empty">No bookings yet. Click the "Send to HelloOtel" button on the booking history page.</div>';
+    : '<div class="popup__empty">No bookings yet. Click the “Send to HelloOtel” button on the booking history page.</div>';
   bookingCount.hidden = true;
 }
 
@@ -220,6 +219,7 @@ function renderBookings(bookings) {
         await deleteBookingFromServer(button.dataset.removeId);
         await render();
         showStatus("Booking removed.");
+        // Notify content script on the active tab to reset the button
         if (bookingCode) {
           const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
           if (tab?.id) {
@@ -232,6 +232,7 @@ function renderBookings(bookings) {
     });
   }
 }
+
 
 function showSentDataOverlay(processed, hellootel) {
   const existing = document.querySelector(".popup-overlay");
@@ -255,15 +256,10 @@ function showSentDataOverlay(processed, hellootel) {
   header.append(title, closeBtn);
   overlay.appendChild(header);
 
-  if (hellootel?.id) {
+  if (hellootel?.id || processed.hellootel_reservation_id) {
     const rid = document.createElement("div");
     rid.className = "popup-overlay__reservation-id";
-    rid.innerHTML = `Reservation ID <span>#${hellootel.id}</span>`;
-    overlay.appendChild(rid);
-  } else if (processed.hellootel_reservation_id) {
-    const rid = document.createElement("div");
-    rid.className = "popup-overlay__reservation-id";
-    rid.innerHTML = `Reservation ID <span>#${processed.hellootel_reservation_id}</span>`;
+    rid.innerHTML = `Reservation ID <span>#${hellootel?.id ?? processed.hellootel_reservation_id}</span>`;
     overlay.appendChild(rid);
   } else if (hellootel?.error) {
     const err = document.createElement("div");
@@ -315,7 +311,6 @@ async function render() {
 
   loginSection.hidden = true;
   authenticatedSection.hidden = false;
-
   const displayName = auth.user?.name || auth.user?.username || "";
   const loginNum    = auth.user?.username;
   userNameLabel.textContent = "";
@@ -337,40 +332,6 @@ async function render() {
   }
 }
 
-// ── Send to Developer ─────────────────────────────────────────────────
-sendToDevButton.addEventListener("click", async () => {
-  sendToDevButton.disabled = true;
-  sendToDevButton.textContent = "Sending...";
-  hideStatus();
-
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) throw new Error("No active tab found.");
-
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: () => document.documentElement.outerHTML,
-    });
-
-    const html = results?.[0]?.result || "";
-    const response = await chrome.runtime.sendMessage({
-      type: "SEND_PAGE_REPORT",
-      url:   tab.url   || "",
-      title: tab.title || "",
-      html,
-    });
-
-    if (!response?.ok) throw new Error(response?.error || "Failed");
-    showStatus("✓ Page sent to developer.");
-  } catch (err) {
-    showStatus(`Failed: ${err.message || "error"}`, true);
-  } finally {
-    sendToDevButton.disabled = false;
-    sendToDevButton.textContent = "📤 Send to Developer";
-  }
-});
-
-// ── Auth ──────────────────────────────────────────────────────────────
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   loginSubmit.disabled = true;

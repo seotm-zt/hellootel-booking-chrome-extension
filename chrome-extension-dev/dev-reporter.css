@@ -1,0 +1,24 @@
+/* Dev Reporter — visual additions for the dev build only. */
+
+.popup__dev-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #f0592b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.popup__button--send {
+  background: #f0592b;
+  color: #fff;
+  font-size: 14px;
+  padding: 10px;
+  width: 100%;
+}
+.popup__button--send:hover { background: #d44d23; }
+
+.popup__input:focus { border-color: #f0592b; }

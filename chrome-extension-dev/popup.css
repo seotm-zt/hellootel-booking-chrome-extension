@@ -50,18 +50,6 @@ body {
   text-align: center;
 }
 
-.popup__dev-badge {
-  display: inline-block;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: #f0592b;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  vertical-align: middle;
-  margin-left: 4px;
-}
-
 .popup__badge {
   display: inline-flex;
   align-items: center;
@@ -114,7 +102,7 @@ body {
   transition: border-color 0.15s;
 }
 
-.popup__input:focus { border-color: #f0592b; }
+.popup__input:focus { border-color: #111827; }
 
 .popup__button {
   min-height: 40px;
@@ -130,15 +118,6 @@ body {
 
 .popup__button--primary { background: #f0592b; }
 .popup__button--primary:hover { background: #d44d23; }
-
-.popup__button--send {
-  background: #f0592b;
-  color: #fff;
-  font-size: 14px;
-  padding: 10px;
-  width: 100%;
-}
-.popup__button--send:hover { background: #d44d23; }
 
 .popup__button--sm {
   min-height: 28px;

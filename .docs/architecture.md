@@ -56,16 +56,40 @@
 
 ## Файлы расширения
 
+### Публичная сборка `chrome-extension/`
+
 | Файл | Роль |
 |------|------|
-| `manifest.json` | Конфигурация расширения: разрешения, content scripts |
-| `auth.js` | URL API, функции `getToken()`, `isAuthorized()`, login/logout |
+| `manifest.json` | Конфигурация MV3: name «Booking Saver for HelloOtel», permission `storage`, host_permissions на API + два supported сайта, один content_scripts блок |
+| `auth.js` | URL API (`https://booking-configurator.hellootel.com/api/v1/extension`), функции `getToken()`, `isAuthorized()`, login/logout |
 | `background.js` | Service worker: проксирует fetch к API, обрабатывает все типы сообщений |
-| `content.js` | Инжектирует кнопки на страницу; управляет модалом подтверждения |
+| `content.js` | Инжектирует кнопки на страницу; управляет модалом подтверждения и sent-просмотром |
 | `content.css` | Стили кнопок, модала и тоста |
 | `popup.html/js/css` | Попап: вход в аккаунт + логин-номер, список броней (только чтение + Remove) |
 | `parsers/registry.js` | Реестр парсеров, матчинг URL |
 | `parsers/config-engine.js` | Движок: строит парсер из JSON-конфига |
+
+### Dev-сборка `chrome-extension-dev/`
+
+Содержит **все файлы публичной сборки плюс**:
+
+| Файл | Роль |
+|------|------|
+| `manifest.json` | Имя «Booking Saver — Dev Reporter», host_permissions `<all_urls>`, matches `<all_urls>`, дополнительно permissions `scripting`, `tabs`, `activeTab` |
+| `auth.js` | API_BASE указывает на `http://booking.localhost/api/v1/extension` (локальная разработка) |
+| `dev-reporter.css` | dev-only: стили `.popup__dev-badge` и `.popup__button--send` |
+| `dev-reporter-popup.js` | dev-only: на загрузке попапа добавляет DEV-бейдж и кнопку «📤 Send to Developer»; обработчик клика снимает HTML текущей вкладки через `chrome.scripting.executeScript` и шлёт SW сообщение `SEND_PAGE_REPORT` |
+| `dev-reporter-bg.js` | dev-only: handler в service worker, обрабатывает `SEND_PAGE_REPORT` и POST'ит на `/api/v1/extension/page-report` |
+
+В dev `popup.html` дополнительно содержит **две строки**:
+- `<link rel="stylesheet" href="dev-reporter.css">`
+- `<script src="dev-reporter-popup.js"></script>`
+
+А `background.js` — одну строку: `importScripts("dev-reporter-bg.js")`.
+
+### Синхронизация prod → dev
+
+`content.js`, `content.css`, `popup.js`, `popup.css`, `parsers/*`, `icons/*` идентичны в обеих сборках — синхронизируются через `cp`. Менять руками нужно только `manifest.json` (намеренно разный) и `auth.js` (намеренно разный config). Подробный гайд — в memory проекта (`project_extension_dev_separate_build.md`).
 
 ## Ключевой принцип: изменения только на стороне сервера
 
@@ -113,14 +137,34 @@ processed_bookings (чистовые данные)
 
 Цвет кнопки определяется состоянием брони, загруженным с сервера при старте. Ключ сопоставления — только `booking_code` (домен не используется, так как бронь может быть сохранена с превью-страницы):
 
-| Цвет | Текст | Смысл |
-|------|-------|-------|
-| Синий (активная) | Send to HelloOtel | Бронь ещё не сохранена в БД |
-| Жёлтый (активная) | Update in database | Сохранена, но не подтверждена оператором |
-| Оранжевый (активная) | Confirm & send to HelloOtel | Подтверждена, но ещё не отправлена в HelloOtel |
-| Зелёный (disabled) | Sent to HelloOtel ✓ | Принята HelloOtel (`hellootel_reservation_id` заполнен) |
+| Цвет | Текст | Смысл | Поведение клика |
+|------|-------|-------|-----------------|
+| Синий (активная) | Send to HelloOtel | Бронь ещё не сохранена в БД | Сохраняет бронь, открывает Confirm-модал |
+| Жёлтый (активная) | Confirm & send to HelloOtel | Сохранена, hotel автоматически сматчен, ждёт подтверждения | Открывает Confirm-модал |
+| Оранжевый (активная) | Hotel not found in HelloOtel | Сохранена, но hotel не сматчен (надо выбрать вручную) | Открывает Confirm-модал |
+| Красный (активная) | Failed to send booking | Подтверждена, HelloOtel отклонил отправку | Открывает Confirm-модал для retry |
+| Зелёный (активная) | Sent to HelloOtel ✓ | Принята HelloOtel (`hellootel_reservation_id` заполнен) | Открывает read-only модал с тем, что реально ушло в HelloOtel |
+
+Текстовые лейблы определены в [content.js](../chrome-extension/content.js) константами `BUTTON_LABEL`, `CONFIRMED_LABEL`, `HOTEL_NOT_FOUND_LABEL`, `FAILED_LABEL`, `SENT_LABEL`.
 
 Кнопка **Cancel Send** в модале подтверждения удаляет бронь из БД и возвращает кнопку в исходное синее состояние.
+
+### Зелёная кнопка: read-only sent view
+
+После успешной отправки в HelloOtel кнопка остаётся **кликабельной**. Хелпер `attachSentClickHandler(btn, parsedCode)` через `cloneNode(true)` сбрасывает прежние listeners сохранения и навешивает обработчик, который открывает модал `showSentDataModal(processed)`. Данные берутся из кэша `sentBookingProcessed`, а если кэш пуст — подгружаются с сервера через `loadBookingsFromServer()` и сматчиваются по `booking_code`.
+
+### Свежесть данных после confirm
+
+`showConfirmModal` резолвится объектом `{ status, processed }`:
+
+- `status: "sent" | "confirmed_only" | "deleted" | "cancelled"`
+- `processed` — свежий `ProcessedBooking` из ответа `/bookings/{id}/confirm` (`result.data`), с учётом всех правок пользователя в форме.
+
+В кэш `sentBookingProcessed` пишется именно `modalResult.processed` (а не pre-confirm снимок `result.processed` от save-эндпоинта), поэтому повторное открытие зелёной кнопки показывает актуальные данные сразу, без перезагрузки страницы.
+
+### Список типов номеров с учётом дат
+
+`loadRoomTypes(hotelId, selectEl, preselectedId, arrivalAt, departureAt)` пробрасывает даты в `getRoomTypesFromServer` и далее в SW → query `?arrival_at=&departure_at=`. Это важно, потому что HelloOtel возвращает только типы номеров, доступные на указанный период. При изменении полей `#ttb-arrival` / `#ttb-departure` в Confirm-модале список перезагружается с сохранением ранее выбранного типа, если он есть в новой выборке (нормализация через `String(t.id)` — `option.value` всегда строка).
 
 ## Приоритет матчинга
 

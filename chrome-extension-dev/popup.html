@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Booking Saver DEV</title>
+  <title>Booking Saver for HelloOtel</title>
   <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="dev-reporter.css">
 </head>
 <body>
   <main class="popup">
@@ -13,7 +14,7 @@
     <header class="popup__header">
       <div class="popup__brand">
         <img src="icons/icon32.png" class="popup__logo" alt="">
-        <span class="popup__title">HelloOtel<br>Booking Saver <span class="popup__dev-badge">DEV</span></span>
+        <span class="popup__title">Booking Saver<br>for HelloOtel</span>
       </div>
       <span class="popup__badge" id="bookingCount" hidden>0</span>
     </header>
@@ -35,12 +36,6 @@
         <span id="userNameLabel" class="popup__user-name"></span>
         <button id="logoutButton" class="popup__button popup__button--sm" type="button">Sign out</button>
       </div>
-
-      <!-- Send to Developer button -->
-      <button id="sendToDev" class="popup__button popup__button--send" type="button">
-        📤 Send to Developer
-      </button>
-
       <section id="bookingsList" class="popup__list"></section>
     </section>
 
@@ -50,5 +45,6 @@
 
   <script src="auth.js"></script>
   <script src="popup.js"></script>
+  <script src="dev-reporter-popup.js"></script>
 </body>
 </html>

@@ -83,7 +83,8 @@ function sendMessage(msg) {
 const loadBookingsFromServer = ()                   => sendMessage({ type: "LOAD_BOOKINGS" }).then(d => d?.data ?? []);
 const saveBookingToServer    = (booking)            => sendMessage({ type: "SAVE_BOOKING",    payload: booking });
 const searchHotelsOnServer   = (query)              => sendMessage({ type: "SEARCH_HOTELS",   query }).then(d => d?.data ?? []);
-const getRoomTypesFromServer = (hotelId)            => sendMessage({ type: "GET_ROOM_TYPES",  hotelId }).then(d => d?.data ?? []);
+const getRoomTypesFromServer = (hotelId, arrivalAt, departureAt) =>
+  sendMessage({ type: "GET_ROOM_TYPES", hotelId, arrivalAt, departureAt }).then(d => d?.data ?? []);
 const confirmBookingOnServer  = (bookingId, payload) => sendMessage({ type: "CONFIRM_BOOKING",  bookingId, payload });
 const deleteBookingFromServer = (bookingId)          => sendMessage({ type: "DELETE_BOOKING",   bookingId });
 const getHotelVoteFromServer  = (hotelId)            => sendMessage({ type: "GET_HOTEL_VOTE",   hotelId }).then(d => d?.vote ?? null);
@@ -244,17 +245,18 @@ function buildTouristRow(t = {}) {
   return div;
 }
 
-async function loadRoomTypes(hotelId, selectEl, preselectedId) {
+async function loadRoomTypes(hotelId, selectEl, preselectedId, arrivalAt, departureAt) {
   selectEl.disabled = true;
   selectEl.innerHTML = '<option value="">Loading...</option>';
   try {
-    const types = await getRoomTypesFromServer(hotelId);
+    const types = await getRoomTypesFromServer(hotelId, arrivalAt, departureAt);
     selectEl.innerHTML = '<option value="">— select room type —</option>';
+    const wanted = preselectedId != null ? String(preselectedId) : "";
     for (const t of types) {
       const opt = document.createElement("option");
       opt.value       = t.id;
       opt.textContent = t.name;
-      if (preselectedId && t.id === preselectedId) opt.selected = true;
+      if (wanted && String(t.id) === wanted) opt.selected = true;
       selectEl.appendChild(opt);
     }
     selectEl.disabled = false;
@@ -264,46 +266,169 @@ async function loadRoomTypes(hotelId, selectEl, preselectedId) {
   }
 }
 
+function fmtDate(val) {
+  if (!val) return null;
+  const s = String(val).slice(0, 10); // YYYY-MM-DD
+  const [y, m, d] = s.split("-");
+  return y && m && d ? `${d}.${m}.${y}` : s;
+}
+
+function staticField(label, value) {
+  if (value == null || value === "") return null;
+  const wrap = document.createElement("div");
+  const lbl = document.createElement("label");
+  lbl.className = "ttb-modal__label";
+  lbl.textContent = label;
+  const val = document.createElement("div");
+  val.className = "ttb-modal__static-value";
+  val.textContent = value;
+  wrap.append(lbl, val);
+  return wrap;
+}
+
+function staticRow2(pairs) {
+  const row = document.createElement("div");
+  row.className = "ttb-modal__row-2";
+  for (const [label, value] of pairs) {
+    const f = staticField(label, value);
+    if (f) row.appendChild(f);
+    else row.appendChild(document.createElement("div"));
+  }
+  return row;
+}
+
+function staticRow3(pairs) {
+  const row = document.createElement("div");
+  row.className = "ttb-modal__row-3";
+  for (const [label, value] of pairs) {
+    const f = staticField(label, value ?? "—");
+    row.appendChild(f);
+  }
+  return row;
+}
+
 function showSentDataModal(processed) {
   destroyModal();
+
+  const operatorName = processed.operator_name
+    || (_operators || []).find(o => o.id == processed.operator_id)?.name
+    || (processed.operator_id ? `#${processed.operator_id}` : null);
+
+  const tourists = (processed.tourists || [])
+    .map(t => {
+      const name = [t.last_name, t.first_name].filter(Boolean).join(" ");
+      const dob  = fmtDate(t.dob || t.birth_date);
+      return { name, dob };
+    })
+    .filter(t => t.name);
 
   const overlay = document.createElement("div");
   overlay.className = "ttb-modal-overlay";
 
-  const rows = [
-    ["Reservation ID",  processed.hellootel_reservation_id ? `#${processed.hellootel_reservation_id}` : null],
-    ["Hotel",           processed.hotel_name],
-    ["Room type",       processed.room_type_name],
-    ["Check-in",        processed.arrival_at],
-    ["Check-out",       processed.departure_at],
-    ["Adults",          processed.person_count_adults],
-    ["Children",        processed.person_count_children],
-    ["Infants",         processed.person_count_teens],
-    ["Price",           processed.price ? `${processed.price} ${processed.currency_code || ""}`.trim() : null],
-    ["Booking #",       processed.booking_code],
-    ["Operator",        processed.operator_name || (processed.operator_id ? `#${processed.operator_id}` : null)],
-    ["Booking date",    processed.reservation_date],
-    ["Vote",            processed.hotel_vote != null ? processed.hotel_vote : null],
-  ].filter(([, v]) => v != null && v !== "");
+  const modal = document.createElement("div");
+  modal.className = "ttb-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
 
-  overlay.innerHTML = `
-    <div class="ttb-modal" role="dialog" aria-modal="true">
-      <div class="ttb-modal__header">
-        <span class="ttb-modal__title">Sent to HelloOtel ✓</span>
-        <button class="ttb-modal__close" type="button" aria-label="Close">✕</button>
-      </div>
-      <div class="ttb-modal__body">
-        <dl class="ttb-sent-data">
-          ${rows.map(([label, value]) => `
-            <dt>${label}</dt>
-            <dd>${value}</dd>
-          `).join("")}
-        </dl>
-      </div>
-    </div>
-  `;
+  // Header
+  const header = document.createElement("div");
+  header.className = "ttb-modal__header";
+  const titleEl = document.createElement("span");
+  titleEl.className = "ttb-modal__title";
+  titleEl.textContent = "Sent to HelloOtel ✓";
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "ttb-modal__close";
+  closeBtn.type = "button";
+  closeBtn.setAttribute("aria-label", "Close");
+  closeBtn.textContent = "✕";
+  closeBtn.addEventListener("click", () => overlay.remove());
+  header.append(titleEl, closeBtn);
 
-  overlay.querySelector(".ttb-modal__close").addEventListener("click", () => overlay.remove());
+  // Body
+  const body = document.createElement("div");
+  body.className = "ttb-modal__body";
+
+  // Reservation ID badge
+  if (processed.hellootel_reservation_id) {
+    const badge = document.createElement("div");
+    badge.className = "ttb-modal__reservation-badge";
+    badge.textContent = `Reservation ID: #${processed.hellootel_reservation_id}`;
+    body.appendChild(badge);
+  }
+
+  // Hotel
+  const hotelField = staticField("Hotel", processed.hotel_name);
+  if (hotelField) body.appendChild(hotelField);
+
+  // Vote stars display
+  if (processed.hotel_vote != null) {
+    const voteWrap = document.createElement("div");
+    const voteLbl = document.createElement("label");
+    voteLbl.className = "ttb-modal__label";
+    voteLbl.textContent = "Your hotel rating";
+    const stars = document.createElement("div");
+    stars.className = "ttb-stars ttb-stars--readonly";
+    const score = Math.round(processed.hotel_vote / 10);
+    for (let i = 1; i <= 10; i++) {
+      const s = document.createElement("span");
+      s.className = "ttb-star" + (i <= score ? " ttb-star--active" : "");
+      s.textContent = i <= score ? "★" : "☆";
+      stars.appendChild(s);
+    }
+    voteWrap.append(voteLbl, stars);
+    body.appendChild(voteWrap);
+  }
+
+  // Room type
+  const roomField = staticField("Room type", processed.room_type_name);
+  if (roomField) body.appendChild(roomField);
+
+  // Section: Booking details
+  const section = document.createElement("div");
+  section.className = "ttb-modal__section-title";
+  section.textContent = "Booking details";
+  body.appendChild(section);
+
+  const opField = staticField("Operator", operatorName);
+  if (opField) body.appendChild(opField);
+
+  body.appendChild(staticRow2([
+    ["Booking number", processed.booking_code],
+    ["Booking date",   fmtDate(processed.reservation_date)],
+  ]));
+
+  body.appendChild(staticRow2([
+    ["Check-in",  fmtDate(processed.arrival_at)],
+    ["Check-out", fmtDate(processed.departure_at)],
+  ]));
+
+  body.appendChild(staticRow2([
+    ["Price",    processed.price ? String(processed.price) : null],
+    ["Currency", processed.currency_code],
+  ]));
+
+  body.appendChild(staticRow3([
+    ["Adults",   processed.person_count_adults != null ? String(processed.person_count_adults) : "0"],
+    ["Children", processed.person_count_children != null ? String(processed.person_count_children) : "0"],
+    ["Infants",  processed.person_count_teens != null ? String(processed.person_count_teens) : "0"],
+  ]));
+
+  // Tourists
+  if (tourists.length) {
+    const tSection = document.createElement("div");
+    tSection.className = "ttb-modal__section-title";
+    tSection.textContent = "Guests";
+    body.appendChild(tSection);
+    for (const t of tourists) {
+      body.appendChild(staticRow2([
+        ["Name", t.name],
+        ["Date of birth", t.dob || null],
+      ]));
+    }
+  }
+
+  modal.append(header, body);
+  overlay.appendChild(modal);
   overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 }
@@ -500,9 +625,27 @@ async function showConfirmModal(saveResult) {
 
   roomSelect.addEventListener("change", updateConfirmState);
 
+  const arrivalInput   = overlay.querySelector("#ttb-arrival");
+  const departureInput = overlay.querySelector("#ttb-departure");
+
+  function reloadRoomTypesForDates() {
+    if (!selectedHotelId) return;
+    const keepSelected = roomSelect.value || null;
+    return loadRoomTypes(
+      selectedHotelId,
+      roomSelect,
+      keepSelected,
+      arrivalInput.value || null,
+      departureInput.value || null,
+    ).then(updateConfirmState);
+  }
+
+  arrivalInput.addEventListener("change", reloadRoomTypesForDates);
+  departureInput.addEventListener("change", reloadRoomTypesForDates);
+
   // ── Pre-load room types and vote if hotel already matched ────────
   if (pre.hotelId) {
-    await loadRoomTypes(pre.hotelId, roomSelect, pre.roomTypeId);
+    await loadRoomTypes(pre.hotelId, roomSelect, pre.roomTypeId, pre.arrivalAt || null, pre.departureAt || null);
     updateConfirmState();
     if (selectedVote === null) {
       getHotelVoteFromServer(pre.hotelId).then(v => {
@@ -539,7 +682,7 @@ async function showConfirmModal(saveResult) {
         selectedHotelName = h.name;
         hotelInput.value  = h.name;
         hideSuggestions();
-        await loadRoomTypes(h.id, roomSelect, null);
+        await loadRoomTypes(h.id, roomSelect, null, arrivalInput.value || null, departureInput.value || null);
         updateConfirmState();
         getHotelVoteFromServer(h.id).then(v => { updateStars(v ? Math.round(v / 10) : 0); }).catch(() => {});
       });
@@ -561,13 +704,15 @@ async function showConfirmModal(saveResult) {
 
   hotelInput.addEventListener("blur", () => setTimeout(hideSuggestions, 150));
 
-  // ── Return Promise resolving to true / false / "deleted" ─────────
+  // ── Return Promise resolving to { status, processed? } ──────────
+  // status: "sent" | "confirmed_only" | "deleted" | "cancelled"
+  // processed: fresh ProcessedBooking from /confirm response, when available
   return new Promise((resolve) => {
 
     function closeCancel() {
       destroyModal();
       showToast("Booking saved. Not yet confirmed.");
-      resolve(false);
+      resolve({ status: "cancelled" });
     }
 
     overlay.querySelector(".ttb-modal__close").addEventListener("click", closeCancel);
@@ -586,7 +731,7 @@ async function showConfirmModal(saveResult) {
         await deleteBookingFromServer(raw.id);
         destroyModal();
         showToast("Booking deleted from database.");
-        resolve("deleted");
+        resolve({ status: "deleted" });
       } catch (err) {
         deleteBtn.disabled    = false;
         deleteBtn.textContent = "Delete from database";
@@ -644,8 +789,8 @@ async function showConfirmModal(saveResult) {
           const choice = await showHellootelErrorDialog(result.hellootel.error);
           if (choice === "ignore") {
             destroyModal();
-            showToast("Booking confirmed ✓ (HelloOtel skipped)");
-            resolve(true);
+            showToast("Failed to send HelloOtel ! (Booking confirmed)");
+            resolve({ status: "confirmed_only", processed: result?.data ?? null });
           }
           // "fix" → modal stays open, user can edit and retry
           return;
@@ -654,15 +799,18 @@ async function showConfirmModal(saveResult) {
         destroyModal();
         const wasSent = !!result?.hellootel?.id;
         showToast(wasSent ? "Booking sent to HelloOtel ✓" : "Booking confirmed ✓");
-        resolve(wasSent ? "sent" : true);
+        resolve({
+          status:    wasSent ? "sent" : "confirmed_only",
+          processed: result?.data ?? null,
+        });
       } catch (err) {
         confirmBtn.disabled    = false;
         confirmBtn.textContent = "Retry";
         const choice = await showHellootelErrorDialog(err.message || "Connection error");
         if (choice === "ignore") {
           destroyModal();
-          showToast("Booking confirmed ✓ (HelloOtel skipped)");
-          resolve(true);
+          showToast("Failed to send HelloOtel ! (Booking confirmed)");
+          resolve({ status: "confirmed_only", processed: null });
         }
         // "fix" → modal stays open
       }
@@ -672,11 +820,39 @@ async function showConfirmModal(saveResult) {
 
 // ── Inject save button ────────────────────────────────────────────────
 
+// Swap a button's click handler to "show sent data" mode.
+// Clones the node when it's already in the DOM to drop prior listeners.
+// Returns the (possibly new) node — callers must reassign their reference.
+function attachSentClickHandler(btn, parsedCode) {
+  const inDom  = !!btn.parentNode;
+  const target = inDom ? btn.cloneNode(true) : btn;
+  if (inDom) btn.replaceWith(target);
+  target.disabled = false;
+  target.addEventListener("click", async () => {
+    target.disabled = true;
+    try {
+      let processed = parsedCode ? sentBookingProcessed.get(parsedCode) : null;
+      if (!processed && parsedCode) {
+        const bookings = await loadBookingsFromServer();
+        const match = bookings.find(b => b.booking_code === parsedCode && b.processed_booking?.hellootel_reservation_id);
+        processed = match?.processed_booking ?? null;
+        if (processed) sentBookingProcessed.set(parsedCode, processed);
+      }
+      if (processed) showSentDataModal(processed);
+    } catch (e) {
+      console.error("[TTB] failed to load sent booking", e);
+    } finally {
+      target.disabled = false;
+    }
+  });
+  return target;
+}
+
 async function injectButton(card, parser) {
   if (card.hasAttribute(ENHANCED_ATTR)) return;
   card.setAttribute(ENHANCED_ATTR, "true");
 
-  const btn = document.createElement("button");
+  let btn = document.createElement("button");
   btn.type      = "button";
   btn.className = "ttb-save-booking-button";
 
@@ -687,21 +863,11 @@ async function injectButton(card, parser) {
   const wrap = document.createElement("div");
   wrap.className = "ttb-save-booking-actions";
 
+
   if (parsedCode && sentCodes.has(parsedCode)) {
     btn.textContent = SENT_LABEL;
     btn.classList.add("ttb-save-booking-button--sent");
-    btn.addEventListener("click", async () => {
-      let processed = sentBookingProcessed.get(parsedCode);
-      if (!processed) {
-        try {
-          const bookings = await loadBookingsFromServer();
-          const match = bookings.find(b => b.booking_code === parsedCode && b.processed_booking?.hellootel_reservation_id);
-          processed = match?.processed_booking ?? null;
-          if (processed) sentBookingProcessed.set(parsedCode, processed);
-        } catch {}
-      }
-      if (processed) showSentDataModal(processed);
-    });
+    btn = attachSentClickHandler(btn, parsedCode);
     wrap.append(btn);
     const container = parser.getButtonContainer(card);
     const placement = parser.buttonPlacement ?? "inside";
@@ -760,6 +926,7 @@ async function injectButton(card, parser) {
         btn.classList.add("ttb-save-booking-button--sent");
         if (parsedCode) sentBookingProcessed.set(parsedCode, result.processed);
         showSentDataModal(result.processed);
+        btn = attachSentClickHandler(btn, parsedCode);
         return;
       }
 
@@ -778,17 +945,22 @@ async function injectButton(card, parser) {
       }
 
       const modalResult = await showConfirmModal(result);
+      const modalStatus = modalResult?.status;
+      // Server returns the up-to-date ProcessedBooking from /confirm; fall back
+      // to the pre-confirm snapshot only if the modal couldn't capture it.
+      const freshProcessed = modalResult?.processed ?? result.processed ?? null;
 
-      if (modalResult === "deleted") {
+      if (modalStatus === "deleted") {
         btn.textContent = BUTTON_LABEL;
         btn.disabled = false;
         btn.classList.remove("ttb-save-booking-button--sent", "ttb-save-booking-button--confirmed", "ttb-save-booking-button--saved", "ttb-save-booking-button--notfound");
-      } else if (modalResult === "sent") {
+      } else if (modalStatus === "sent") {
         btn.textContent = SENT_LABEL;
         btn.classList.remove("ttb-save-booking-button--confirmed", "ttb-save-booking-button--saved");
         btn.classList.add("ttb-save-booking-button--sent");
-        if (parsedCode && result.processed) sentBookingProcessed.set(parsedCode, result.processed);
-      } else if (modalResult === true) {
+        if (parsedCode && freshProcessed) sentBookingProcessed.set(parsedCode, freshProcessed);
+        btn = attachSentClickHandler(btn, parsedCode);
+      } else if (modalStatus === "confirmed_only") {
         // confirmed but not sent to HellOotel (no hotel or send failed)
         btn.textContent = FAILED_LABEL;
         btn.disabled = false;
