@@ -41,7 +41,7 @@ class BookingProcessorService
 
         [$hotelId, $roomTypeId, $roomTypeName] = $this->matchHotelAndRoom($booking, $fieldMap);
 
-        [$adults, $children, $infants] = $this->parseGuestCounts($booking);
+        [$adults, $children, $infants] = $this->parseGuestCounts($booking, $arrival);
 
         $processed = ProcessedBooking::create([
             'source_booking_id'     => $booking->id,
@@ -292,9 +292,12 @@ class BookingProcessorService
         return array_values(array_filter($statuses))[0] ?? null;
     }
 
-    // Returns [adults, children, infants] — uses explicit booking fields first,
-    // then falls back to parsing "1 ADL , 2 CHD"-style strings from guests.
-    private function parseGuestCounts(ExtensionBooking $booking): array
+    // Returns [adults, children, infants]. Sources, in order:
+    //   1. explicit booking fields
+    //   2. "1 ADL, 2 CHD" markers in guests string
+    //   3. derive from tourists' DOB vs arrival date (0-5 = infant, 6-12 = child, 13+ = adult)
+    //   4. fall back to "all tourists = adults"
+    private function parseGuestCounts(ExtensionBooking $booking, ?string $arrivalAt = null): array
     {
         $adults   = $booking->adults;
         $children = $booking->children;
@@ -307,7 +310,26 @@ class BookingProcessorService
             if (preg_match('/(\d+)\s*INF/i', $g, $m)) $infants  = (int) $m[1];
         }
 
-        // Also derive from tourists array if still missing
+        // Derive counts by age at arrival when explicit fields are missing.
+        // Tourists without a DOB are counted as adults (safest default).
+        if ($adults === null && $children === null && $infants === null
+            && !empty($booking->tourists) && $arrivalAt) {
+            $arrival = Carbon::parse($arrivalAt);
+            $a = 0; $c = 0; $i = 0;
+            foreach ($booking->tourists as $t) {
+                $dob = $this->tryParseDate($t['dob'] ?? '');
+                if (!$dob) { $a++; continue; }
+                $age = (int) Carbon::parse($dob)->diffInYears($arrival);
+                if ($age <= 5)      $i++;
+                elseif ($age <= 12) $c++;
+                else                $a++;
+            }
+            $adults   = $a;
+            $children = $c;
+            $infants  = $i;
+        }
+
+        // Last resort: count all tourists as adults
         if ($adults === null && !empty($booking->tourists)) {
             $adults = count($booking->tourists);
         }

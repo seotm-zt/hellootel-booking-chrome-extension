@@ -23,6 +23,30 @@
  *                               "before" — inserted as sibling before the container
  *                               "after"  — inserted as sibling after the container
  *
+ * ─── cross-element extraction (type: "card") ──────────────────────────────────
+ *
+ *   data_root   {object?}  Use a DIFFERENT element as the extraction root for
+ *                          fields / label_maps / dl_maps / meta_* / tourist_blocks.
+ *                          The button still injects relative to `card`.
+ *                          Shape: { selector_template, code_source }
+ *                            selector_template — CSS selector with "{code}" placeholder.
+ *                            code_source       — normal field spec used to extract
+ *                                                the code from the original card.
+ *                          Example: card = button in a modal, data_root resolves to
+ *                          the booking row #cl_{code} elsewhere in the page.
+ *
+ *   card_root   {string?}  CSS selector for an ancestor of `card` whose subtree is
+ *                          the extraction root for card_fields / card_label_maps.
+ *                          When omitted, card_fields use `card` directly.
+ *                          Example: "#modalContainer" lifts scope from the inner
+ *                          pay button up to the whole modal.
+ *
+ *   card_fields       {object?}  Same shape as `fields`. Extracted from card_root.
+ *                                Use for data that lives in the card/modal scope
+ *                                (e.g. total price shown only in the popup).
+ *
+ *   card_label_maps   {array?}   Same shape as `label_maps`. Evaluated on card_root.
+ *
  * ─── fields ───────────────────────────────────────────────────────────────────
  *
  *   Each key maps to a booking field (booking_code, hotel_name, stay_dates …).
@@ -148,13 +172,44 @@ const ConfigParserEngine = (() => {
       parseCard(card) {
         const result = {};
 
+        // ── resolve extraction roots ────────────────────────────────────────
+        let dataRoot = card;
+        if (cfg.data_root && cfg.data_root.selector_template) {
+          const codeSpec = cfg.data_root.code_source;
+          const code = codeSpec ? _extractField(card, codeSpec) : null;
+          if (code) {
+            const sel = cfg.data_root.selector_template.replace(/\{code\}/g, code);
+            const found = document.querySelector(sel);
+            if (found) dataRoot = found;
+          }
+        }
+        const cardRoot = cfg.card_root
+          ? (card.closest(cfg.card_root) || card)
+          : card;
+
         if (cfg.fields) {
           for (const [field, spec] of Object.entries(cfg.fields)) {
-            result[field] = _extractField(card, spec);
+            result[field] = _extractField(dataRoot, spec);
           }
         }
 
-        _applyCommonMaps(card, cfg, result);
+        if (cfg.card_fields) {
+          for (const [field, spec] of Object.entries(cfg.card_fields)) {
+            const val = _extractField(cardRoot, spec);
+            if (val !== null && val !== undefined && val !== "" &&
+                !(Array.isArray(val) && val.length === 0)) {
+              result[field] = val;
+            }
+          }
+        }
+
+        _applyCommonMaps(dataRoot, cfg, result);
+
+        if (cfg.card_label_maps) {
+          for (const map of cfg.card_label_maps) {
+            Object.assign(result, _extractLabelMap(cardRoot, map));
+          }
+        }
 
         return result;
       },

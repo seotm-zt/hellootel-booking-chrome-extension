@@ -58,13 +58,66 @@ class ParserEngineSimulator
     {
         $result = [];
 
+        // Resolve alternative extraction roots (mirrors config-engine.js):
+        //   data_root  → "fields/maps/tourist_blocks come from here, not from card"
+        //   card_root  → ancestor of card that scopes card_fields/card_label_maps
+        $dataRoot = $this->resolveDataRoot($card, $cfg, $xpath);
+        $cardRoot = $this->resolveCardRoot($card, $cfg, $xpath);
+
         foreach ($cfg['fields'] ?? [] as $field => $spec) {
-            $result[$field] = $this->extractField($card, $spec, $xpath);
+            $result[$field] = $this->extractField($dataRoot, $spec, $xpath);
         }
 
-        $this->applyCommonMaps($card, $cfg, $result, $xpath);
+        foreach ($cfg['card_fields'] ?? [] as $field => $spec) {
+            $val = $this->extractField($cardRoot, $spec, $xpath);
+            if ($val !== null && $val !== '' && $val !== []) {
+                $result[$field] = $val;
+            }
+        }
+
+        $this->applyCommonMaps($dataRoot, $cfg, $result, $xpath);
+
+        foreach ($cfg['card_label_maps'] ?? [] as $map) {
+            $result = array_merge($result, $this->extractLabelMap($cardRoot, $map, $xpath));
+        }
 
         return $result;
+    }
+
+    private function resolveDataRoot(DOMElement $card, array $cfg, DOMXPath $xpath): DOMElement
+    {
+        if (empty($cfg['data_root']['selector_template'])) return $card;
+        $tpl = $cfg['data_root']['selector_template'];
+        $codeSpec = $cfg['data_root']['code_source'] ?? null;
+        if (!$codeSpec) return $card;
+        $code = $this->extractField($card, $codeSpec, $xpath);
+        if (!is_string($code) || $code === '') return $card;
+        $sel = str_replace('{code}', $code, $tpl);
+        $found = $this->css($xpath, $card->ownerDocument, $sel)[0] ?? null;
+        return $found ?: $card;
+    }
+
+    private function resolveCardRoot(DOMElement $card, array $cfg, DOMXPath $xpath): DOMElement
+    {
+        if (empty($cfg['card_root'])) return $card;
+        return $this->closest($card, $cfg['card_root'], $xpath) ?? $card;
+    }
+
+    /** Walk up ancestors looking for a match — DOMElement has no closest(). */
+    private function closest(DOMElement $el, string $selector, DOMXPath $xpath): ?DOMElement
+    {
+        try {
+            $selfXp = $this->cssToXpath->toXPath($selector, 'self::');
+        } catch (\Throwable) {
+            return null;
+        }
+        $cur = $el;
+        while ($cur instanceof DOMElement) {
+            $nodes = $xpath->query($selfXp, $cur);
+            if ($nodes && $nodes->length > 0) return $cur;
+            $cur = $cur->parentNode;
+        }
+        return null;
     }
 
     private function applyCommonMaps(DOMElement $card, array $cfg, array &$result, DOMXPath $xpath): void
