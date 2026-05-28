@@ -89,9 +89,11 @@ const confirmBookingOnServer  = (bookingId, payload) => sendMessage({ type: "CON
 const deleteBookingFromServer = (bookingId)          => sendMessage({ type: "DELETE_BOOKING",   bookingId });
 const getHotelVoteFromServer  = (hotelId)            => sendMessage({ type: "GET_HOTEL_VOTE",   hotelId }).then(d => d?.vote ?? null);
 
-// ── Currency list cache ───────────────────────────────────────────────
+// ── Reference list caches ─────────────────────────────────────────────
 let _currencies = null; // null = not yet fetched
 let _operators  = null; // null = not yet fetched
+let _countries  = null; // {id: name} after fetch
+let _cities     = null; // {id: name} after fetch
 
 async function ensureOperators() {
   if (_operators !== null) return _operators;
@@ -102,6 +104,36 @@ async function ensureOperators() {
     _operators = [];
   }
   return _operators;
+}
+
+async function ensureCountries() {
+  if (_countries !== null) return _countries;
+  try {
+    const json = await sendMessage({ type: "GET_COUNTRIES" });
+    const arr  = json?.data ?? [];
+    _countries = Object.fromEntries(arr.map(c => [c.id, c.name]));
+  } catch {
+    _countries = {};
+  }
+  return _countries;
+}
+
+async function ensureCities() {
+  if (_cities !== null) return _cities;
+  try {
+    const json = await sendMessage({ type: "GET_CITIES" });
+    const arr  = json?.data ?? [];
+    _cities = Object.fromEntries(arr.map(c => [c.id, c.name]));
+  } catch {
+    _cities = {};
+  }
+  return _cities;
+}
+
+function formatHotelLocation(countryId, cityId) {
+  const country = countryId && _countries ? _countries[countryId] : null;
+  const city    = cityId    && _cities    ? _cities[cityId]       : null;
+  return [country, city].filter(Boolean).join(", ");
 }
 
 function populateOperatorSelect(selectEl, preselectedId) {
@@ -445,6 +477,8 @@ async function showConfirmModal(saveResult) {
     hotelId:     processed?.hotel_id       ?? null,
     // If auto-matched, show the canonical HellOotel name, not the raw parsed value
     hotelName:   hotelMatch ? hotelMatch.name : (processed?.hotel_name ?? raw.hotel_name ?? ""),
+    countryId:   hotelMatch?.country_id    ?? null,
+    cityId:      hotelMatch?.city_id       ?? null,
     roomTypeId:  processed?.room_type_id   ?? null,
     bookingCode: processed?.booking_code   ?? raw.booking_code ?? "",
     reservDate:  processed?.reservation_date ?? "",
@@ -485,6 +519,7 @@ async function showConfirmModal(saveResult) {
             value="${esc(pre.hotelName)}" autocomplete="off" />
           <ul class="ttb-modal__suggestions" id="ttb-hotel-suggestions" hidden></ul>
         </div>
+        <div class="ttb-hotel-location" id="ttb-hotel-location" hidden></div>
 
         <div class="ttb-rating-row">
           <span class="ttb-rating-label">Your hotel rating <span class="ttb-required">*</span></span>
@@ -564,6 +599,7 @@ async function showConfirmModal(saveResult) {
       </div>
 
       <p class="ttb-modal__send-note">You are sending booking information directly to the hotel manager via the HelloOtel system.</p>
+      ${pre.tourists.length === 0 ? `<p class="ttb-modal__warn-note">Attention! To copy guests&rsquo; full names, you must first open the detailed booking view before sending the reservation.</p>` : ``}
       <div class="ttb-modal__footer">
         <button class="ttb-modal__btn ttb-modal__btn--delete"  type="button">Cancel Send</button>
         <div style="flex:1"></div>
@@ -590,16 +626,31 @@ async function showConfirmModal(saveResult) {
     if (opSelect) populateOperatorSelect(opSelect, pre.operatorId);
   });
 
-  const hotelInput   = overlay.querySelector("#ttb-hotel-input");
-  const suggestions  = overlay.querySelector("#ttb-hotel-suggestions");
-  const roomSelect   = overlay.querySelector("#ttb-room-select");
-  const touristsList = overlay.querySelector("#ttb-tourists-list");
-  const confirmBtn   = overlay.querySelector(".ttb-modal__btn--confirm");
+  const hotelInput      = overlay.querySelector("#ttb-hotel-input");
+  const suggestions     = overlay.querySelector("#ttb-hotel-suggestions");
+  const hotelLocationEl = overlay.querySelector("#ttb-hotel-location");
+  const roomSelect      = overlay.querySelector("#ttb-room-select");
+  const touristsList    = overlay.querySelector("#ttb-tourists-list");
+  const confirmBtn      = overlay.querySelector(".ttb-modal__btn--confirm");
 
   let selectedHotelId   = pre.hotelId;
   let selectedHotelName = pre.hotelName;
   // DB/API stores 10-100 (stars×10); divide by 10 to get star count for display
   let selectedVote      = pre.hotelVote ? Math.round(pre.hotelVote / 10) : null;
+
+  function updateHotelLocation(countryId, cityId) {
+    const text = formatHotelLocation(countryId, cityId);
+    if (text) {
+      hotelLocationEl.textContent = text;
+      hotelLocationEl.hidden = false;
+    } else {
+      hotelLocationEl.textContent = "";
+      hotelLocationEl.hidden = true;
+    }
+  }
+
+  // Show auto-matched location on initial open
+  updateHotelLocation(pre.countryId, pre.cityId);
 
   // ── Star rating ───────────────────────────────────────────────────
   const starBtns = overlay.querySelectorAll(".ttb-star");
@@ -681,6 +732,7 @@ async function showConfirmModal(saveResult) {
         selectedHotelId   = h.id;
         selectedHotelName = h.name;
         hotelInput.value  = h.name;
+        updateHotelLocation(h.country_id, h.city_id);
         hideSuggestions();
         await loadRoomTypes(h.id, roomSelect, null, arrivalInput.value || null, departureInput.value || null);
         updateConfirmState();
@@ -693,6 +745,7 @@ async function showConfirmModal(saveResult) {
 
   hotelInput.addEventListener("input", () => {
     selectedHotelId = null;
+    updateHotelLocation(null, null); // hide location while user is typing
     updateConfirmState();
     clearTimeout(hotelSearchTimeout);
     const q = hotelInput.value.trim();
@@ -1017,6 +1070,8 @@ async function boot() {
     refreshConfirmedCodes(),
     ensureCurrencies(),
     ensureOperators(),
+    ensureCountries(),
+    ensureCities(),
   ]);
   queueScan();
 }

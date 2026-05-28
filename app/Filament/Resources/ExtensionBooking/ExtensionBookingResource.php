@@ -144,7 +144,6 @@ class ExtensionBookingResource extends Resource
                     TextEntry::make('adults')->label('Adults')->placeholder('—'),
                     TextEntry::make('children')->label('Children')->placeholder('—'),
                     TextEntry::make('infants')->label('Infants')->placeholder('—'),
-                    TextEntry::make('meal_plan')->label('Meal plan')->placeholder('—'),
                     TextEntry::make('transfer')->label('Transfer')->placeholder('—'),
                     TextEntry::make('statuses')->label('Statuses')
                         ->formatStateUsing(fn ($state) => is_array($state)

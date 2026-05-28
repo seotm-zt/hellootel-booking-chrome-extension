@@ -532,7 +532,7 @@ const ConfigParserEngine = (() => {
     if (!spec.sel) return spec.multi ? [] : null;
 
     if (spec.multi) {
-      return Array.from(card.querySelectorAll(spec.sel))
+      const arr = Array.from(card.querySelectorAll(spec.sel))
         .map((el) => {
           let t = _textOf(el, spec.strip_icons);
           if (spec.strip_prefix) {
@@ -545,6 +545,10 @@ const ConfigParserEngine = (() => {
           return t;
         })
         .filter(Boolean);
+      // join: when set, return a single string instead of array.
+      // Useful for combining sibling values into a parseable string
+      // (e.g. two date elements → "09.06.2026 - 16.06.2026" for stay_dates).
+      return spec.join != null ? arr.join(spec.join) : arr;
     }
 
     const el = card.querySelector(spec.sel);

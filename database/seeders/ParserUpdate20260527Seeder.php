@@ -168,7 +168,6 @@ class ParserUpdate20260527Seeder extends Seeder
         if (!empty($cfg['dl_maps'][0]['fields'])) {
             unset(
                 $cfg['dl_maps'][0]['fields']['guests'],
-                $cfg['dl_maps'][0]['fields']['meal_plan'],
             );
         }
         return $cfg;

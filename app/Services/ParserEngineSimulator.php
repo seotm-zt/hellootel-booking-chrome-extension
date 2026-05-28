@@ -174,7 +174,8 @@ class ParserEngineSimulator
                 $t = $this->applyStrip($t, $spec);
                 if ($t !== '') $out[] = $t;
             }
-            return $out;
+            // join: when set, return joined string instead of array.
+            return isset($spec['join']) ? implode($spec['join'], $out) : $out;
         }
 
         $el = $this->css($xpath, $root, $spec['sel'])[0] ?? null;

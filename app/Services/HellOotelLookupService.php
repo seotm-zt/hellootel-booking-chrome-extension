@@ -9,6 +9,13 @@ class HellOotelLookupService
     private string $base;
     private string $token;
 
+    // Per-request memoization — HellOotel reference lists rarely change
+    // within a single request, but we hit /hotel/list multiple times
+    // (hotels endpoint, findHotel, hotel_match enrichment).
+    private ?array $hotelsFullCache = null;
+    private ?array $countriesCache  = null;
+    private ?array $citiesCache     = null;
+
     public function __construct(string $token)
     {
         $this->base  = rtrim(config('services.hellootel.base'), '/');
@@ -20,14 +27,64 @@ class HellOotelLookupService
         return Http::timeout(15)->withBasicAuth($this->token, '');
     }
 
-    // Returns [id => name]
-    public function getHotels(): array
+    // Returns [id => ['name', 'country_id', 'city_id']]
+    public function getHotelsFull(): array
     {
+        if ($this->hotelsFullCache !== null) return $this->hotelsFullCache;
+
         $items = $this->http()
             ->get($this->base . '/hotel/list', ['language' => 'en'])
             ->json() ?? [];
 
-        return collect($items)->mapWithKeys(fn($h) => [$h['id'] => $h['name']])->all();
+        $out = [];
+        foreach ($items as $h) {
+            if (!isset($h['id'])) continue;
+            $out[$h['id']] = [
+                'name'       => $h['name'] ?? '',
+                'country_id' => $h['country_id'] ?? null,
+                'city_id'    => $h['city_id'] ?? null,
+            ];
+        }
+        return $this->hotelsFullCache = $out;
+    }
+
+    // Returns [id => name]
+    public function getHotels(): array
+    {
+        return array_map(fn($h) => $h['name'], $this->getHotelsFull());
+    }
+
+    // Returns [id => name]
+    public function getCountries(): array
+    {
+        if ($this->countriesCache !== null) return $this->countriesCache;
+
+        $items = $this->http()
+            ->get($this->base . '/country/list', ['language' => 'en'])
+            ->json() ?? [];
+
+        return $this->countriesCache = $this->mapIdName($items);
+    }
+
+    // Returns [id => name]
+    public function getCities(): array
+    {
+        if ($this->citiesCache !== null) return $this->citiesCache;
+
+        $items = $this->http()
+            ->get($this->base . '/city/list', ['language' => 'en'])
+            ->json() ?? [];
+
+        return $this->citiesCache = $this->mapIdName($items);
+    }
+
+    private function mapIdName(array $items): array
+    {
+        if (empty($items)) return [];
+        if (is_array(reset($items))) {
+            return collect($items)->mapWithKeys(fn($x) => [$x['id'] => $x['name']])->all();
+        }
+        return $items; // already a [id => name] flat map
     }
 
     // Returns [id => name]
@@ -49,10 +106,16 @@ class HellOotelLookupService
         return is_array($body) ? $body : [];
     }
 
-    // Returns ['id' => int, 'name' => string, 'score' => int] or null
+    // Returns ['id' => int, 'name' => string, 'score' => int, 'country_id' => ?int, 'city_id' => ?int] or null
     public function findHotel(string $rawName): ?array
     {
-        return $this->bestMatch($this->getHotels(), $rawName, threshold: 75);
+        $match = $this->bestMatch($this->getHotels(), $rawName, threshold: 75);
+        if ($match) {
+            $full = $this->getHotelsFull()[$match['id']] ?? null;
+            $match['country_id'] = $full['country_id'] ?? null;
+            $match['city_id']    = $full['city_id']    ?? null;
+        }
+        return $match;
     }
 
     // Returns ['id' => int, 'name' => string, 'score' => int] or null

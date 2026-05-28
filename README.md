@@ -332,7 +332,7 @@ Adminка → раздел **Chrome Extension**
 | `total_price` | Сумма (валюта определяется по символу) → `tour_price_native` + `tour_price_native_currency` |
 | `tourists` | Массив `{ last_name, first_name, dob }` → `guest_name` + person_count_* |
 
-`nights`, `meal_plan`, `transfer`, `statuses`, `details_link`, `thumbnail`, `guests` как текст и `meta_fields` блок не нужны — сервер не отправляет их в HelloOtel, person_count_* считаются из массива `tourists`, nights вычисляется из дат.
+`nights`, `transfer`, `statuses`, `details_link`, `thumbnail`, `guests` как текст и `meta_fields` блок не нужны — сервер не отправляет их в HelloOtel, person_count_* считаются из массива `tourists`, nights вычисляется из дат.
 
 ### Типы парсеров
 

@@ -8,7 +8,6 @@
  */
 
 importScripts("auth.js");
-importScripts("dev-reporter-bg.js");
 
 async function authedFetch(path, options = {}) {
   const token = await getToken();
@@ -148,6 +147,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     (async () => {
       try {
         const data = await authedFetch("/operators");
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === "GET_COUNTRIES") {
+    (async () => {
+      try {
+        const data = await authedFetch("/countries");
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === "GET_CITIES") {
+    (async () => {
+      try {
+        const data = await authedFetch("/cities");
         sendResponse({ ok: true, data });
       } catch (err) {
         sendResponse({ ok: false, error: err.message });

@@ -210,15 +210,11 @@ class ParserDataSeeder extends Seeder
             array (
               0 => 'состав',
             ),
-            'subtitle' => 
+            'subtitle' =>
             array (
               0 => 'страна',
             ),
-            'meal_plan' => 
-            array (
-              0 => 'питание',
-            ),
-            'hotel_name' => 
+            'hotel_name' =>
             array (
               0 => 'отель',
             ),

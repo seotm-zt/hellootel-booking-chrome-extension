@@ -21,7 +21,6 @@ class ExtensionBooking extends Model
         'adults',
         'children',
         'infants',
-        'meal_plan',
         'transfer',
         'total_price',
         'statuses',

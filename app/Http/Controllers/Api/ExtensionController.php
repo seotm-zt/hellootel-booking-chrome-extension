@@ -108,7 +108,6 @@ class ExtensionController extends Controller
             'adults'         => 'nullable|integer|min:0',
             'children'       => 'nullable|integer|min:0',
             'infants'        => 'nullable|integer|min:0',
-            'meal_plan'      => 'nullable|string|max:255',
             'transfer'       => 'nullable|string|max:255',
             'total_price'    => 'nullable|string|max:255',
             'statuses'       => 'nullable|array',
@@ -266,30 +265,51 @@ class ExtensionController extends Controller
 
     public function hotels(Request $request, HellOotelLookupService $lookup): JsonResponse
     {
-        $q       = trim($request->query('q', ''));
-        $hotels  = $lookup->getHotels(); // [id => name]
+        $q      = trim($request->query('q', ''));
+        $hotels = $lookup->getHotelsFull(); // [id => ['name','country_id','city_id']]
 
         if ($q !== '') {
-            $q      = mb_strtolower($q);
-            $hotels = array_filter($hotels, fn($name) => str_contains(mb_strtolower($name), $q));
+            $qLow   = mb_strtolower($q);
+            $hotels = array_filter($hotels, fn($h) => str_contains(mb_strtolower($h['name']), $qLow));
         }
 
         $result = array_map(
-            fn($id, $name) => ['id' => (int) $id, 'name' => $name],
+            fn($id, $h) => [
+                'id'         => (int) $id,
+                'name'       => $h['name'],
+                'country_id' => $h['country_id'],
+                'city_id'    => $h['city_id'],
+            ],
             array_keys($hotels),
-            array_values($hotels)
+            array_values($hotels),
         );
 
         // Sort: items that start with the query come first
         if ($q !== '') {
+            $qLow = mb_strtolower($q);
             usort($result, fn($a, $b) =>
-                str_starts_with(mb_strtolower($a['name']), $q) <=> str_starts_with(mb_strtolower($b['name']), $q)
+                str_starts_with(mb_strtolower($a['name']), $qLow) <=> str_starts_with(mb_strtolower($b['name']), $qLow)
                     ?: strcmp($a['name'], $b['name'])
             );
             $result = array_reverse($result); // starts-with = true sorts last, flip it
         }
 
         return response()->json(['data' => array_values(array_slice($result, 0, 30))]);
+    }
+
+    public function countries(HellOotelLookupService $lookup): JsonResponse
+    {
+        // {id => name} → [{id, name}]
+        $items = $lookup->getCountries();
+        $data  = array_map(fn($id, $name) => ['id' => (int) $id, 'name' => $name], array_keys($items), array_values($items));
+        return response()->json(['data' => $data]);
+    }
+
+    public function cities(HellOotelLookupService $lookup): JsonResponse
+    {
+        $items = $lookup->getCities();
+        $data  = array_map(fn($id, $name) => ['id' => (int) $id, 'name' => $name], array_keys($items), array_values($items));
+        return response()->json(['data' => $data]);
     }
 
     public function hotelRoomTypes(int $id, HellOotelLookupService $lookup, Request $request): JsonResponse
