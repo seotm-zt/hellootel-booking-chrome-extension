@@ -482,6 +482,21 @@ const ConfigParserEngine = (() => {
       return null;
     }
 
+    // ── self: extract from card/item element itself ────────────────────────
+    // Useful inside tourist_blocks when each item is a leaf node (e.g. <a>)
+    // and the field value is some slice of its text.
+    if (spec.self) {
+      let text = _textOf(card, spec.strip_icons);
+      if (spec.strip_prefix) {
+        const rx = new RegExp("^" + spec.strip_prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*", "i");
+        text = text.replace(rx, "").trim();
+      }
+      if (spec.strip_pattern) {
+        text = text.replace(new RegExp(spec.strip_pattern, spec.strip_flags || ""), spec.strip_replace ?? "").trim();
+      }
+      return text;
+    }
+
     // ── h-element split: code (before ": ") ────────────────────────────────
     if (spec.h_code !== undefined) {
       const el = card.querySelector(spec.h_code);
@@ -546,7 +561,7 @@ const ConfigParserEngine = (() => {
             t = t.replace(rx, "").trim();
           }
           if (spec.strip_pattern) {
-            t = t.replace(new RegExp(spec.strip_pattern), "").trim();
+            t = t.replace(new RegExp(spec.strip_pattern, spec.strip_flags || ""), spec.strip_replace ?? "").trim();
           }
           return t;
         })
@@ -573,7 +588,7 @@ const ConfigParserEngine = (() => {
     }
 
     if (spec.strip_pattern) {
-      text = text.replace(new RegExp(spec.strip_pattern), "").trim();
+      text = text.replace(new RegExp(spec.strip_pattern, spec.strip_flags || ""), spec.strip_replace ?? "").trim();
     }
 
     if (spec.append_location) {

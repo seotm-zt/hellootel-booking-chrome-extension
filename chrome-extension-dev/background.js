@@ -8,6 +8,7 @@
  */
 
 importScripts("auth.js");
+importScripts("dev-reporter-bg.js");
 
 async function authedFetch(path, options = {}) {
   const token = await getToken();

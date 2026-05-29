@@ -163,6 +163,12 @@ class ParserEngineSimulator
             return null;
         }
 
+        // self: extract from the root element itself (no sub-querying)
+        if (!empty($spec['self'])) {
+            $text = $this->textOf($root, $spec['strip_icons'] ?? false);
+            return $this->applyStrip($text, $spec);
+        }
+
         if (empty($spec['sel'])) {
             return !empty($spec['multi']) ? [] : null;
         }
@@ -194,7 +200,13 @@ class ParserEngineSimulator
             $text = preg_replace('/^' . $prefix . '\s*/iu', '', $text);
         }
         if (!empty($spec['strip_pattern'])) {
-            $text = preg_replace('/' . str_replace('/', '\/', $spec['strip_pattern']) . '/u', '', $text);
+            // JS engine defaults to single-match (no /g). Mirror that here by using
+            // preg_replace with limit=1, unless the config opts into global with
+            // strip_flags: "g". strip_replace defaults to "" (remove match).
+            $pattern     = '/' . str_replace('/', '\/', $spec['strip_pattern']) . '/u';
+            $limit       = (strpos($spec['strip_flags'] ?? '', 'g') !== false) ? -1 : 1;
+            $replacement = $spec['strip_replace'] ?? '';
+            $text        = preg_replace($pattern, $replacement, $text, $limit);
         }
         return trim($text ?? '');
     }

@@ -7,7 +7,7 @@ use App\Models\ExtensionParserRule;
 use Illuminate\Database\Seeder;
 
 // Сгенерировано командой: php artisan parsers:generate-seeder
-// Дата: 2026-05-29 11:09:29
+// Дата: 2026-05-29 19:42:29
 // Полная замена: парсеры/правила, которых нет в этом сидере, удаляются.
 class ParserDataSeeder extends Seeder
 {
@@ -579,6 +579,95 @@ class ParserDataSeeder extends Seeder
     ),
     'is_active' => true,
     'operator_id' => 32,
+    'operator_name' => NULL,
+    'notes' => NULL,
+  ),
+  6 => 
+  array (
+    'name' => 'BG-operator — Заявка',
+    'domain' => 'www.bgoperator.ru',
+    'path_match' => '/tozaya',
+    'config' => 
+    array (
+      'card' => '#Form',
+      'type' => 'card',
+      'button' => '.claim_no',
+      'fields' => 
+      array (
+        'subtitle' => 
+        array (
+          'sel' => '.full-info-z table tr:nth-of-type(2) td:nth-of-type(4)',
+        ),
+        'hotel_name' => 
+        array (
+          'sel' => '.full-info-z table tr:nth-of-type(2) td:nth-of-type(3)',
+          'strip_pattern' => '[ ]+[0-9]\\*$',
+        ),
+        'stay_dates' => 
+        array (
+          'sel' => '.full-info-z table tr:nth-of-type(2) td:nth-of-type(2)',
+          'strip_pattern' => '[ ]-',
+          'strip_replace' => ' - ',
+        ),
+        'total_price' => 
+        array (
+          'sel' => 'table.line tr:nth-of-type(2) td.line:nth-of-type(1)',
+        ),
+        'booking_code' => 
+        array (
+          'sel' => '.claim_no',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => 'input[name="tck"]',
+          'attr' => 'value',
+        ),
+      ),
+      'meta_fields' => 
+      array (
+        'payment_status' => 
+        array (
+          'sel' => 'table.line tr:nth-of-type(2) td.line:nth-of-type(4)',
+          'strip_pattern' => '[ ]*[CС]рок.*$',
+        ),
+        'status_voucher' => 
+        array (
+          'sel' => '.full-info-z table tr:nth-of-type(2) td:nth-of-type(6)',
+        ),
+      ),
+      'tourist_blocks' => 
+      array (
+        'item' => '.full-info-z table tr:nth-of-type(2) td:nth-of-type(8) a',
+        'fields' => 
+        array (
+          'dob' => 
+          array (
+            'self' => true,
+            'strip_pattern' => '^.*[ ]',
+          ),
+          'gender' => 
+          array (
+            'self' => true,
+            'strip_pattern' => '[ ].*$',
+          ),
+          'last_name' => 
+          array (
+            'self' => true,
+            'strip_flags' => 'g',
+            'strip_pattern' => '^[A-Za-z]+[ ]+|[ ]+[^ ]+[ ]+[0-9].*$',
+          ),
+          'first_name' => 
+          array (
+            'self' => true,
+            'strip_flags' => 'g',
+            'strip_pattern' => '^[A-Za-z]+[ ]+[A-Z]+[ ]+|[ ]+[0-9].*$',
+          ),
+        ),
+      ),
+      'button_placement' => 'after',
+    ),
+    'is_active' => true,
+    'operator_id' => 38,
     'operator_name' => NULL,
     'notes' => NULL,
   ),
