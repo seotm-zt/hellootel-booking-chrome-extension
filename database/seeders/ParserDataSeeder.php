@@ -7,7 +7,8 @@ use App\Models\ExtensionParserRule;
 use Illuminate\Database\Seeder;
 
 // Сгенерировано командой: php artisan parsers:generate-seeder
-// Дата: 2026-05-21 11:07:55
+// Дата: 2026-05-29 11:09:29
+// Полная замена: парсеры/правила, которых нет в этом сидере, удаляются.
 class ParserDataSeeder extends Seeder
 {
     public function run(): void
@@ -15,7 +16,7 @@ class ParserDataSeeder extends Seeder
         $parsers = array (
   0 => 
   array (
-    'name' => 'HellOotel — История бронирований',
+    'name' => 'Velikolepniy Vek',
     'domain' => 'demo.velikolepniy-vek.com',
     'path_match' => '/hotel/book/history',
     'config' => 
@@ -25,17 +26,6 @@ class ParserDataSeeder extends Seeder
       'button' => '.hotel-reservation-history__item-header',
       'fields' => 
       array (
-        'nights' => 
-        array (
-          'sel' => '.hotel-reservation-history__item-header .hotel-reservation-history__item-header-col:nth-child(5)',
-          'strip_prefix' => 'Ночей:',
-        ),
-        'statuses' => 
-        array (
-          'sel' => '.hotel-reservation-history__item-header .hotel-reservation-history__item-header-col:nth-child(7)',
-          'multi' => true,
-          'strip_prefix' => 'Статус:',
-        ),
         'subtitle' => 
         array (
           'sel' => '.hotel-reservation-history__item-body h2',
@@ -64,34 +54,6 @@ class ParserDataSeeder extends Seeder
         array (
           'sel' => '.hotel-reservation-history__item-header .hotel-reservation-history__item-header-col:nth-child(4)',
           'strip_prefix' => 'Забронирован:',
-        ),
-      ),
-      'meta_maps' => 
-      array (
-        0 => 
-        array (
-          'item' => '.hotel-reservation-history__item-sub-header-col, .tour-reservation-history__item-sub-header-col',
-          'label' => 'label',
-          'value' => 'span',
-          'fields' => 
-          array (
-            'agency' => 
-            array (
-              0 => 'агентство',
-            ),
-            'manager' => 
-            array (
-              0 => 'менеджер',
-            ),
-            'bed_type' => 
-            array (
-              0 => 'тип кровати',
-            ),
-            'price_to_pay' => 
-            array (
-              0 => 'цена к оплате',
-            ),
-          ),
         ),
       ),
       'label_maps' => 
@@ -141,6 +103,8 @@ class ParserDataSeeder extends Seeder
       ),
     ),
     'is_active' => true,
+    'operator_id' => 60,
+    'operator_name' => NULL,
     'notes' => NULL,
   ),
   1 => 
@@ -155,16 +119,6 @@ class ParserDataSeeder extends Seeder
       'button' => '.content-box',
       'fields' => 
       array (
-        'guests' => 
-        array (
-          'sel' => '.travel-line .name',
-        ),
-        'statuses' => 
-        array (
-          'sel' => '.travel-status',
-          'multi' => true,
-          'strip_icons' => true,
-        ),
         'subtitle' => 
         array (
           'sel' => '.travel-line.text-description a',
@@ -187,11 +141,6 @@ class ParserDataSeeder extends Seeder
         array (
           'data' => 'voucher',
         ),
-        'details_link' => 
-        array (
-          'sel' => '.travel-line.text-description a',
-          'attr' => 'href',
-        ),
         'reservation_at' => 
         array (
           'sel' => '.reservation-date',
@@ -206,35 +155,16 @@ class ParserDataSeeder extends Seeder
           'value' => '.text2',
           'fields' => 
           array (
-            'guests' => 
-            array (
-              0 => 'состав',
-            ),
-            'subtitle' =>
+            'subtitle' => 
             array (
               0 => 'страна',
             ),
-            'hotel_name' =>
+            'hotel_name' => 
             array (
               0 => 'отель',
             ),
           ),
           'container' => '.reservation-tab.residence .tab-list',
-        ),
-      ),
-      'meta_fields' => 
-      array (
-        'agency' => 
-        array (
-          'sel' => '.reservation-info',
-        ),
-        'manager' => 
-        array (
-          'sel' => '.reservation-name',
-        ),
-        'end_date' => 
-        array (
-          'data' => 'enddate',
         ),
       ),
       'tourist_blocks' => 
@@ -274,19 +204,400 @@ class ParserDataSeeder extends Seeder
       'button_placement' => 'after',
     ),
     'is_active' => true,
+    'operator_id' => 15,
+    'operator_name' => NULL,
     'notes' => 'Список заявок агентства на coralagency.ru/reservation/search. Поля из data-атрибутов div.box и видимых span.',
   ),
+  2 => 
+  array (
+    'name' => 'Пегас тур',
+    'domain' => 'agency.pegast.ru',
+    'path_match' => '/MyAccount/Bookings',
+    'config' => 
+    array (
+      'card' => 'li.bookings-list__item',
+      'button' => '.booking-head__left-block-top',
+      'fields' => 
+      array (
+        'subtitle' => 
+        array (
+          'sel' => '.main-column__accommodation .inplace-tooltip',
+        ),
+        'hotel_name' => 
+        array (
+          'sel' => '.booking-hotel-service__hotel-name a',
+        ),
+        'stay_dates' => 
+        array (
+          'sel' => '.main-cell--tour-duration .main-cell__primary',
+        ),
+        'total_price' => 
+        array (
+          'sel' => '.main-cell__price .text-nowrap',
+        ),
+        'booking_code' => 
+        array (
+          'sel' => '.booking-number__number',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => '.booking-head__left-block-dates-value',
+          'strip_prefix' => 'от',
+        ),
+      ),
+      'tourist_blocks' => 
+      array (
+        'item' => '.booking-persons-list__item',
+        'fields' => 
+        array (
+          'dob' => 
+          array (
+            'sel' => '.row__birth',
+          ),
+          'last_name' => 
+          array (
+            'sel' => '.person-name',
+            'strip_pattern' => '[ ].*$',
+          ),
+          'first_name' => 
+          array (
+            'sel' => '.person-name',
+            'strip_pattern' => '^[^ ]+[ ]+',
+          ),
+        ),
+      ),
+      'button_placement' => 'after',
+    ),
+    'is_active' => true,
+    'operator_id' => 41,
+    'operator_name' => 'Pegas Touristik',
+    'notes' => 'Pegas Touristik bookings list (agency.pegast.ru/MyAccount/Bookings/). Seeded from page report #11 on 2026-05-27. Operator name placeholder — verify against HelloOtel /operator/list.',
+  ),
+  3 => 
+  array (
+    'name' => 'FunSun Russia — Просмотр заявок',
+    'domain' => 'b2b.fstravel.com',
+    'path_match' => '/cl_refer',
+    'config' => 
+    array (
+      'card' => 'button.pay_claim',
+      'type' => 'card',
+      'fields' => 
+      array (
+        'subtitle' => 
+        array (
+          'sel' => '.order-block__data.hotel-room',
+          'strip_icons' => true,
+        ),
+        'hotel_name' => 
+        array (
+          'sel' => '.order-block__data.hotel-name a',
+        ),
+        'stay_dates' => 
+        array (
+          'sel' => '.order-block__data.hotel-dates',
+          'strip_icons' => true,
+        ),
+        'booking_code' => 
+        array (
+          'data' => 'claim',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => 'td.status',
+          'strip_icons' => true,
+        ),
+      ),
+      'card_root' => '#modalContainer',
+      'data_root' => 
+      array (
+        'code_source' => 
+        array (
+          'data' => 'claim',
+        ),
+        'selector_template' => '#cl_{code}',
+      ),
+      'card_fields' => 
+      array (
+        'total_price' => 
+        array (
+          'sel' => '.samo_container > table:nth-of-type(2) tbody tr:nth-child(2) td.cl-cost.claim-currency',
+          'append_location' => '.samo_container > table:nth-of-type(2) thead th.cl-cost.claim-currency',
+        ),
+      ),
+      'meta_fields' => 
+      array (
+        'flights' => 
+        array (
+          'sel' => '.order-block__data.freight-name',
+          'multi' => true,
+        ),
+        'hotel_stars' => 
+        array (
+          'sel' => '.order-block__data.hotel-stars',
+        ),
+        'payment_status' => 
+        array (
+          'sel' => '.claim-status',
+          'strip_icons' => true,
+        ),
+      ),
+      'tourist_blocks' => 
+      array (
+        'item' => '.tbl_peoples tbody tr[data-people]',
+        'fields' => 
+        array (
+          'dob' => 
+          array (
+            'sel' => '.born',
+          ),
+          'gender' => 
+          array (
+            'sel' => '.human',
+          ),
+          'last_name' => 
+          array (
+            'sel' => '.tourist-latin-name',
+            'strip_pattern' => '[ ].*$',
+          ),
+          'first_name' => 
+          array (
+            'sel' => '.tourist-latin-name',
+            'strip_pattern' => '^[^ ]+[ ]+',
+          ),
+        ),
+      ),
+      'button_placement' => 'after',
+    ),
+    'is_active' => true,
+    'operator_id' => NULL,
+    'operator_name' => NULL,
+    'notes' => NULL,
+  ),
+  4 => 
+  array (
+    'name' => 'Anex Tour — Просмотр заявок',
+    'domain' => 'samo.anextour.ru',
+    'path_match' => '/cl_refer',
+    'config' => 
+    array (
+      'card' => 'button.pay_claim',
+      'type' => 'card',
+      'fields' => 
+      array (
+        'subtitle' => 
+        array (
+          'sel' => '.order-block__data.hotel-room',
+          'strip_icons' => true,
+        ),
+        'hotel_name' => 
+        array (
+          'sel' => '.order-block__data.hotel-name a',
+        ),
+        'stay_dates' => 
+        array (
+          'sel' => '.order-block__data.hotel-dates',
+          'strip_icons' => true,
+        ),
+        'booking_code' => 
+        array (
+          'data' => 'claim',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => 'td.status',
+          'strip_icons' => true,
+        ),
+      ),
+      'card_root' => '#modalContainer',
+      'data_root' => 
+      array (
+        'code_source' => 
+        array (
+          'data' => 'claim',
+        ),
+        'selector_template' => '#cl_{code}',
+      ),
+      'card_fields' => 
+      array (
+        'total_price' => 
+        array (
+          'sel' => '.samo_container > table:nth-of-type(2) tbody tr:nth-child(2) td.cl-cost.claim-currency',
+          'append_location' => '.samo_container > table:nth-of-type(2) thead th.cl-cost.claim-currency',
+        ),
+      ),
+      'meta_fields' => 
+      array (
+        'flights' => 
+        array (
+          'sel' => '.order-block__data.freight-name',
+          'multi' => true,
+        ),
+        'hotel_stars' => 
+        array (
+          'sel' => '.order-block__data.hotel-stars',
+        ),
+        'payment_status' => 
+        array (
+          'sel' => '.claim-status',
+          'strip_icons' => true,
+        ),
+      ),
+      'tourist_blocks' => 
+      array (
+        'item' => '.tbl_peoples tbody tr[data-people]',
+        'fields' => 
+        array (
+          'dob' => 
+          array (
+            'sel' => '.born',
+          ),
+          'gender' => 
+          array (
+            'sel' => '.human',
+          ),
+          'last_name' => 
+          array (
+            'sel' => '.tourist-latin-name',
+            'strip_pattern' => '[ ].*$',
+          ),
+          'first_name' => 
+          array (
+            'sel' => '.tourist-latin-name',
+            'strip_pattern' => '^[^ ]+[ ]+',
+          ),
+        ),
+      ),
+      'button_placement' => 'after',
+    ),
+    'is_active' => true,
+    'operator_id' => 32,
+    'operator_name' => NULL,
+    'notes' => NULL,
+  ),
+  5 => 
+  array (
+    'name' => 'Anex Tour Agent — Заявки',
+    'domain' => 'agent.anextour.ru',
+    'path_match' => '/orders',
+    'config' => 
+    array (
+      'card' => '#modalAbout',
+      'type' => 'card',
+      'button' => '#modalAbout > div.mb-24.flex.flex-wrap.items-center',
+      'fields' => 
+      array (
+        'hotel_name' => 
+        array (
+          'sel' => 'li > div.flex.flex-col.rounded-8.bg-fog a.text-16.font-medium.text-black',
+          'strip_icons' => true,
+        ),
+        'stay_dates' => 
+        array (
+          'sel' => 'time[data-field="datebeg"]',
+          'join' => ' - ',
+          'multi' => true,
+        ),
+        'booking_code' => 
+        array (
+          'sel' => 'p.text-16.leading-22.font-bold',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => 'p.text-14.leading-22.mr-6',
+          'strip_prefix' => 'Заявка от ',
+        ),
+      ),
+      'card_root' => '[role="tabpanel"]',
+      'label_maps' => 
+      array (
+        0 => 
+        array (
+          'item' => 'li > div.flex.flex-col.rounded-8.bg-fog div.relative.flex',
+          'label' => 'div.text-carbon',
+          'value' => 'div.font-medium.pl-2',
+          'fields' => 
+          array (
+            'subtitle' => 
+            array (
+              0 => 'номер',
+            ),
+          ),
+        ),
+      ),
+      'meta_fields' => 
+      array (
+        'payment_status' => 
+        array (
+          'sel' => 'p.text-14.leading-22.font-medium.text-black',
+        ),
+      ),
+      'tourist_blocks' => 
+      array (
+        'item' => 'ul > li > div.rounded.bg-fog.p-16',
+        'fields' => 
+        array (
+          'dob' => 
+          array (
+            'sel' => 'p.text-carbon + p.text-14.font-medium',
+            'strip_icons' => true,
+          ),
+          'gender' => 
+          array (
+            'sel' => 'span.text-12.font-medium.w-40.h-28.rounded-24',
+          ),
+          'last_name' => 
+          array (
+            'sel' => 'p.flex.items-center.text-14.font-medium',
+            'strip_pattern' => '[ ].*$',
+          ),
+          'first_name' => 
+          array (
+            'sel' => 'p.flex.items-center.text-14.font-medium',
+            'strip_pattern' => '^[^ ]+[ ]+',
+          ),
+        ),
+      ),
+      'card_label_maps' => 
+      array (
+        0 => 
+        array (
+          'item' => 'footer > div > div',
+          'label' => 'div.text-carbon',
+          'value' => 'div.text-24.font-bold',
+          'fields' => 
+          array (
+            'total_price' => 
+            array (
+              0 => 'каталогу',
+              1 => 'стоимост',
+            ),
+          ),
+        ),
+      ),
+      'button_placement' => 'after',
+    ),
+    'is_active' => true,
+    'operator_id' => 32,
+    'operator_name' => NULL,
+    'notes' => NULL,
+  ),
 );
+
+        $keepNames = array_column($parsers, 'name');
+        ExtensionParser::whereNotIn('name', $keepNames)->delete();
 
         foreach ($parsers as $row) {
             ExtensionParser::updateOrCreate(
                 ['name' => $row['name']],
                 [
-                    'domain'     => $row['domain'],
-                    'path_match' => $row['path_match'],
-                    'config'     => $row['config'],
-                    'is_active'  => $row['is_active'],
-                    'notes'      => $row['notes'],
+                    'domain'        => $row['domain'],
+                    'path_match'    => $row['path_match'],
+                    'config'        => $row['config'],
+                    'is_active'     => $row['is_active'],
+                    'operator_id'   => $row['operator_id']   ?? null,
+                    'operator_name' => $row['operator_name'] ?? null,
+                    'notes'         => $row['notes'],
                 ]
             );
         }
@@ -307,6 +618,12 @@ class ParserDataSeeder extends Seeder
     'notes' => 'Список заявок агентства',
   ),
 );
+
+        $keepRules = array_map(fn($r) => $r['domain'] . '|' . ($r['path_match'] ?? ''), $rules);
+        ExtensionParserRule::all()->each(function ($rule) use ($keepRules) {
+            $key = $rule->domain . '|' . ($rule->path_match ?? '');
+            if (!in_array($key, $keepRules, true)) $rule->delete();
+        });
 
         foreach ($rules as $row) {
             ExtensionParserRule::updateOrCreate(
