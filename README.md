@@ -43,7 +43,8 @@ cd /var/www/booking_saver
 composer install --no-dev --optimize-autoloader
 
 # На Hellootel (PHP 8.1 по умолчанию):
-/opt/php84/bin/php /opt/php84/bin/composer install --no-dev --optimize-autoloader
+# /opt/php84/bin/php /opt/php84/bin/composer install --no-dev --optimize-autoloader
+/opt/php84/bin/php /usr/local/bin/composer install --no-dev --optimize-autoloader
 ```
 
 ### 3. Настроить окружение
