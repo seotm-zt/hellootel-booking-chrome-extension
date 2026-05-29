@@ -183,6 +183,86 @@ class ExtensionController extends Controller
         ], $booking->wasRecentlyCreated ? 201 : 200);
     }
 
+    // Manual-entry counterpart of store()+confirm(): used when the parser
+    // couldn't extract any guests, so the raw booking is intentionally NOT
+    // persisted. The user fills tourists by hand in the confirm modal, then
+    // this endpoint creates a ProcessedBooking with source_booking_id=null
+    // and immediately ships it to HelloOtel.
+    public function storeProcessedDirect(Request $request, HellOotelReservationService $reservation): JsonResponse
+    {
+        $data = $request->validate([
+            'hotel_id'         => 'nullable|integer',
+            'hotel_name'       => 'nullable|string|max:500',
+            'room_type_id'     => 'nullable|integer',
+            'room_type_name'   => 'nullable|string|max:500',
+            'booking_code'     => 'nullable|string|max:255',
+            'reservation_date' => 'nullable|date_format:Y-m-d',
+            'arrival_at'       => 'nullable|date_format:Y-m-d',
+            'departure_at'     => 'nullable|date_format:Y-m-d',
+            'price'            => 'nullable|numeric',
+            'currency_code'    => 'nullable|string|max:3',
+            'adults'           => 'nullable|integer|min:0',
+            'children'         => 'nullable|integer|min:0',
+            'infants'          => 'nullable|integer|min:0',
+            'tourists'         => 'required|array|min:1',
+            'hotel_vote'       => 'nullable|integer|min:10|max:100',
+            'operator_id'      => 'nullable|integer',
+        ]);
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        $processed = ProcessedBooking::create([
+            'source_booking_id'      => null,
+            'saved_by_user_id'       => $user->id,
+            'confirmed_by_user_id'   => $user->id,
+            'confirmed_at'           => now(),
+            'booking_code'           => $data['booking_code']     ?? null,
+            'hotel_id'               => $data['hotel_id']         ?? null,
+            'hotel_name'             => $data['hotel_name']       ?? null,
+            'room_type_id'           => $data['room_type_id']     ?? null,
+            'room_type_name'         => $data['room_type_name']   ?? null,
+            'reservation_date'       => $data['reservation_date'] ?? null,
+            'arrival_at'             => $data['arrival_at']       ?? null,
+            'departure_at'           => $data['departure_at']     ?? null,
+            'price'                  => $data['price']            ?? null,
+            'currency_code'          => $data['currency_code']    ?? null,
+            'person_count_adults'    => (int) ($data['adults']   ?? 0),
+            'person_count_children'  => (int) ($data['children'] ?? 0),
+            'person_count_teens'     => (int) ($data['infants']  ?? 0),
+            'tourists'               => $data['tourists'],
+            'tourist_ids'            => [],
+            'hotel_vote'             => $data['hotel_vote']       ?? null,
+            'operator_id'            => $data['operator_id']      ?? null,
+            'total_bonus'            => 0,
+            'hm_approval'            => null,
+            'payment_status_ag'      => 0,
+            'payment_status_rm'      => 0,
+            'payment_status_cm'      => 0,
+        ]);
+
+        Log::info('ProcessedBooking created without source booking', [
+            'processed_id' => $processed->id,
+            'user_id'      => $user->id,
+        ]);
+
+        $hellootelResult = ['id' => null, 'error' => null];
+        try {
+            $hellootelResult = $reservation->send($processed);
+        } catch (\Throwable $e) {
+            Log::warning('HellOotel send failed for direct booking', [
+                'processed_id' => $processed->id,
+                'error'        => $e->getMessage(),
+            ]);
+            $hellootelResult['error'] = $e->getMessage();
+        }
+
+        return response()->json([
+            'data'      => $processed,
+            'hellootel' => $hellootelResult,
+        ]);
+    }
+
     public function confirm(int $id, Request $request, HellOotelReservationService $reservation): JsonResponse
     {
         /** @var User $user */
@@ -384,7 +464,7 @@ class ExtensionController extends Controller
     {
         $parsers = ExtensionParser::where('is_active', true)
             ->orderBy('name')
-            ->get(['name', 'domain', 'path_match', 'config']);
+            ->get(['name', 'domain', 'path_match', 'config', 'operator_id', 'operator_name']);
 
         return response()->json(['data' => $parsers]);
     }

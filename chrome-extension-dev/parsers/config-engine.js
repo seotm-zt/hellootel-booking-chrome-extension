@@ -153,6 +153,8 @@ const ConfigParserEngine = (() => {
     // ── default: card-based parser ──────────────────────────────────────────
     return {
       name: entry.name,
+      operator_id:   entry.operator_id   ?? null,
+      operator_name: entry.operator_name ?? null,
       _domain: domain,
       _pathMatch: pathMatch,
 
@@ -223,6 +225,8 @@ const ConfigParserEngine = (() => {
 
     return {
       name: entry.name,
+      operator_id:   entry.operator_id   ?? null,
+      operator_name: entry.operator_name ?? null,
       _domain: domain,
       _pathMatch: pathMatch,
 
@@ -333,6 +337,8 @@ const ConfigParserEngine = (() => {
 
     return {
       name: entry.name,
+      operator_id:   entry.operator_id   ?? null,
+      operator_name: entry.operator_name ?? null,
       _domain: domain,
       _pathMatch: pathMatch,
 

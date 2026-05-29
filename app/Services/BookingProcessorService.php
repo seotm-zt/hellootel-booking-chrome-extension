@@ -17,6 +17,7 @@ class BookingProcessorService
     {
         if ($booking->processed_booking_id) {
             $processed = ProcessedBooking::findOrFail($booking->processed_booking_id);
+
             // Patch fields that may have been null on first processing
             if (!$processed->currency_code && $booking->total_price) {
                 [, $currency] = $this->parseTotalPrice($booking->total_price);
@@ -24,6 +25,22 @@ class BookingProcessorService
                     $processed->update(['currency_code' => $currency]);
                 }
             }
+
+            // Retry hotel matching if it failed before — the user may have
+            // added the hotel to HelloOtel between the two save attempts.
+            if (!$processed->hotel_id && $booking->hotel_name) {
+                $parser   = $this->resolveParser($booking->source_domain ?? '', $booking->source_url ?? '');
+                $fieldMap = $parser?->config['field_map'] ?? [];
+                [$hotelId, $roomTypeId, $roomTypeName] = $this->matchHotelAndRoom($booking, $fieldMap);
+                if ($hotelId) {
+                    $processed->update([
+                        'hotel_id'       => $hotelId,
+                        'room_type_id'   => $roomTypeId,
+                        'room_type_name' => $roomTypeName ?? $processed->room_type_name,
+                    ]);
+                }
+            }
+
             return $processed;
         }
 

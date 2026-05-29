@@ -75,6 +75,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "STORE_PROCESSED_DIRECT") {
+    (async () => {
+      try {
+        const data = await authedFetch(`/processed-bookings/direct`, {
+          method: "POST",
+          body: JSON.stringify(message.payload),
+        });
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
   if (message.type === "SEARCH_HOTELS") {
     (async () => {
       try {

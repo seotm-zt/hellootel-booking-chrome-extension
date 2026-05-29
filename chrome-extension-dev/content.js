@@ -86,6 +86,7 @@ const searchHotelsOnServer   = (query)              => sendMessage({ type: "SEAR
 const getRoomTypesFromServer = (hotelId, arrivalAt, departureAt) =>
   sendMessage({ type: "GET_ROOM_TYPES", hotelId, arrivalAt, departureAt }).then(d => d?.data ?? []);
 const confirmBookingOnServer  = (bookingId, payload) => sendMessage({ type: "CONFIRM_BOOKING",  bookingId, payload });
+const storeProcessedDirect    = (payload)            => sendMessage({ type: "STORE_PROCESSED_DIRECT", payload });
 const deleteBookingFromServer = (bookingId)          => sendMessage({ type: "DELETE_BOOKING",   bookingId });
 const getHotelVoteFromServer  = (hotelId)            => sendMessage({ type: "GET_HOTEL_VOTE",   hotelId }).then(d => d?.vote ?? null);
 
@@ -472,6 +473,10 @@ async function showConfirmModal(saveResult) {
   const raw        = saveResult.data;
   const processed  = saveResult.processed;
   const hotelMatch = saveResult.hotel_match;
+  // Direct mode: parser found no guests, so the raw booking was NOT persisted.
+  // The user must enter guests manually here and we POST to /processed-bookings/direct
+  // on confirm (no source_booking_id linkage).
+  const direct     = !!saveResult._direct;
 
   const pre = {
     hotelId:     processed?.hotel_id       ?? null,
@@ -492,7 +497,7 @@ async function showConfirmModal(saveResult) {
     infants:     processed?.person_count_teens    ?? raw.infants  ?? "",
     tourists:    processed?.tourists ?? raw.tourists ?? [],
     hotelVote:   processed?.hotel_vote ?? null,
-    operatorId:  processed?.operator_id ?? null,
+    operatorId:  processed?.operator_id ?? saveResult._operatorId ?? null,
   };
 
   const overlay = document.createElement("div");
@@ -590,7 +595,7 @@ async function showConfirmModal(saveResult) {
           </div>
         </div>
 
-        <div class="ttb-modal__section-title">Guests</div>
+        <div class="ttb-modal__section-title">Guests${direct ? ` <span class="ttb-required">*</span>` : ``}</div>
         <div id="ttb-tourists-list"></div>
         <button class="ttb-modal__add-tourist" type="button" id="ttb-add-tourist">+ Add guest</button>
 
@@ -601,7 +606,7 @@ async function showConfirmModal(saveResult) {
       <p class="ttb-modal__send-note">You are sending booking information directly to the hotel manager via the HelloOtel system.</p>
       ${pre.tourists.length === 0 ? `<p class="ttb-modal__warn-note">Attention! To copy guests&rsquo; full names, you must first open the detailed booking view before sending the reservation.</p>` : ``}
       <div class="ttb-modal__footer">
-        <button class="ttb-modal__btn ttb-modal__btn--delete"  type="button">Cancel Send</button>
+        <button class="ttb-modal__btn ttb-modal__btn--delete"  type="button" ${direct ? `hidden` : ``}>Cancel Send</button>
         <div style="flex:1"></div>
         <button class="ttb-modal__btn ttb-modal__btn--cancel"  type="button">Cancel</button>
         <button class="ttb-modal__btn ttb-modal__btn--confirm" type="button" disabled>Confirm</button>
@@ -670,8 +675,17 @@ async function showConfirmModal(saveResult) {
   updateStars(selectedVote ?? 0);
 
   // ── Confirm button state ──────────────────────────────────────────
+  function hasAnyTourist() {
+    return [...touristsList.querySelectorAll(".ttb-tourist-row")]
+      .some(row =>
+        row.querySelector(".ttb-tourist__last").value.trim() ||
+        row.querySelector(".ttb-tourist__first").value.trim()
+      );
+  }
   function updateConfirmState() {
-    confirmBtn.disabled = !selectedHotelId || !roomSelect.value || !(selectedVote > 0);
+    const baseInvalid = !selectedHotelId || !roomSelect.value || !(selectedVote > 0);
+    // In direct mode the user must add at least one guest by hand
+    confirmBtn.disabled = baseInvalid || (direct && !hasAnyTourist());
   }
 
   roomSelect.addEventListener("change", updateConfirmState);
@@ -712,6 +726,17 @@ async function showConfirmModal(saveResult) {
 
   overlay.querySelector("#ttb-add-tourist").addEventListener("click", () => {
     touristsList.appendChild(buildTouristRow());
+    updateConfirmState();
+  });
+
+  // Re-evaluate Confirm enable state when guest inputs change or rows are removed
+  // (matters only in direct mode where ≥1 guest is required).
+  touristsList.addEventListener("input",  updateConfirmState);
+  touristsList.addEventListener("click",  (e) => {
+    if (e.target.classList?.contains("ttb-tourist__remove")) {
+      // remove handler runs on the row itself; schedule state check after removal
+      queueMicrotask(updateConfirmState);
+    }
   });
 
   // ── Hotel autocomplete ────────────────────────────────────────────
@@ -764,7 +789,6 @@ async function showConfirmModal(saveResult) {
 
     function closeCancel() {
       destroyModal();
-      showToast("Booking saved. Not yet confirmed.");
       resolve({ status: "cancelled" });
     }
 
@@ -817,7 +841,7 @@ async function showConfirmModal(saveResult) {
         const operatorSelectEl = overlay.querySelector("#ttb-operator-select");
         const selectedOperatorId = operatorSelectEl?.value ? parseInt(operatorSelectEl.value, 10) : null;
 
-        const result = await confirmBookingOnServer(raw.id, {
+        const payload = {
           hotel_id:         selectedHotelId || null,
           hotel_name:       selectedHotelName || null,
           room_type_id:     selectedRoomId || null,
@@ -834,7 +858,11 @@ async function showConfirmModal(saveResult) {
           tourists:    tourists,
           hotel_vote:  selectedVote !== null ? selectedVote * 10 : undefined,
           operator_id: selectedOperatorId,
-        });
+        };
+
+        const result = direct
+          ? await storeProcessedDirect(payload)
+          : await confirmBookingOnServer(raw.id, payload);
 
         if (result?.hellootel?.error) {
           confirmBtn.disabled    = false;
@@ -967,6 +995,32 @@ async function injectButton(card, parser) {
 
       const raw     = parser.parseCard(card);
       const booking = buildCommonBookingData(raw);
+
+      // No guests parsed → skip persisting the raw booking. Open the confirm
+      // modal in direct mode so the user can enter guests by hand; on confirm
+      // we POST to /processed-bookings/direct (no source_booking_id).
+      if (!raw.tourists || raw.tourists.length === 0) {
+        btn.textContent = prev;
+        btn.disabled    = false;
+        const modalResult = await showConfirmModal({
+          data: booking, processed: null, hotel_match: null, _direct: true,
+          _operatorId: parser.operator_id ?? null,
+        });
+        const modalStatus = modalResult?.status;
+        if (modalStatus === "sent") {
+          btn.textContent = SENT_LABEL;
+          btn.classList.add("ttb-save-booking-button--sent");
+          if (parsedCode && modalResult.processed) {
+            sentBookingProcessed.set(parsedCode, modalResult.processed);
+          }
+          btn = attachSentClickHandler(btn, parsedCode);
+        } else if (modalStatus === "confirmed_only") {
+          btn.textContent = FAILED_LABEL;
+          btn.classList.add("ttb-save-booking-button--confirmed");
+        }
+        return;
+      }
+
       const result  = await saveBookingToServer(booking);
 
       // Reflect state from previous sessions immediately
