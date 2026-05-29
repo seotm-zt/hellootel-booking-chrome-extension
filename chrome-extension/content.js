@@ -228,9 +228,13 @@ async function refreshConfirmedCodes() {
 // ── Button injection ─────────────────────────────────────────────────
 
 function buildCommonBookingData(booking) {
+  // Use effective location (real source URL on preview pages) — otherwise
+  // saves from booking.localhost and booking-configurator.hellootel.com
+  // would end up with different source_domain and create duplicate rows.
+  const loc = getEffectiveLocation();
   return {
     ...booking,
-    source_url:  window.location.href,
+    source_url:  loc.href,
     page_title:  document.title,
     language:    document.documentElement.lang || "en",
     captured_at: new Date().toISOString(),
@@ -604,7 +608,7 @@ async function showConfirmModal(saveResult) {
       </div>
 
       <p class="ttb-modal__send-note">You are sending booking information directly to the hotel manager via the HelloOtel system.</p>
-      ${pre.tourists.length === 0 ? `<p class="ttb-modal__warn-note">Attention! To copy guests&rsquo; full names, you must first open the detailed booking view before sending the reservation.</p>` : ``}
+      ${pre.tourists.length === 0 ? `<p class="ttb-modal__warn-note">Attention! To copy all data correctly, you must first expand the detailed booking view before sending the reservation.</p>` : ``}
       <div class="ttb-modal__footer">
         <button class="ttb-modal__btn ttb-modal__btn--delete"  type="button" ${direct ? `hidden` : ``}>Cancel Send</button>
         <div style="flex:1"></div>
@@ -1142,6 +1146,23 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) queu
 // Clean up the modal if the user navigates away (Livewire SPA or real unload).
 window.addEventListener("pagehide", destroyModal);
 document.addEventListener("livewire:navigate", destroyModal);
+
+// React to login/logout from the popup without a page refresh.
+// Without this, buttons injected right after login show the default blue
+// "Send to HelloOtel" because the sent/failed/saved sets were populated
+// (or rather, not populated) while the user was still anonymous.
+chrome.storage.onChanged.addListener(async (changes, area) => {
+  if (area !== "local" || !changes[AUTH_STATE_KEY]) return;
+  const wasAuthed = !!changes[AUTH_STATE_KEY].oldValue?.authorized;
+  const isAuthed  = !!changes[AUTH_STATE_KEY].newValue?.authorized;
+  if (isAuthed && !wasAuthed) {
+    await refreshConfirmedCodes();
+    clearInjectedButtons();
+    queueScan();
+  } else if (!isAuthed && wasAuthed) {
+    clearInjectedButtons();
+  }
+});
 
 installObserver();
 

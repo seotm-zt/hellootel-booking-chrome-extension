@@ -47,8 +47,26 @@
 
 > **Важно:** HellOotel возвращает только типы номеров, доступные на указанный период. Если `arrival_at`/`departure_at` не переданы, `HellOotelLookupService::getRoomTypes()` подставляет «вчера/сегодня» как fallback, что может скрыть нужные варианты. В Confirm-модале расширения даты пробрасываются автоматически: при первой загрузке — из распарсенных `pre.arrivalAt/departureAt`, при изменении полей `#ttb-arrival`/`#ttb-departure` — список перезагружается с новыми датами.
 
+## GET /country/list, /city/list
+
+Справочники стран и городов. Расширение получает их один раз при `boot()` через прокси-роуты `/api/v1/extension/countries` и `/api/v1/extension/cities`, кэширует в памяти как `{id: name}` и резолвит `country_id`/`city_id` из ответа `/hotels?q=…` в подсветку «Страна, Город» под полем выбора отеля (цвет `#f0592b`).
+
+## Direct mode — когда парсер не нашёл туристов
+
+Если `raw.tourists.length === 0` после `parseCard`:
+1. `POST /bookings` **не вызывается** — сырая бронь не сохраняется
+2. Открывается confirm-модалка в direct-режиме: «Guests» помечен `*` обязательным, кнопка `Cancel Send` (delete from DB) скрыта
+3. Пользователь вручную добавляет туристов; `Confirm` активна только когда есть ≥1 заполненная строка
+4. На Confirm → **`POST /api/v1/extension/processed-bookings/direct`** с тем же payload что и обычный confirm
+5. Сервер создаёт `ProcessedBooking` с `source_booking_id = null`, ставит `confirmed_at = now()`, шлёт в HelloOtel через `HellOotelReservationService::send()`
+
+## Повторное сохранение брони со статусом «Hotel not found»
+
+Если после первого сохранения отель не нашёлся в HellOotel — пользователь может завести его в HellOotel и кликнуть кнопку повторно. `BookingProcessorService::process()` в ветке «уже обработано» теперь ретраит `matchHotelAndRoom` если `processed.hotel_id` всё ещё null: успешный матч → запись `hotel_id`/`room_type_*` обновляется → ответ возвращает заполненный `hotel_match` → кнопка переходит в состояние «Confirm & send to HelloOtel».
+
 ## Удалённые поля
 
 | Поле | Статус |
 |------|--------|
 | `reservation_time` | Удалено из формы, API, БД (миграция 2026_05_21) |
+| `meal_plan` | Удалено из формы, API, БД (миграция 2026_05_28). План питания не отправляется в HelloOtel, поле было пыли-собирателем |

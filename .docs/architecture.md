@@ -39,9 +39,13 @@
 1. content.js загружен браузером
          │
 2. boot() — параллельно:
-   ├── loadParsers()  → background → GET /parsers  → регистрирует DB-парсеры
+   ├── loadParsers()  → background → GET /parsers  → регистрирует DB-парсеры (с operator_id)
    ├── loadRules()    → background → GET /parser-rules → загружает правила доменов
-   └── refreshConfirmedCodes() → background → GET /bookings → строит Set подтв./сохранённых
+   ├── refreshConfirmedCodes() → background → GET /bookings → строит Set подтв./сохранённых
+   ├── ensureCurrencies() → background → GET /currencies → кэш в _currencies
+   ├── ensureOperators()  → background → GET /operators  → кэш в _operators
+   ├── ensureCountries()  → background → GET /countries  → кэш {id:name} в _countries
+   └── ensureCities()     → background → GET /cities     → кэш {id:name} в _cities
          │
 3. queueScan()
    ├── ParserRegistry.find(location) — ищет подходящий парсер
@@ -67,7 +71,8 @@
 | `content.css` | Стили кнопок, модала и тоста |
 | `popup.html/js/css` | Попап: вход в аккаунт + логин-номер, список броней (только чтение + Remove) |
 | `parsers/registry.js` | Реестр парсеров, матчинг URL |
-| `parsers/config-engine.js` | Движок: строит парсер из JSON-конфига |
+| `parsers/config-engine.js` | Движок: строит парсер из JSON-конфига. Поддерживает cross-element extraction (`data_root`/`card_root`/`card_fields`/`card_label_maps`) и `multi+join` для склейки нескольких элементов в строку |
+| `parsers/currency-utils.js` | `detectCurrency(text)` — извлекает ISO-код валюты из price-строки |
 
 ### Dev-сборка `chrome-extension-dev/`
 
@@ -193,6 +198,14 @@ processed_bookings (чистовые данные)
 4. **Повторная отправка заблокирована**: если `hellootel_reservation_id` уже заполнен — запрос к HellOotel не делается (защита от дублей)
 5. После отправки брони автоматически отправляется рейтинг (`hotel_vote`), если он выставлен
 
+### Direct mode (бронь без сырой записи)
+
+Когда парсер не извлёк ни одного гостя, content.js не сохраняет в `extension_bookings`, а сразу открывает confirm-модалку. На Confirm идёт `POST /processed-bookings/direct` → `storeProcessedDirect()` создаёт `ProcessedBooking` с `source_booking_id = null`, ставит `confirmed_at = now()` и шлёт в HelloOtel через `HellOotelReservationService::send()`. Поле «Guests» помечено `*` обязательным, кнопка `Cancel Send` скрыта (удалять нечего). См. [send_booking.md](send_booking.md).
+
+### Ретрай матчинга отеля
+
+`BookingProcessorService::process()` при повторной обработке существующей брони (`processed_booking_id` уже стоит) патчит поля, которые ранее не заполнились. Сейчас два таких поля: `currency_code` (если в первый раз не определили валюту по `total_price`) и `hotel_id` (если отеля не было в HellOotel — пользователь мог добавить его между сохранениями).
+
 ### Рейтинг отеля (hotel_vote)
 
 - HellOotel API возвращает и принимает рейтинг в диапазоне **0–100**
@@ -212,8 +225,13 @@ processed_bookings (чистовые данные)
 
 | Класс | Роль |
 |-------|------|
-| `HellOotelLookupService` | Чтение: список отелей (`/hotel/search`), типы номеров (`/hotel/bonus-room-types`), рейтинг (`/hotel/vote`) |
+| `HellOotelLookupService` | Чтение: список отелей с `country_id`/`city_id` (`/hotel/list`), типы номеров (`/hotel/bonus-room-types`), рейтинг (`/hotel/vote`), операторы (`/operator/list`), страны (`/country/list`), города (`/city/list`). Per-request memoization для каждого справочника |
 | `HellOotelReservationService` | Запись: создание резервации (`/reservation/create`), отправка рейтинга (`/hotel/vote`) |
+| `ParserEngineSimulator` | PHP-зеркало `ConfigParserEngine`. Используется командой `parser:test` для прогона парсеров против сохранённых HTML-снимков без браузера |
+
+### Подсветка страны/города
+
+Когда отель найден (auto-match или suggestions), под полем выбора отеля показывается «Страна, Город» (цвет `#f0592b`). Резолв ID→название идёт через локальные кэши `_countries`/`_cities`, загруженные при `boot()`. Если отель не найден или у него нет `country_id`/`city_id` — блок скрыт.
 
 ### Оператор
 

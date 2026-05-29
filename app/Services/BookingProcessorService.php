@@ -142,9 +142,11 @@ class BookingProcessorService
     {
         if (!$domain) return null;
 
-        // Bookings saved from the HTML preview page have domain=booking.localhost.
-        // The real URL is stored in the corresponding ExtensionPageReport.
-        if ($domain === 'booking.localhost' && preg_match('#/page-reports/(\d+)/#', $url, $m)) {
+        // Bookings saved from the HTML preview route — regardless of host
+        // (booking.localhost in dev, booking-configurator.hellootel.com in prod) —
+        // should resolve against the original page's domain. The real URL is
+        // stored in the corresponding ExtensionPageReport.
+        if (preg_match('#/admin/extension/page-reports/(\d+)/html#', $url, $m)) {
             $report = ExtensionPageReport::find((int) $m[1]);
             if ($report?->url) {
                 $domain = parse_url($report->url, PHP_URL_HOST) ?: $domain;

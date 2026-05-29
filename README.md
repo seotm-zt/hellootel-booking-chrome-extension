@@ -42,8 +42,7 @@ unzip booking_saver.zip -d /var/www/booking_saver
 cd /var/www/booking_saver
 composer install --no-dev --optimize-autoloader
 
-# На Hellootel (PHP 8.1 по умолчанию):
-# /opt/php84/bin/php /opt/php84/bin/composer install --no-dev --optimize-autoloader
+# На Hellootel (PHP 8.1 по умолчанию, нужен 8.4; composer в /usr/local/bin/composer):
 /opt/php84/bin/php /usr/local/bin/composer install --no-dev --optimize-autoloader
 ```
 
@@ -167,6 +166,44 @@ php artisan optimize:clear
 # На Hellootel:
 /opt/php84/bin/php artisan optimize:clear
 ```
+
+---
+
+## Деплой обновлений
+
+После того как сервер уже запущен — для обновления кода нужно три шага: pull, миграции, сидер парсеров.
+
+```bash
+git pull
+
+# composer (если изменился composer.lock)
+/opt/php84/bin/php /usr/local/bin/composer install --no-dev --optimize-autoloader
+
+# миграции БД
+/opt/php84/bin/php artisan migrate --force
+
+# полная замена парсеров и правил из сидера
+/opt/php84/bin/php artisan db:seed --class=ParserDataSeeder --force
+
+# сбросить кэши
+/opt/php84/bin/php artisan cache:clear
+/opt/php84/bin/php artisan config:clear
+/opt/php84/bin/php artisan route:clear
+/opt/php84/bin/php artisan view:clear
+```
+
+> **⚠ Полная замена парсеров.** Сгенерированный `ParserDataSeeder` делает `whereNotIn('name', $list)->delete()` перед `updateOrCreate`. Парсеры/правила, которых нет в сидере, **удаляются**. Если на проде есть локальные парсеры — экспортируй их в сидер на локалке (`php artisan parsers:generate-seeder`) до деплоя, либо забэкапь:
+> ```bash
+> mysqldump -u USER -p DBNAME extension_parsers extension_parser_rules > /tmp/parsers_backup.sql
+> ```
+
+### Обновление Chrome-расширения
+
+Парсеры из БД подгружаются расширением через `/api/v1/extension/parsers` при каждом загрузе страницы — новые/изменённые парсеры подхватываются автоматически без обновления расширения.
+
+Релоад расширения нужен только когда меняется JS-код (`content.js`, `config-engine.js` и т.д.) или `manifest.json`. В этом случае подними `version` в `chrome-extension/manifest.json` и юзеры либо получат обновление автоматически (через Chrome Web Store), либо вручную «Reload» в `chrome://extensions`.
+
+При добавлении новых хостов в `manifest.json → host_permissions` юзеры увидят промпт «This extension wants new permissions» — должны нажать **Accept**, иначе расширение перейдёт в disabled-состояние.
 
 ---
 
