@@ -37,6 +37,7 @@
       "js": [
         "auth.js",
         "parsers/currency-utils.js",
+        "booking-modal.js",
         "parsers/registry.js",
         "parsers/config-engine.js",
         "content.js"

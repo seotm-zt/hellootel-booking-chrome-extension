@@ -234,11 +234,6 @@ class ExtensionController extends Controller
             'tourist_ids'            => [],
             'hotel_vote'             => $data['hotel_vote']       ?? null,
             'operator_id'            => $data['operator_id']      ?? null,
-            'total_bonus'            => 0,
-            'hm_approval'            => null,
-            'payment_status_ag'      => 0,
-            'payment_status_rm'      => 0,
-            'payment_status_cm'      => 0,
         ]);
 
         Log::info('ProcessedBooking created without source booking', [
@@ -261,6 +256,121 @@ class ExtensionController extends Controller
             'data'      => $processed,
             'hellootel' => $hellootelResult,
         ]);
+    }
+
+    // List the current user's processed bookings that have NOT been sent to
+    // HelloOtel yet (failed / not sent / hotel-not-found). Sent bookings are
+    // intentionally hidden from the extension popup.
+    public function processedList(): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $rows = ProcessedBooking::where('saved_by_user_id', $user->id)
+            ->whereNull('hellootel_reservation_id')
+            ->with('sourceBooking:id,source_url')
+            ->orderByDesc('id')
+            ->get([
+                'id', 'source_booking_id', 'booking_code',
+                'hotel_id', 'hotel_name', 'room_type_id', 'room_type_name',
+                'operator_id', 'operator_name', 'reservation_date',
+                'arrival_at', 'departure_at', 'price', 'currency_code',
+                'person_count_adults', 'person_count_children', 'person_count_teens',
+                'tourists', 'hotel_vote', 'hellootel_response',
+            ]);
+
+        // Flatten the source page URL (parser bookings only) so the popup can
+        // link to the original page for verifying parsed data.
+        $data = $rows->map(function (ProcessedBooking $r) {
+            $arr = $r->toArray();
+            $arr['source_url'] = $r->sourceBooking?->source_url;
+            unset($arr['source_booking']);
+            return $arr;
+        });
+
+        return response()->json(['data' => $data]);
+    }
+
+    // Update an existing ProcessedBooking (edited in the extension) and retry
+    // sending it to HelloOtel. Counterpart of confirm() for processed bookings
+    // that have no source ExtensionBooking (manual entries).
+    public function updateProcessed(int $id, Request $request, HellOotelReservationService $reservation): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $processed = ProcessedBooking::where('id', $id)
+            ->where('saved_by_user_id', $user->id)
+            ->firstOrFail();
+
+        $data = $request->validate([
+            'hotel_id'         => 'nullable|integer',
+            'hotel_name'       => 'nullable|string|max:500',
+            'room_type_id'     => 'nullable|integer',
+            'room_type_name'   => 'nullable|string|max:500',
+            'booking_code'     => 'nullable|string|max:255',
+            'reservation_date' => 'nullable|date_format:Y-m-d',
+            'arrival_at'       => 'nullable|date_format:Y-m-d',
+            'departure_at'     => 'nullable|date_format:Y-m-d',
+            'price'            => 'nullable|numeric',
+            'currency_code'    => 'nullable|string|max:3',
+            'adults'           => 'nullable|integer|min:0',
+            'children'         => 'nullable|integer|min:0',
+            'infants'          => 'nullable|integer|min:0',
+            'tourists'         => 'required|array|min:1',
+            'hotel_vote'       => 'nullable|integer|min:10|max:100',
+            'operator_id'      => 'nullable|integer',
+        ]);
+
+        $processed->confirmed_by_user_id = $user->id;
+        if (!$processed->confirmed_at) {
+            $processed->confirmed_at = now();
+        }
+
+        $directFields = [
+            'hotel_id', 'hotel_name', 'room_type_id', 'room_type_name',
+            'booking_code', 'reservation_date',
+            'arrival_at', 'departure_at', 'price', 'currency_code', 'tourists',
+            'hotel_vote', 'operator_id',
+        ];
+        foreach ($directFields as $field) {
+            if (!array_key_exists($field, $data)) continue;
+            $processed->$field = $data[$field];
+        }
+        if (array_key_exists('adults', $data))   $processed->person_count_adults   = (int) ($data['adults']   ?? 0);
+        if (array_key_exists('children', $data)) $processed->person_count_children = (int) ($data['children'] ?? 0);
+        if (array_key_exists('infants', $data))  $processed->person_count_teens    = (int) ($data['infants']  ?? 0);
+
+        $processed->save();
+
+        $hellootelResult = ['id' => null, 'error' => null];
+        try {
+            $hellootelResult = $reservation->send($processed);
+        } catch (\Throwable $e) {
+            Log::warning('HellOotel resend failed for processed booking', [
+                'processed_id' => $processed->id,
+                'error'        => $e->getMessage(),
+            ]);
+            $hellootelResult['error'] = $e->getMessage();
+        }
+
+        return response()->json([
+            'data'      => $processed,
+            'hellootel' => $hellootelResult,
+        ]);
+    }
+
+    public function destroyProcessed(int $id): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        ProcessedBooking::where('id', $id)
+            ->where('saved_by_user_id', $user->id)
+            ->firstOrFail()
+            ->delete();
+
+        return response()->json(['ok' => true]);
     }
 
     public function confirm(int $id, Request $request, HellOotelReservationService $reservation): JsonResponse

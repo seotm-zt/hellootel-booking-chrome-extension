@@ -45,7 +45,7 @@ class BookingProcessorService
         }
 
         [$arrival, $departure] = $this->parseStayDates($booking->stay_dates);
-        [$price, $currency, $commission] = $this->parseTotalPrice($booking->total_price);
+        [$price, $currency] = $this->parseTotalPrice($booking->total_price);
 
         $tourists = $booking->tourists ?: [];
         $guestInfo = collect($tourists)
@@ -81,16 +81,10 @@ class BookingProcessorService
             'agency_name'           => $this->resolveField($booking, $fieldMap, 'agency_name', $booking->meta['agency'] ?? null),
             'price'                 => $price,
             'currency_code'         => $currency,
-            'commission'            => $commission,
             'status'                => $this->resolveField($booking, $fieldMap, 'status', $this->firstStatus($booking->statuses)),
             'person_count_adults'   => $adults,
             'person_count_children' => $children,
             'person_count_teens'    => $infants,
-            'total_bonus'           => 0,
-            'hm_approval'           => null,
-            'payment_status_ag'     => 0,
-            'payment_status_rm'     => 0,
-            'payment_status_cm'     => 0,
         ]);
 
         $booking->update(['processed_booking_id' => $processed->id]);

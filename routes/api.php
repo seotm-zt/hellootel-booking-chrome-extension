@@ -17,6 +17,9 @@ Route::prefix('v1/extension')->group(function () {
         Route::get('bookings',                      [ExtensionController::class, 'index']);
         Route::post('bookings',                     [ExtensionController::class, 'store']);
         Route::post('processed-bookings/direct',    [ExtensionController::class, 'storeProcessedDirect']);
+        Route::get('processed-bookings',            [ExtensionController::class, 'processedList']);
+        Route::patch('processed-bookings/{id}',     [ExtensionController::class, 'updateProcessed']);
+        Route::delete('processed-bookings/{id}',    [ExtensionController::class, 'destroyProcessed']);
         Route::patch('bookings/{id}/confirm',       [ExtensionController::class, 'confirm']);
         Route::delete('bookings/{id}',              [ExtensionController::class, 'destroy']);
 

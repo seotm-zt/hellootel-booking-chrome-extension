@@ -158,11 +158,12 @@ class ExtensionBookingResource extends Resource
                 ->schema([
                     RepeatableEntry::make('tourists')
                         ->label('')
-                        ->columns(3)
+                        ->columns(2)
                         ->schema([
+                            TextEntry::make('full_name')->label('Full name')->placeholder('—'),
+                            TextEntry::make('dob')->label('Date of birth')->placeholder('—'),
                             TextEntry::make('last_name')->label('Last name')->placeholder('—'),
                             TextEntry::make('first_name')->label('First name')->placeholder('—'),
-                            TextEntry::make('dob')->label('Date of birth')->placeholder('—'),
                         ]),
                 ]),
 

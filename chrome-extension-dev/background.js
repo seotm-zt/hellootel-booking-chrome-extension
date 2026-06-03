@@ -91,6 +91,45 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "LOAD_PROCESSED") {
+    (async () => {
+      try {
+        const data = await authedFetch(`/processed-bookings`);
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === "UPDATE_PROCESSED_DIRECT") {
+    (async () => {
+      try {
+        const data = await authedFetch(`/processed-bookings/${message.id}`, {
+          method: "PATCH",
+          body: JSON.stringify(message.payload),
+        });
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === "DELETE_PROCESSED") {
+    (async () => {
+      try {
+        const data = await authedFetch(`/processed-bookings/${message.id}`, { method: "DELETE" });
+        sendResponse({ ok: true, data });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
   if (message.type === "SEARCH_HOTELS") {
     (async () => {
       try {

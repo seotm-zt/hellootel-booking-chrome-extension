@@ -6,15 +6,12 @@ use App\Filament\Resources\ProcessedBooking\Pages\EditProcessedBooking;
 use App\Filament\Resources\ProcessedBooking\Pages\ListProcessedBookings;
 use App\Filament\Resources\ProcessedBooking\Pages\ViewProcessedBooking;
 use App\Models\ProcessedBooking;
-use App\Services\BookingProcessorService;
 use App\Services\HellOotelLookupService;
-use App\Services\HellOotelReservationService;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
@@ -22,15 +19,11 @@ use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section as InfoSection;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Actions\Action;
-use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Collection;
 
 class ProcessedBookingResource extends Resource
 {
@@ -38,6 +31,37 @@ class ProcessedBookingResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-check-badge';
     protected static ?string $navigationLabel = 'Processed Bookings';
     protected static ?int $navigationSort = 201;
+
+    /** Per-request memoized [hotel_id => name] map for the table column. */
+    protected static ?array $hotelMap = null;
+
+    protected static function hotelName(?int $id, ProcessedBooking $record): string
+    {
+        if (!$id) {
+            return '—';
+        }
+        if (static::$hotelMap === null) {
+            static::$hotelMap = app(HellOotelLookupService::class)->getHotels();
+        }
+        return static::$hotelMap[$id] ?? $record->hotel_name ?? "#{$id}";
+    }
+
+    /** Per-request memoized [operator_id => name] map for the table column. */
+    protected static ?array $operatorMap = null;
+
+    protected static function operatorName(?string $name, ProcessedBooking $record): string
+    {
+        if (filled($name)) {
+            return $name;
+        }
+        if (!$record->operator_id) {
+            return '—';
+        }
+        if (static::$operatorMap === null) {
+            static::$operatorMap = app(HellOotelLookupService::class)->getOperators();
+        }
+        return static::$operatorMap[$record->operator_id] ?? "#{$record->operator_id}";
+    }
 
     public static function getNavigationGroup(): ?string
     {
@@ -65,6 +89,14 @@ class ProcessedBookingResource extends Resource
             ->columns([
                 TextColumn::make('id')->label('ID')->sortable(),
                 TextColumn::make('booking_code')->label('Code')->badge()->color('success')->searchable()->placeholder('—'),
+                TextColumn::make('source')
+                    ->label('Source')
+                    ->badge()
+                    ->getStateUsing(fn (ProcessedBooking $r) => $r->source_booking_id ? 'Parser' : 'Manual')
+                    ->color(fn (string $state) => $state === 'Parser' ? 'info' : 'warning')
+                    ->icon(fn (string $state) => $state === 'Parser'
+                        ? 'heroicon-o-cpu-chip'
+                        : 'heroicon-o-pencil-square'),
                 IconColumn::make('hotel_id')
                     ->label('Matched')
                     ->boolean()
@@ -73,16 +105,27 @@ class ProcessedBookingResource extends Resource
                     ->trueColor('success')
                     ->falseColor('gray')
                     ->getStateUsing(fn (ProcessedBooking $r) => (bool) $r->hotel_id),
-                TextColumn::make('hotel_id')->label('hotel_id')->placeholder('—')->searchable(),
-                TextColumn::make('hotel_vote')
-                    ->label('Rating')
-                    ->alignCenter()
+                TextColumn::make('hotel_id')
+                    ->label('Hotel')
                     ->placeholder('—')
-                    ->formatStateUsing(fn (?int $state) => $state !== null ? str_repeat('★', $state) . str_repeat('☆', 5 - $state) : '—'),
+                    ->searchable()
+                    ->formatStateUsing(fn (?int $state, ProcessedBooking $r) => static::hotelName($state, $r)),
+                TextColumn::make('hotel_vote')->label('Rating')->alignCenter()->placeholder('—'),
                 TextColumn::make('hotel_name')->label('Hotel (text)')->limit(30)->placeholder('—')->searchable()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('room_type_id')->label('room_type_id')->placeholder('—'),
                 TextColumn::make('room_type_name')->label('Room type')->limit(25)->placeholder('—'),
-                TextColumn::make('status')->label('Status')->placeholder('—')->badge()->color('warning'),
+                TextColumn::make('hellootel_reservation_id')->label('Reservation ID')->badge()->color('success')->placeholder('—'),
+                TextColumn::make('hellootel_status')
+                    ->label('Sent')
+                    ->badge()
+                    ->getStateUsing(fn (ProcessedBooking $r) => $r->hellootel_reservation_id
+                        ? 'Sent'
+                        : ($r->hellootel_response ? 'Error' : '—'))
+                    ->color(fn (string $state) => match ($state) {
+                        'Sent'  => 'success',
+                        'Error' => 'danger',
+                        default => 'gray',
+                    })
+                    ->tooltip(fn (ProcessedBooking $r) => $r->hellootel_reservation_id ? null : ($r->hellootel_response ?: null)),
                 IconColumn::make('confirmed_at')
                     ->label('Conf.')
                     ->boolean()
@@ -102,14 +145,16 @@ class ProcessedBookingResource extends Resource
                         : '—')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('operator_id')->label('operator_id')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('operator_name')->label('operator_name')->placeholder('—')->searchable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('operator_name')
+                    ->label('Operator')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->getStateUsing(fn (ProcessedBooking $r) => static::operatorName($r->operator_name, $r)),
                 TextColumn::make('agency_id')->label('agency_id')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('agency_name')->label('Agency')->placeholder('—')->searchable(),
+                TextColumn::make('agency_name')->label('Agency')->placeholder('—')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('reservation_date')->label('Res. date')->date('d.m.Y')->sortable()->placeholder('—'),
                 TextColumn::make('arrival_at')->label('Check-in')->date('d.m.Y')->sortable()->placeholder('—'),
                 TextColumn::make('departure_at')->label('Check-out')->date('d.m.Y')->placeholder('—'),
-                TextColumn::make('nights')->label('Nights')->alignCenter()->placeholder('—'),
-                TextColumn::make('guest_info')->label('Guests')->limit(25)->placeholder('—')->searchable(),
                 TextColumn::make('person_count_adults')->label('Adt.')->alignCenter(),
                 TextColumn::make('person_count_children')->label('Chd.')->alignCenter(),
                 TextColumn::make('person_count_teens')->label('Inf.')->alignCenter(),
@@ -117,59 +162,14 @@ class ProcessedBookingResource extends Resource
                     ->formatStateUsing(fn ($state, ProcessedBooking $r) => $state
                         ? number_format($state, 2, '.', ' ') . ($r->currency_code ? ' ' . $r->currency_code : '')
                         : '—'),
-                TextColumn::make('commission')->label('Commission')->placeholder('—')
-                    ->formatStateUsing(fn ($state, ProcessedBooking $r) => $state
-                        ? number_format($state, 2, '.', ' ') . ($r->currency_code ? ' ' . $r->currency_code : '')
-                        : '—')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('total_bonus')->label('Bonus')->alignCenter()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('hm_approval')->label('hm_approval')->alignCenter()->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('payment_status_ag')->label('pay_ag')->alignCenter()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('payment_status_rm')->label('pay_rm')->alignCenter()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('payment_status_cm')->label('pay_cm')->alignCenter()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->actions([
-                Action::make('match')
-                    ->label('Match')
-                    ->icon('heroicon-o-magnifying-glass')
-                    ->color('info')
-                    ->action(function (ProcessedBooking $record): void {
-                        static::runMatch($record);
-                    }),
-                Action::make('get_vote')
-                    ->label('Get Vote')
-                    ->icon('heroicon-o-star')
-                    ->color('warning')
-                    ->visible(fn (ProcessedBooking $r) => (bool) $r->hotel_id)
-                    ->action(function (ProcessedBooking $record): void {
-                        static::runGetVote($record);
-                    }),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    BulkAction::make('match_all')
-                        ->label('Match with API')
-                        ->icon('heroicon-o-magnifying-glass')
-                        ->color('info')
-                        ->requiresConfirmation()
-                        ->modalHeading('Match with HellOotel API')
-                        ->modalDescription('The selected records will be matched against the HellOotel hotel and room type directories.')
-                        ->modalSubmitActionLabel('Match')
-                        ->action(function (Collection $records): void {
-                            $matched = 0;
-                            foreach ($records as $record) {
-                                if (static::runMatch($record)) $matched++;
-                            }
-                            Notification::make()
-                                ->title('Matching complete')
-                                ->body("Updated: {$matched} of {$records->count()}")
-                                ->success()
-                                ->send();
-                        })
-                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
@@ -193,25 +193,11 @@ class ProcessedBookingResource extends Resource
                     TextInput::make('hotel_name')->label('Hotel name (raw from booking)'),
                 ]),
 
-                ToggleButtons::make('hotel_vote')
-                    ->label('Hotel Rating')
-                    ->options([
-                        0 => '—',
-                        1 => '★',
-                        2 => '★★',
-                        3 => '★★★',
-                        4 => '★★★★',
-                        5 => '★★★★★',
-                    ])
-                    ->colors([
-                        0 => 'gray',
-                        1 => 'warning',
-                        2 => 'warning',
-                        3 => 'warning',
-                        4 => 'warning',
-                        5 => 'warning',
-                    ])
-                    ->inline()
+                TextInput::make('hotel_vote')
+                    ->label('Hotel Rating (0-100)')
+                    ->numeric()
+                    ->minValue(0)
+                    ->maxValue(100)
                     ->columnSpanFull(),
 
                 \Filament\Forms\Components\Grid::make(2)->schema([
@@ -263,21 +249,15 @@ class ProcessedBookingResource extends Resource
                     ->schema([
                         TextInput::make('last_name')->label('Last name'),
                         TextInput::make('first_name')->label('First name'),
-                        TextInput::make('dob')->label('Date of birth'),
+                        DatePicker::make('dob')->label('Date of birth')->displayFormat('d.m.Y'),
                     ])
                     ->defaultItems(0)
                     ->addActionLabel('Add tourist'),
             ]),
 
-            Section::make('Price & statuses')->columns(3)->schema([
+            Section::make('Price')->columns(2)->schema([
                 TextInput::make('price')->label('price')->numeric(),
-                TextInput::make('commission')->label('commission')->numeric(),
                 TextInput::make('currency_code')->label('currency_code')->maxLength(3)->placeholder('EUR'),
-                TextInput::make('total_bonus')->label('total_bonus')->numeric(),
-                TextInput::make('hm_approval')->label('hm_approval')->numeric(),
-                TextInput::make('payment_status_ag')->label('payment_status_ag')->numeric(),
-                TextInput::make('payment_status_rm')->label('payment_status_rm')->numeric(),
-                TextInput::make('payment_status_cm')->label('payment_status_cm')->numeric(),
             ]),
         ]);
     }
@@ -291,7 +271,7 @@ class ProcessedBookingResource extends Resource
                 TextEntry::make('hotel_vote')
                     ->label('Hotel Rating')
                     ->placeholder('—')
-                    ->formatStateUsing(fn (?int $state) => $state !== null ? str_repeat('★', $state) . str_repeat('☆', 5 - $state) . " ({$state}/5)" : '—'),
+                    ->formatStateUsing(fn (?int $state) => $state !== null ? "{$state}/100" : '—'),
                 TextEntry::make('hotel_name')->label('Hotel (text)')->placeholder('—'),
                 TextEntry::make('room_type_id')->label('room_type_id')->placeholder('—'),
                 TextEntry::make('room_type_name')->label('Room type')->placeholder('—'),
@@ -326,21 +306,12 @@ class ProcessedBookingResource extends Resource
                     ]),
                 ]),
 
-            InfoSection::make('Price & statuses')->columns(4)->schema([
+            InfoSection::make('Price')->columns(2)->schema([
                 TextEntry::make('price')->label('Price')
                     ->formatStateUsing(fn ($state, ProcessedBooking $r) => $state
                         ? number_format($state, 2, '.', ' ') . ($r->currency_code ? ' ' . $r->currency_code : '')
                         : '—'),
-                TextEntry::make('commission')->label('Commission')
-                    ->formatStateUsing(fn ($state, ProcessedBooking $r) => $state
-                        ? number_format($state, 2, '.', ' ') . ($r->currency_code ? ' ' . $r->currency_code : '')
-                        : '—'),
                 TextEntry::make('currency_code')->label('Currency')->placeholder('—'),
-                TextEntry::make('total_bonus')->label('total_bonus'),
-                TextEntry::make('hm_approval')->label('hm_approval')->placeholder('—'),
-                TextEntry::make('payment_status_ag')->label('payment_status_ag'),
-                TextEntry::make('payment_status_rm')->label('payment_status_rm'),
-                TextEntry::make('payment_status_cm')->label('payment_status_cm'),
             ]),
 
             InfoSection::make('Confirmation')->columns(2)->schema([
@@ -385,59 +356,6 @@ class ProcessedBookingResource extends Resource
                 TextEntry::make('created_at')->label('Processed at')->dateTime('d.m.Y H:i'),
             ]),
         ]);
-    }
-
-    public static function runGetVote(ProcessedBooking $record): void
-    {
-        if (!$record->hotel_id) {
-            Notification::make()->title('No hotel_id')->warning()->send();
-            return;
-        }
-
-        $vote = app(HellOotelLookupService::class)->getHotelVote((int) $record->hotel_id);
-
-        if ($vote === null) {
-            Notification::make()->title('Could not load vote from HellOotel')->warning()->send();
-            return;
-        }
-
-        $record->update(['hotel_vote' => $vote]);
-        $stars = str_repeat('★', $vote) . str_repeat('☆', 5 - $vote);
-        Notification::make()->title("Vote loaded: {$stars} ({$vote}/5)")->success()->send();
-    }
-
-    // Returns true if hotel_id was resolved
-    private static function runMatch(ProcessedBooking $record): bool
-    {
-        $source = $record->sourceBooking;
-        if (!$source) return false;
-
-        $service = app(BookingProcessorService::class);
-        [$hotelId, $roomTypeId, $roomTypeName] = $service->matchHotelAndRoom($source);
-
-        if (!$hotelId) {
-            Notification::make()
-                ->title('Hotel not found')
-                ->body("Could not match: \"{$source->hotel_name}\"")
-                ->warning()
-                ->send();
-            return false;
-        }
-
-        $record->update([
-            'hotel_id'      => $hotelId,
-            'room_type_id'  => $roomTypeId,
-            'room_type_name' => $roomTypeName,
-        ]);
-
-        $roomMsg = $roomTypeName ? ", room type: {$roomTypeName} (#{$roomTypeId})" : ', room type not found';
-        Notification::make()
-            ->title('Matched')
-            ->body("Hotel #{$hotelId}{$roomMsg}")
-            ->success()
-            ->send();
-
-        return true;
     }
 
     public static function getRelations(): array

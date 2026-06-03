@@ -119,6 +119,8 @@ body {
 .popup__button--primary { background: #f0592b; }
 .popup__button--primary:hover { background: #d44d23; }
 
+.popup__button--block { width: 100%; margin: 8px 0; }
+
 .popup__button--sm {
   min-height: 28px;
   padding: 0 10px;
@@ -303,7 +305,22 @@ body {
   color: #f0592b;
   font-size: 14px;
   font-weight: 700;
+  margin-right: auto;
 }
+
+.booking-card__edit {
+  min-height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #f0592b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.booking-card__edit:hover { background: #d44d23; }
 
 .booking-card__remove {
   min-height: 26px;

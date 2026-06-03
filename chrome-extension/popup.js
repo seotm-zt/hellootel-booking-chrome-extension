@@ -11,20 +11,7 @@ const loginSubmit         = document.getElementById("loginSubmit");
 const authenticatedSection = document.getElementById("authenticatedSection");
 const userNameLabel       = document.getElementById("userNameLabel");
 const logoutButton        = document.getElementById("logoutButton");
-
-const STATUS_MAP = {
-  "Не подтверждено": "Unconfirmed",
-  "Подтверждено":    "Confirmed",
-  "Оплачено":        "Paid",
-  "Не оплачено":     "Unpaid",
-  "Отменено":        "Cancelled",
-  "Ожидает":         "Pending",
-  "Обработано":      "Processed",
-};
-
-function translateStatus(s) {
-  return STATUS_MAP[s?.trim()] ?? s;
-}
+const addBookingManual    = document.getElementById("addBookingManual");
 
 function normalizeText(value) {
   return (value || "").replace(/\s+/g, " ").trim();
@@ -41,12 +28,6 @@ function hideStatus() {
   statusBox.textContent = "";
 }
 
-function formatStatuses(statuses) {
-  return Array.isArray(statuses)
-    ? statuses.filter(Boolean).map(translateStatus).join(", ")
-    : "";
-}
-
 function safeHttpUrl(url) {
   try {
     const parsed = new URL(url);
@@ -54,6 +35,13 @@ function safeHttpUrl(url) {
   } catch {
     return null;
   }
+}
+
+function fmtDateShort(v) {
+  if (!v) return "";
+  const s = String(v).slice(0, 10); // ISO → YYYY-MM-DD
+  const [y, m, d] = s.split("-");
+  return (y && m && d) ? `${d}.${m}.${y}` : s;
 }
 
 function createMetaRow(label, value) {
@@ -69,10 +57,9 @@ function createMetaRow(label, value) {
   return row;
 }
 
-function renderEmptyState(allConfirmed = false) {
-  bookingsList.innerHTML = allConfirmed
-    ? '<div class="popup__empty">No bookings yet. Click the "Send to HelloOtel" button on the booking history page.</div>'
-    : '<div class="popup__empty">No bookings yet. Click the “Send to HelloOtel” button on the booking history page.</div>';
+function renderEmptyState() {
+  bookingsList.innerHTML =
+    '<div class="popup__empty">No bookings to send. Use “+ Add booking manually”, or the “Send to HelloOtel” button on a booking page.</div>';
   bookingCount.hidden = true;
 }
 
@@ -87,28 +74,84 @@ async function apiFetch(path, options = {}) {
   return fetch(`${API_BASE}${path}`, { ...options, headers });
 }
 
-async function loadBookings() {
-  const response = await apiFetch("/bookings");
+// The popup lists ProcessedBookings that have NOT been sent to HelloOtel yet
+// (the endpoint already filters out sent ones). Manual bookings appear here too
+// since they have no source ExtensionBooking.
+async function loadProcessed() {
+  const response = await apiFetch("/processed-bookings");
   if (!response.ok) throw new Error("Failed to load bookings");
   const json = await response.json();
   return Array.isArray(json.data) ? json.data : [];
 }
 
-async function deleteBookingFromServer(id) {
-  const response = await apiFetch(`/bookings/${id}`, { method: "DELETE" });
+async function deleteProcessed(id) {
+  const response = await apiFetch(`/processed-bookings/${id}`, { method: "DELETE" });
   if (!response.ok) throw new Error("Failed to delete booking");
 }
 
-function buildBookingCard(booking) {
-  const code     = normalizeText(booking.booking_code || "No code");
-  const title    = normalizeText(booking.hotel_name   || "Untitled");
-  const subtitle = normalizeText(booking.subtitle);
-  const safeUrl  = safeHttpUrl(booking.source_url || "");
+// ── Manual-booking window (shared by "Add" and "Edit") ──────────────────
+
+function openManualWindow() {
+  return (async () => {
+    const width = 620;
+    let height = 820;
+    try {
+      const win = await chrome.windows.getCurrent();
+      if (win?.height) height = win.height;
+    } catch { /* keep default height */ }
+    const sw = window.screen?.availWidth  ?? width;
+    const sh = window.screen?.availHeight ?? height;
+    const left = Math.max(0, Math.round((sw - width)  / 2));
+    const top  = Math.max(0, Math.round((sh - height) / 2));
+    chrome.windows.create({
+      url: chrome.runtime.getURL("manual-booking.html"),
+      type: "popup",
+      width, height, left, top,
+    });
+  })();
+}
+
+function setEditBooking(record) {
+  return new Promise((resolve) => {
+    try { chrome.storage.local.set({ ttbEditBooking: record }, resolve); }
+    catch { resolve(); }
+  });
+}
+
+function clearEditBooking() {
+  return new Promise((resolve) => {
+    try { chrome.storage.local.remove("ttbEditBooking", resolve); }
+    catch { resolve(); }
+  });
+}
+
+// ── Booking cards ───────────────────────────────────────────────────────
+
+// Pull a human-readable message out of the stored HelloOtel API response
+// (a JSON string like {"message":"..."} or {"error":"..."}).
+function extractErrorMessage(resp) {
+  if (!resp) return "";
+  try {
+    const obj = typeof resp === "string" ? JSON.parse(resp) : resp;
+    return obj?.message || obj?.error || (typeof resp === "string" ? resp : JSON.stringify(obj));
+  } catch {
+    return String(resp);
+  }
+}
+
+function getBookingStatus(b) {
+  if (b.hellootel_response) return { label: "Failed to send", cls: "popup__status-badge--failed" };
+  if (!b.hotel_id)          return { label: "Hotel not found in HelloOtel", cls: "popup__status-badge--notfound" };
+  return { label: "Not sent yet", cls: "popup__status-badge--ready" };
+}
+
+function buildBookingCard(b) {
+  const code  = normalizeText(b.booking_code || "No code");
+  const title = normalizeText(b.hotel_name   || "Untitled");
 
   const article = document.createElement("article");
   article.className = "booking-card";
 
-  // Top row
   const top = document.createElement("div");
   top.className = "booking-card__top";
 
@@ -124,178 +167,100 @@ function buildBookingCard(booking) {
   titleEl.textContent = title;
   info.appendChild(titleEl);
 
-  if (subtitle && booking.processed_booking?.hotel_id) {
-    const subEl = document.createElement("div");
-    subEl.className = "booking-card__subtitle";
-    subEl.textContent = subtitle;
-    info.appendChild(subEl);
-  }
-
   top.appendChild(info);
 
+  // Link to the original page (parser bookings only) for verifying parsed data.
+  const safeUrl = safeHttpUrl(b.source_url || "");
   if (safeUrl) {
     const link = document.createElement("a");
     link.className = "booking-card__goto";
     link.href = safeUrl;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.title = "Go to booking page";
+    link.title = "Open the original page";
     link.textContent = "↗";
     top.appendChild(link);
   }
 
   article.appendChild(top);
 
-  // Meta rows
   const meta = document.createElement("div");
   meta.className = "booking-card__meta";
-  for (const row of [
-    createMetaRow("Dates",  booking.stay_dates),
-    createMetaRow("Guests", booking.guests),
-  ]) {
+  const dates  = [fmtDateShort(b.arrival_at), fmtDateShort(b.departure_at)].filter(Boolean).join(" – ");
+  const guests = [
+    b.person_count_adults   ? `${b.person_count_adults} ad`  : null,
+    b.person_count_children ? `${b.person_count_children} ch` : null,
+    b.person_count_teens    ? `${b.person_count_teens} inf`  : null,
+  ].filter(Boolean).join(", ");
+  for (const row of [createMetaRow("Dates", dates), createMetaRow("Guests", guests)]) {
     if (row) meta.appendChild(row);
   }
   article.appendChild(meta);
 
-  // HelloOtel status badge
-  const status = getBookingStatus(booking);
+  const status = getBookingStatus(b);
   if (status) {
     const badge = document.createElement("div");
     badge.className = `popup__status-badge ${status.cls}`;
     badge.textContent = status.label;
+    if (b.hellootel_response) badge.title = extractErrorMessage(b.hellootel_response);
     article.appendChild(badge);
   }
 
-  // Footer
   const footer = document.createElement("div");
   footer.className = "booking-card__footer";
 
   const price = document.createElement("div");
   price.className = "booking-card__price";
-  price.textContent = (normalizeText(booking.total_price || "—").split("/")[0]).trim() || "—";
+  price.textContent = b.price ? `${b.price} ${b.currency_code || ""}`.trim() : "—";
   footer.appendChild(price);
+
+  const editBtn = document.createElement("button");
+  editBtn.className = "booking-card__edit";
+  editBtn.type = "button";
+  editBtn.textContent = "Edit";
+  footer.appendChild(editBtn);
 
   const removeBtn = document.createElement("button");
   removeBtn.className = "booking-card__remove";
-  removeBtn.dataset.removeId   = booking.id;
-  removeBtn.dataset.bookingCode = booking.booking_code || "";
   removeBtn.type = "button";
   removeBtn.textContent = "Remove";
   footer.appendChild(removeBtn);
 
   article.appendChild(footer);
 
-  return article;
+  return { article, editBtn, removeBtn };
 }
 
-function getBookingStatus(booking) {
-  const pb = booking.processed_booking;
-  if (!pb) return { label: "Not processed", cls: "" };
-  if (pb.hellootel_reservation_id) return null; // sent — not shown
-  if (pb.confirmed_at) return { label: "Failed to send booking", cls: "popup__status-badge--failed" };
-  if (pb.hotel_id)     return { label: "Confirm & send to HelloOtel", cls: "popup__status-badge--ready" };
-  return { label: "Hotel not found in HelloOtel", cls: "popup__status-badge--notfound" };
-}
+function renderBookings(list) {
+  if (!list.length) { renderEmptyState(); return; }
 
-function renderBookings(bookings) {
-  const pending = bookings.filter(b => !b.processed_booking?.hellootel_reservation_id);
-
-  if (!bookings.length) { renderEmptyState(false); return; }
-  if (!pending.length)  { renderEmptyState(true);  return; }
-
-  bookingCount.textContent = String(pending.length);
+  bookingCount.textContent = String(list.length);
   bookingCount.hidden = false;
-
   bookingsList.innerHTML = "";
 
-  for (const booking of pending) {
-    bookingsList.appendChild(buildBookingCard(booking));
-  }
+  for (const booking of list) {
+    const { article, editBtn, removeBtn } = buildBookingCard(booking);
 
-  for (const button of bookingsList.querySelectorAll("[data-remove-id]")) {
-    button.addEventListener("click", async () => {
+    // Edit → stash the record and open the manual-booking window in edit mode.
+    editBtn.addEventListener("click", async () => {
+      await setEditBooking(booking);
+      await openManualWindow();
+    });
+
+    removeBtn.addEventListener("click", async () => {
+      removeBtn.disabled = true;
       try {
-        const bookingCode = button.dataset.bookingCode;
-        await deleteBookingFromServer(button.dataset.removeId);
+        await deleteProcessed(booking.id);
         await render();
         showStatus("Booking removed.");
-        // Notify content script on the active tab to reset the button
-        if (bookingCode) {
-          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-          if (tab?.id) {
-            chrome.tabs.sendMessage(tab.id, { type: "BOOKING_DELETED", bookingCode }).catch(() => {});
-          }
-        }
       } catch {
+        removeBtn.disabled = false;
         showStatus("Failed to remove booking.", true);
       }
     });
+
+    bookingsList.appendChild(article);
   }
-}
-
-
-function showSentDataOverlay(processed, hellootel) {
-  const existing = document.querySelector(".popup-overlay");
-  if (existing) existing.remove();
-
-  const overlay = document.createElement("div");
-  overlay.className = "popup-overlay";
-
-  const header = document.createElement("div");
-  header.className = "popup-overlay__header";
-
-  const title = document.createElement("div");
-  title.className = "popup-overlay__title";
-  title.textContent = "Sent to HelloOtel";
-
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "popup-overlay__close";
-  closeBtn.textContent = "✕";
-  closeBtn.addEventListener("click", () => overlay.remove());
-
-  header.append(title, closeBtn);
-  overlay.appendChild(header);
-
-  if (hellootel?.id || processed.hellootel_reservation_id) {
-    const rid = document.createElement("div");
-    rid.className = "popup-overlay__reservation-id";
-    rid.innerHTML = `Reservation ID <span>#${hellootel?.id ?? processed.hellootel_reservation_id}</span>`;
-    overlay.appendChild(rid);
-  } else if (hellootel?.error) {
-    const err = document.createElement("div");
-    err.className = "popup-overlay__error";
-    err.textContent = `Error: ${hellootel.error}`;
-    overlay.appendChild(err);
-  }
-
-  const body = document.createElement("div");
-  body.className = "popup-overlay__body";
-
-  const rows = [
-    ["Hotel",        processed.hotel_name],
-    ["Room type",    processed.room_type_name],
-    ["Check-in",     processed.arrival_at],
-    ["Check-out",    processed.departure_at],
-    ["Adults",       processed.person_count_adults],
-    ["Children",     processed.person_count_children],
-    ["Infants",      processed.person_count_teens],
-    ["Price",        processed.price ? `${processed.price} ${processed.currency_code || ""}`.trim() : null],
-    ["Booking #",    processed.booking_code],
-    ["Operator",     processed.operator_name || (processed.operator_id ? `#${processed.operator_id}` : null)],
-    ["Booking date", processed.reservation_date],
-    ["Vote",         processed.hotel_vote != null ? processed.hotel_vote : null],
-  ];
-
-  for (const [label, value] of rows) {
-    if (value == null || value === "") continue;
-    const row = document.createElement("div");
-    row.className = "popup-overlay__row";
-    row.innerHTML = `<strong>${label}</strong><span>${value}</span>`;
-    body.appendChild(row);
-  }
-
-  overlay.appendChild(body);
-  document.body.appendChild(overlay);
 }
 
 async function render() {
@@ -325,8 +290,8 @@ async function render() {
   }
 
   try {
-    const bookings = await loadBookings();
-    renderBookings(bookings);
+    const list = await loadProcessed();
+    renderBookings(list);
   } catch {
     showStatus("Failed to load bookings from the server.", true);
   }
@@ -352,6 +317,13 @@ loginForm.addEventListener("submit", async (e) => {
 logoutButton.addEventListener("click", async () => {
   await apiLogout();
   await render();
+});
+
+// Manual booking: open the form full-size in its own window (the action popup
+// is too narrow). Clear any leftover edit record so "Add" always starts blank.
+addBookingManual.addEventListener("click", async () => {
+  await clearEditBooking();
+  await openManualWindow();
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
