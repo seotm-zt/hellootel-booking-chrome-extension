@@ -351,11 +351,15 @@ function renderRows() {
   renderPager(total);
 }
 
-// Open the manual-booking window in edit mode for this record. The window
-// matches the current browser window's height (full height), centered.
-async function openEdit(b) {
+// Open the manual-booking window, centered and matching the current browser
+// window's height. Pass a record to edit it; pass nothing to add a fresh one
+// (any stale edit record is cleared so the form opens blank).
+async function openManualWindow(editRecord = null) {
   try {
-    await new Promise((resolve) => chrome.storage.local.set({ ttbEditBooking: b }, resolve));
+    await new Promise((resolve) => {
+      if (editRecord) chrome.storage.local.set({ ttbEditBooking: editRecord }, resolve);
+      else            chrome.storage.local.remove("ttbEditBooking", resolve);
+    });
     const width = 620;
     let height = 820;
     try {
@@ -372,9 +376,11 @@ async function openEdit(b) {
       width, height, left, top,
     });
   } catch (e) {
-    console.error("[TTB] openEdit failed", e);
+    console.error("[TTB] openManualWindow failed", e);
   }
 }
+
+const openEdit = (b) => openManualWindow(b);
 
 async function removeBooking(b, btn) {
   if (!confirm(`Delete booking ${b.booking_code || "#" + b.id}?`)) return;
@@ -422,6 +428,7 @@ async function init() {
   $("page").hidden = false;
   bindFilters();
   bindSort();
+  $("bk-add").addEventListener("click", () => openManualWindow());
   $("bk-refresh").addEventListener("click", reload);
   // Refresh when returning to this tab (e.g. after editing in the popup window).
   window.addEventListener("focus", reload);

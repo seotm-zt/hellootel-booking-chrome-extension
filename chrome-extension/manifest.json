@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Booking Saver for HelloOtel",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Capture bookings from supported travel agency sites and send them to HelloOtel with one click.",
   "background": {
     "service_worker": "background.js"

@@ -14,10 +14,12 @@
  * /processed-bookings/direct — creating a ProcessedBooking only (no raw booking).
  */
 
-// Age buckets for auto-counting guests from their date of birth (age at check-in):
-//   < 2  → infant, 2..11 → child, 12+ → adult. Unknown DOB → adult.
-const INFANT_MAX_AGE = 2;
-const CHILD_MAX_AGE  = 12;
+// Age buckets for auto-counting guests from their date of birth (age at check-in).
+// Must match the server rule in BookingProcessorService::parseGuestCounts():
+//   0-5  → infant, 6-12 → child, 13+ → adult. Unknown DOB → adult.
+// (constants are exclusive upper bounds: age < 6 → infant, age < 13 → child)
+const INFANT_MAX_AGE = 6;
+const CHILD_MAX_AGE  = 13;
 
 function ageAt(dobIso, refDate) {
   const dob = new Date(dobIso);
@@ -223,7 +225,9 @@ function renderManualForm(prefill = null) {
     loadRoomTypes(selectedHotelId, roomSelect, keep, arrivalInput.value || null, departureInput.value || null)
       .then(updateConfirmState);
   }
-  arrivalInput.addEventListener("change", () => { reloadRoomTypesForDates(); recomputeCounts(); });
+  // Changing the guest list or the check-in date must always re-derive the
+  // counts from DOB — re-enable autoCounts so it wins over any prior manual edit.
+  arrivalInput.addEventListener("change", () => { reloadRoomTypesForDates(); autoCounts = true; recomputeCounts(); });
   departureInput.addEventListener("change", reloadRoomTypesForDates);
 
   // ── Guests: prefilled rows when editing, otherwise one empty row ──
@@ -235,12 +239,13 @@ function renderManualForm(prefill = null) {
   form.querySelector("#ttb-add-tourist").addEventListener("click", () => {
     touristsList.appendChild(buildTouristRow());
     updateConfirmState();
+    autoCounts = true;
     recomputeCounts();
   });
-  touristsList.addEventListener("input", () => { updateConfirmState(); recomputeCounts(); });
+  touristsList.addEventListener("input", () => { autoCounts = true; updateConfirmState(); recomputeCounts(); });
   touristsList.addEventListener("click", (e) => {
     if (e.target.classList?.contains("ttb-tourist__remove")) {
-      queueMicrotask(() => { updateConfirmState(); recomputeCounts(); });
+      queueMicrotask(() => { updateConfirmState(); autoCounts = true; recomputeCounts(); });
     }
   });
 
@@ -370,8 +375,8 @@ function renderManualForm(prefill = null) {
         return;
       }
 
-      showToast("Booking sent to HelloOtel ✓");
-      finishWithSummary(result?.data ?? null);
+      // Success: nothing more to show — just close the window.
+      window.close();
     } catch (err) {
       confirmBtn.disabled    = false;
       confirmBtn.textContent = "Retry";
@@ -380,19 +385,6 @@ function renderManualForm(prefill = null) {
       // "fix" → stay on the form
     }
   });
-}
-
-// Show the read-only summary; closing it closes the window.
-function finishWithSummary(processed) {
-  if (!processed) { window.close(); return; }
-  showSentDataModal(processed);
-  const overlay = document.querySelector(".ttb-modal-overlay");
-  if (overlay) {
-    overlay.querySelector(".ttb-modal__close")?.addEventListener("click", () => window.close());
-    overlay.addEventListener("click", (e) => { if (e.target === overlay) window.close(); });
-  } else {
-    window.close();
-  }
 }
 
 // Read (and consume) the booking the popup asked us to edit, if any.
