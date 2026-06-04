@@ -17,21 +17,39 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
-        'access_token',
+        'hellootel_access_token',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
-        'access_token',
+        'api_token',
+        'hellootel_access_token',
     ];
 
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
+            'email_verified_at'      => 'datetime',
+            'password'               => 'hashed',
+            // Upstream HelloOtel token: encrypted at rest, never exposed.
+            'hellootel_access_token' => 'encrypted',
+            'api_token_expires_at'   => 'datetime',
+            'api_token_last_used_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Resolve a user by the plaintext extension token. Only the sha256 hash is
+     * stored, so we hash the incoming token and look that up.
+     */
+    public static function findByApiToken(?string $plain): ?self
+    {
+        if (!$plain) {
+            return null;
+        }
+
+        return static::where('api_token', hash('sha256', $plain))->first();
     }
 
     public function canAccessPanel(Panel $panel): bool

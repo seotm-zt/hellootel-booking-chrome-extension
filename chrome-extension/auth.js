@@ -49,6 +49,17 @@ async function apiLogin(username, password) {
 }
 
 async function apiLogout() {
+  // Best-effort server-side revocation (clears api_token in the DB) before
+  // dropping local state. Ignore failures — local logout must always succeed.
+  try {
+    const token = await getToken();
+    if (token) {
+      await fetch(`${API_BASE}/logout`, {
+        method: "POST",
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+      });
+    }
+  } catch {}
   await clearAuthState();
 }
 

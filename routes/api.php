@@ -6,10 +6,14 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/extension')->group(function () {
     Route::post('login',        [ExtensionController::class, 'login'])->middleware('throttle:10,1');
-    Route::get('parsers',       [ExtensionController::class, 'parsersList']);
-    Route::get('parser-rules',  [ExtensionController::class, 'parserRules']);
 
     Route::middleware(ApiTokenAuth::class)->group(function () {
+        Route::post('logout',                       [ExtensionController::class, 'logout']);
+
+        // Parser configs are no longer public — they expose target domains/selectors.
+        Route::get('parsers',                       [ExtensionController::class, 'parsersList']);
+        Route::get('parser-rules',                  [ExtensionController::class, 'parserRules']);
+
         Route::post('page-report',                  [ExtensionController::class, 'pageReport']);
 
         Route::get('currencies',                    [ExtensionController::class, 'currencies']);

@@ -191,7 +191,12 @@ function destroyModal() {
 }
 
 function esc(v) {
-  return String(v ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function normaliseTourist(t = {}) {
@@ -469,7 +474,7 @@ async function showConfirmModal(saveResult) {
         <label class="ttb-modal__label">
           Hotel <span class="ttb-required">*</span>
           ${hotelMatch
-            ? `<span class="ttb-modal__match-badge">Auto-matched · <strong>${hotelMatch.score}%</strong></span>`
+            ? `<span class="ttb-modal__match-badge">Auto-matched · <strong>${Number(hotelMatch.score) || 0}%</strong></span>`
             : `<span class="ttb-modal__match-badge ttb-modal__match-badge--notfound">Hotel not found</span>`}
         </label>
         <div class="ttb-modal__autocomplete">

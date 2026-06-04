@@ -185,11 +185,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "LOAD_PARSERS") {
     (async () => {
       try {
-        const resp = await fetch(`${API_BASE}/parsers`, {
-          headers: { Accept: "application/json" },
-        });
-        const data = resp.ok ? await resp.json() : null;
-        sendResponse({ ok: resp.ok, data });
+        // Parsers now require auth — send the bearer token like the other calls.
+        const data = await authedFetch("/parsers");
+        sendResponse({ ok: true, data });
       } catch (err) {
         sendResponse({ ok: false, error: err.message });
       }
@@ -248,11 +246,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "LOAD_RULES") {
     (async () => {
       try {
-        const resp = await fetch(`${API_BASE}/parser-rules`, {
-          headers: { Accept: "application/json" },
-        });
-        const data = resp.ok ? await resp.json() : null;
-        sendResponse({ ok: resp.ok, data });
+        const data = await authedFetch("/parser-rules");
+        sendResponse({ ok: true, data });
       } catch (err) {
         sendResponse({ ok: false, error: err.message });
       }

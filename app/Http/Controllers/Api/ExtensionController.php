@@ -65,7 +65,15 @@ class ExtensionController extends Controller
         if ($user->name !== $name) {
             $user->name = $name;
         }
-        $user->access_token = $hellootelToken;
+
+        // Issue a fresh extension token (opaque, random) and store only its hash.
+        // The plaintext is returned once to the extension and never persisted.
+        // The upstream HelloOtel token is stored separately (encrypted cast).
+        $plainApiToken                = Str::random(64);
+        $user->api_token              = hash('sha256', $plainApiToken);
+        $user->api_token_expires_at   = null; // no forced TTL for now
+        $user->api_token_last_used_at = now();
+        $user->hellootel_access_token = $hellootelToken;
         $user->save();
 
         if (!$user->hasAnyRole([Role::ADMIN->value, Role::OPERATOR->value])) {
@@ -73,13 +81,28 @@ class ExtensionController extends Controller
         }
 
         return response()->json([
-            'token' => $user->access_token,
+            'token' => $plainApiToken,
             'user'  => [
                 'id'       => $user->id,
                 'name'     => $user->name,
                 'username' => $request->username,
             ],
         ]);
+    }
+
+    // Revoke the current extension token server-side (the extension calls this on
+    // logout). Clears only the extension token, not the upstream HelloOtel one.
+    public function logout(): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $user->forceFill([
+            'api_token'            => null,
+            'api_token_expires_at' => null,
+        ])->save();
+
+        return response()->json(['ok' => true]);
     }
 
     public function index(): JsonResponse
@@ -431,10 +454,13 @@ class ExtensionController extends Controller
 
         $processed = ProcessedBooking::findOrFail($booking->processed_booking_id);
 
+        // Do NOT log tourist PII (names, dates of birth). Log only the count plus
+        // non-personal fields for debugging.
         Log::info('HellOotel confirm: incoming form data', [
-            'booking_id'   => $id,
-            'processed_id' => $processed->id,
-            'form_data'    => $data,
+            'booking_id'    => $id,
+            'processed_id'  => $processed->id,
+            'form_data'     => array_diff_key($data, ['tourists' => null]),
+            'tourist_count' => is_array($data['tourists'] ?? null) ? count($data['tourists']) : 0,
         ]);
 
         // Confirmation stamp — always written
@@ -586,7 +612,7 @@ class ExtensionController extends Controller
         $user = Auth::user();
 
         $resp = Http::timeout(10)
-            ->withBasicAuth($user->access_token, '')
+            ->withBasicAuth($user->hellootel_access_token, '')
             ->get(config('services.hellootel.base') . '/reservation/tour-price-currencies', ['language' => 'en']);
 
         $data = $resp->successful() ? ($resp->json() ?? []) : [];
@@ -616,7 +642,8 @@ class ExtensionController extends Controller
         $data = $request->validate([
             'url'   => 'required|string|max:2000',
             'title' => 'nullable|string|max:500',
-            'html'  => 'required|string',
+            // Cap the snapshot size (~5 MB) to prevent storage exhaustion / DoS.
+            'html'  => 'required|string|max:5000000',
         ]);
 
         ExtensionPageReport::create($data);

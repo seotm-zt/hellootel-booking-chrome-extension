@@ -180,9 +180,14 @@ const ConfigParserEngine = (() => {
           const codeSpec = cfg.data_root.code_source;
           const code = codeSpec ? _extractField(card, codeSpec) : null;
           if (code) {
+            // `code` comes from the (untrusted) page DOM, so the resulting
+            // selector may be syntactically invalid — guard querySelector so a
+            // SyntaxError can't abort parsing of the whole card.
             const sel = cfg.data_root.selector_template.replace(/\{code\}/g, code);
-            const found = document.querySelector(sel);
-            if (found) dataRoot = found;
+            try {
+              const found = document.querySelector(sel);
+              if (found) dataRoot = found;
+            } catch { /* malformed selector — fall back to card */ }
           }
         }
         const cardRoot = cfg.card_root

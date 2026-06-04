@@ -332,6 +332,10 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
   const wasAuthed = !!changes[AUTH_STATE_KEY].oldValue?.authorized;
   const isAuthed  = !!changes[AUTH_STATE_KEY].newValue?.authorized;
   if (isAuthed && !wasAuthed) {
+    // Parsers/rules now require auth. If boot() ran while logged out the registry
+    // is empty, so (re)load them on login before scanning — otherwise no parser
+    // matches the page and no buttons appear until a manual reload.
+    await Promise.all([ParserRegistry.loadParsers(), ParserRegistry.loadRules()]);
     await refreshConfirmedCodes();
     clearInjectedButtons();
     queueScan();

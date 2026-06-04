@@ -65,5 +65,20 @@ Route::get('/admin/extension/page-reports/{id}/html', function (int $id) {
     // overflow:hidden there, waiting for hydration that never happens here)
     $html   = preg_replace('/(<html\b[^>]*)\sstyle="[^"]*"/i', '$1', $html);
 
-    return response($html)->header('Content-Type', 'text/html; charset=utf-8');
+    // Defense-in-depth against stored XSS (the captured HTML is operator-supplied
+    // and served same-origin to admins). The iframe sandbox already disables
+    // scripts, but also neutralise the common JS sinks at the source:
+    //   - inline event handlers (onerror/onload/onclick/...)
+    //   - javascript:/vbscript: URLs in href/src/action/etc.
+    $html = preg_replace('/\son[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
+    $html = preg_replace('/(href|src|action|formaction|xlink:href)\s*=\s*("|\')?\s*(?:javascript|vbscript|data:text\/html)\s*:[^"\'>\s]*/i', '$1="#"', $html);
+
+    return response($html)
+        ->header('Content-Type', 'text/html; charset=utf-8')
+        // No scripts, no plugins; styles/images allowed so the preview renders.
+        // base-uri is intentionally NOT restricted: the preview injects <base href>
+        // so relative assets resolve back to the original site.
+        ->header('Content-Security-Policy',
+            "default-src 'none'; img-src * data:; style-src * 'unsafe-inline'; font-src * data:; script-src 'none'; object-src 'none'; form-action 'none'")
+        ->header('X-Content-Type-Options', 'nosniff');
 })->middleware(['web', \Filament\Http\Middleware\Authenticate::class])->name('admin.extension.report.html');

@@ -23,7 +23,12 @@
         src="{{ route('admin.extension.report.html', $reportId) }}"
         class="w-full"
         style="height: 72vh; border: none; display: block;"
-        sandbox="allow-same-origin allow-scripts allow-forms"
+        {{-- Security: NO allow-scripts. The preview is static HTML/CSS only, so no
+             JS must ever execute. Combining allow-scripts with allow-same-origin
+             would let attacker-supplied page HTML run in the admin origin (stored
+             XSS). Keeping allow-same-origin alone (scripts disabled) is safe and
+             preserves CSS/relative-asset loading parity. --}}
+        sandbox="allow-same-origin"
         loading="lazy"
     ></iframe>
 </div>
