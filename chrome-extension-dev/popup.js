@@ -12,6 +12,7 @@ const authenticatedSection = document.getElementById("authenticatedSection");
 const userNameLabel       = document.getElementById("userNameLabel");
 const logoutButton        = document.getElementById("logoutButton");
 const addBookingManual    = document.getElementById("addBookingManual");
+const viewAllBookings     = document.getElementById("viewAllBookings");
 
 function normalizeText(value) {
   return (value || "").replace(/\s+/g, " ").trim();
@@ -324,6 +325,11 @@ logoutButton.addEventListener("click", async () => {
 addBookingManual.addEventListener("click", async () => {
   await clearEditBooking();
   await openManualWindow();
+});
+
+// Open the full "All bookings" page (with filters) in a browser tab.
+viewAllBookings.addEventListener("click", () => {
+  chrome.tabs.create({ url: chrome.runtime.getURL("bookings.html") });
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {

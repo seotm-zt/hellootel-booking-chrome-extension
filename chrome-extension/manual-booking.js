@@ -298,10 +298,18 @@ function renderManualForm(prefill = null) {
       hotelInput.value  = prefill.hotel_name ?? "";
       loadRoomTypes(prefill.hotel_id, roomSelect, prefill.room_type_id ?? null,
         arrivalInput.value || null, departureInput.value || null).then(updateConfirmState);
-    } else if (prefill.hotel_name) {
-      hotelInput.value = prefill.hotel_name;
+      if (prefill.hotel_vote) {
+        updateStars(Math.round(prefill.hotel_vote / 10));
+      } else {
+        // No saved rating → pull the hotel's vote from HelloOtel (like create mode).
+        getHotelVoteFromServer(prefill.hotel_id)
+          .then(v => { if (selectedVote === null) updateStars(v ? Math.round(v / 10) : 0); })
+          .catch(() => {});
+      }
+    } else {
+      if (prefill.hotel_name) hotelInput.value = prefill.hotel_name;
+      updateStars(prefill.hotel_vote ? Math.round(prefill.hotel_vote / 10) : 0);
     }
-    updateStars(prefill.hotel_vote ? Math.round(prefill.hotel_vote / 10) : 0);
     updateConfirmState();
   }
 

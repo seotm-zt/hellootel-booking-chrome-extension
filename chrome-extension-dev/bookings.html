@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All bookings — HelloOtel</title>
+  <link rel="stylesheet" href="content.css">
+  <link rel="stylesheet" href="bookings.css">
+</head>
+<body>
+  <div id="mb-fallback" class="mb-fallback" hidden></div>
+
+  <main id="page" class="bk" hidden>
+    <header class="bk__header">
+      <h1 class="bk__title">All bookings</h1>
+      <button id="bk-refresh" class="bk__btn bk__btn--ghost" type="button">↻ Refresh</button>
+    </header>
+
+    <div class="bk__filters">
+      <input  id="f-search"   class="bk__input bk__input--search" type="text" placeholder="Search code or hotel…">
+      <select id="f-status"   class="bk__input">
+        <option value="">All statuses</option>
+        <option value="notsent">Not sent</option>
+        <option value="failed">Failed</option>
+        <option value="notfound">Hotel not found</option>
+        <option value="sent">Sent</option>
+      </select>
+      <select id="f-hotel"    class="bk__input"></select>
+      <select id="f-operator" class="bk__input"></select>
+      <label class="bk__date">Check-in&nbsp;<input id="f-from" class="bk__input" type="date"></label>
+      <label class="bk__date">–&nbsp;<input id="f-to" class="bk__input" type="date"></label>
+      <button id="f-clear" class="bk__btn bk__btn--ghost" type="button">Clear</button>
+    </div>
+
+    <div id="bk-count" class="bk__count"></div>
+
+    <div class="bk__table-wrap">
+      <table class="bk__table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Source</th>
+            <th>Hotel</th>
+            <th>Rating</th>
+            <th>Room type</th>
+            <th>Operator</th>
+            <th class="bk-sortable" data-sort="arrival_at">Check-in</th>
+            <th class="bk-sortable" data-sort="departure_at">Check-out</th>
+            <th>Guests</th>
+            <th>Price</th>
+            <th class="bk-sortable" data-sort="created_at">Added</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="bk-rows"></tbody>
+      </table>
+    </div>
+
+    <div id="bk-pager" class="bk__pager"></div>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="parsers/currency-utils.js"></script>
+  <script src="booking-modal.js"></script>
+  <script src="bookings.js"></script>
+</body>
+</html>

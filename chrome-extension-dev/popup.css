@@ -121,6 +121,21 @@ body {
 
 .popup__button--block { width: 100%; margin: 8px 0; }
 
+.popup__all-link {
+  display: block;
+  width: 100%;
+  margin: 6px 0 2px;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: #f0592b;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+}
+.popup__all-link:hover { text-decoration: underline; }
+
 .popup__button--sm {
   min-height: 28px;
   padding: 0 10px;

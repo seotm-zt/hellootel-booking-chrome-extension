@@ -261,29 +261,44 @@ class ExtensionController extends Controller
     // List the current user's processed bookings that have NOT been sent to
     // HelloOtel yet (failed / not sent / hotel-not-found). Sent bookings are
     // intentionally hidden from the extension popup.
-    public function processedList(): JsonResponse
+    // Lists the current user's processed bookings. By default only the un-sent
+    // ones (for the popup); pass ?all=1 for the full "All bookings" page.
+    public function processedList(Request $request, HellOotelLookupService $lookup): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $rows = ProcessedBooking::where('saved_by_user_id', $user->id)
-            ->whereNull('hellootel_reservation_id')
+        $query = ProcessedBooking::where('saved_by_user_id', $user->id)
             ->with('sourceBooking:id,source_url')
-            ->orderByDesc('id')
-            ->get([
-                'id', 'source_booking_id', 'booking_code',
-                'hotel_id', 'hotel_name', 'room_type_id', 'room_type_name',
-                'operator_id', 'operator_name', 'reservation_date',
-                'arrival_at', 'departure_at', 'price', 'currency_code',
-                'person_count_adults', 'person_count_children', 'person_count_teens',
-                'tourists', 'hotel_vote', 'hellootel_response',
-            ]);
+            ->orderByDesc('id');
 
-        // Flatten the source page URL (parser bookings only) so the popup can
-        // link to the original page for verifying parsed data.
-        $data = $rows->map(function (ProcessedBooking $r) {
+        if (!$request->boolean('all')) {
+            $query->whereNull('hellootel_reservation_id');
+        }
+
+        $rows = $query->get([
+            'id', 'source_booking_id', 'booking_code',
+            'hotel_id', 'hotel_name', 'room_type_id', 'room_type_name',
+            'operator_id', 'operator_name', 'reservation_date',
+            'arrival_at', 'departure_at', 'price', 'currency_code',
+            'person_count_adults', 'person_count_children', 'person_count_teens',
+            'tourists', 'hotel_vote', 'hellootel_reservation_id', 'hellootel_sent_at',
+            'hellootel_response', 'created_at',
+        ]);
+
+        $operators = $lookup->getOperators(); // [id => name]
+        $hotels    = $lookup->getHotels();    // [id => name]
+
+        // Flatten the source page URL (parser bookings only) and resolve the
+        // canonical hotel/operator name from their ids so the same hotel always
+        // shows identically (the stored hotel_name varies per parser).
+        $data = $rows->map(function (ProcessedBooking $r) use ($operators, $hotels) {
             $arr = $r->toArray();
-            $arr['source_url'] = $r->sourceBooking?->source_url;
+            $arr['source_url']    = $r->sourceBooking?->source_url;
+            $arr['hotel_name']    = ($r->hotel_id ? ($hotels[$r->hotel_id] ?? null) : null)
+                ?: $r->hotel_name;
+            $arr['operator_name'] = $r->operator_name
+                ?: ($r->operator_id ? ($operators[$r->operator_id] ?? null) : null);
             unset($arr['source_booking']);
             return $arr;
         });
@@ -302,6 +317,10 @@ class ExtensionController extends Controller
         $processed = ProcessedBooking::where('id', $id)
             ->where('saved_by_user_id', $user->id)
             ->firstOrFail();
+
+        if ($processed->hellootel_reservation_id) {
+            return response()->json(['error' => 'Booking already sent to HelloOtel'], 422);
+        }
 
         $data = $request->validate([
             'hotel_id'         => 'nullable|integer',
@@ -365,10 +384,15 @@ class ExtensionController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        ProcessedBooking::where('id', $id)
+        $processed = ProcessedBooking::where('id', $id)
             ->where('saved_by_user_id', $user->id)
-            ->firstOrFail()
-            ->delete();
+            ->firstOrFail();
+
+        if ($processed->hellootel_reservation_id) {
+            return response()->json(['error' => 'Booking already sent to HelloOtel'], 422);
+        }
+
+        $processed->delete();
 
         return response()->json(['ok' => true]);
     }
