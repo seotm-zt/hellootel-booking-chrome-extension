@@ -8,7 +8,6 @@
  */
 
 importScripts("auth.js");
-importScripts("dev-reporter-bg.js");
 
 async function authedFetch(path, options = {}) {
   const token = await getToken();
@@ -25,6 +24,16 @@ async function authedFetch(path, options = {}) {
   });
 
   const data = await response.json().catch(() => ({}));
+
+  // Token rotated/revoked server-side (ApiTokenAuth returns 401). The locally
+  // stored token is dead — mark the session expired so the UI prompts re-login
+  // instead of silently failing (e.g. parsers never load → no save buttons).
+  if (response.status === 401) {
+    await markSessionExpired();
+    const err = new Error(data.error || data.message || "Session expired");
+    err.status = 401;
+    throw err;
+  }
 
   if (!response.ok) {
     throw new Error(data.error || data.message || `HTTP ${response.status}`);

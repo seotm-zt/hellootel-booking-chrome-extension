@@ -23,6 +23,17 @@ async function clearAuthState() {
   } catch {}
 }
 
+// Mark the session as expired (token rotated/revoked server-side → 401). Unlike a
+// manual logout (which removes the key), this writes an authorized:false state
+// carrying reason:"expired", so the UI can tell the two apart and prompt re-login.
+async function markSessionExpired() {
+  try {
+    await chrome.storage.local.set({
+      [AUTH_STATE_KEY]: { authorized: false, reason: "expired", savedAt: new Date().toISOString() },
+    });
+  } catch {}
+}
+
 async function apiLogin(username, password) {
   const response = await fetch(`${API_BASE}/login`, {
     method: "POST",

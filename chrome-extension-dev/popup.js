@@ -272,6 +272,10 @@ async function render() {
     loginSection.hidden = false;
     authenticatedSection.hidden = true;
     bookingCount.hidden = true;
+    // Token rotated/revoked server-side (e.g. signed in on another device).
+    if (auth?.reason === "expired") {
+      showStatus("Session expired — please sign in again.", true);
+    }
     return;
   }
 

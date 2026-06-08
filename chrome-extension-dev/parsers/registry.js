@@ -32,6 +32,10 @@ const ParserRegistry = (() => {
   /** @type {{domain:string, parser:string}[]} loaded from parser-rules API */
   let remoteRules = [];
 
+  // True once /parsers returned a valid response at least once. Stays false when
+  // the call fails (network / 401 / asleep service worker), so callers can retry.
+  let parsersLoadedOk = false;
+
   // ── registration ────────────────────────────────────────────────────────────
 
   function register(parser) {
@@ -87,7 +91,11 @@ const ParserRegistry = (() => {
   async function loadParsers() {
     try {
       const resp = await chrome.runtime.sendMessage({ type: "LOAD_PARSERS" });
-      if (!resp?.ok || !Array.isArray(resp.data?.data)) return;
+      if (!resp?.ok || !Array.isArray(resp.data?.data)) return false;
+
+      // A successful response (even with zero parsers for this domain) counts as
+      // "loaded" — no point retrying. Only failures above leave the flag false.
+      parsersLoadedOk = true;
 
       for (const entry of resp.data.data) {
         if (!entry.name || !entry.config) continue;
@@ -113,15 +121,17 @@ const ParserRegistry = (() => {
           }
         }
       }
+      return true;
     } catch {
       // background unreachable — rely on bundled parsers only
+      return false;
     }
   }
 
   async function loadRules() {
     try {
       const resp = await chrome.runtime.sendMessage({ type: "LOAD_RULES" });
-      if (!resp?.ok || !Array.isArray(resp.data?.data)) return;
+      if (!resp?.ok || !Array.isArray(resp.data?.data)) return false;
 
       for (const rule of resp.data.data) {
         const pm = rule.path_match || "";
@@ -129,10 +139,18 @@ const ParserRegistry = (() => {
           remoteRules.push(rule);
         }
       }
+      return true;
     } catch {
       // background unreachable — hardcoded matches() still works
+      return false;
     }
   }
 
-  return { register, find, findByName, loadParsers, loadRules };
+  // Whether /parsers has been fetched successfully at least once. Used by the
+  // content script to retry loading when the one-shot boot() load failed.
+  function isLoaded() {
+    return parsersLoadedOk;
+  }
+
+  return { register, find, findByName, loadParsers, loadRules, isLoaded };
 })();

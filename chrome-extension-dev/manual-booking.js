@@ -14,22 +14,6 @@
  * /processed-bookings/direct — creating a ProcessedBooking only (no raw booking).
  */
 
-// Age buckets for auto-counting guests from their date of birth (age at check-in).
-// Must match the server rule in BookingProcessorService::parseGuestCounts():
-//   0-5  → infant, 6-12 → child, 13+ → adult. Unknown DOB → adult.
-// (constants are exclusive upper bounds: age < 6 → infant, age < 13 → child)
-const INFANT_MAX_AGE = 6;
-const CHILD_MAX_AGE  = 13;
-
-function ageAt(dobIso, refDate) {
-  const dob = new Date(dobIso);
-  if (isNaN(dob.getTime())) return null;
-  let age = refDate.getFullYear() - dob.getFullYear();
-  const m = refDate.getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && refDate.getDate() < dob.getDate())) age--;
-  return age;
-}
-
 function showFallback(message) {
   const fb = document.getElementById("mb-fallback");
   fb.hidden = false;
@@ -44,23 +28,12 @@ function renderManualForm(prefill = null) {
   form.innerHTML = `
     <h1 class="mb-form__title">${editId ? "Edit booking" : "Add booking to HelloOtel"}</h1>
 
-    <div class="ttb-modal__section-title">Booking details</div>
-
-    <label class="ttb-modal__label">Operator</label>
-    <select class="ttb-modal__select" id="ttb-operator-select">
-      <option value="">— select operator —</option>
-    </select>
-
-    <div class="ttb-modal__row-2">
-      <div>
-        <label class="ttb-modal__label">Booking number</label>
-        <input class="ttb-modal__input" id="ttb-booking-code" type="text" placeholder="ORD-123456" />
-      </div>
-      <div>
-        <label class="ttb-modal__label">Booking date</label>
-        <input class="ttb-modal__input" id="ttb-reserv-date" type="date" />
-      </div>
+    <label class="ttb-modal__label">Hotel</label>
+    <div class="ttb-modal__autocomplete">
+      <input class="ttb-modal__input" id="ttb-hotel-input" type="text" placeholder="Type hotel name..." autocomplete="off" />
+      <ul class="ttb-modal__suggestions" id="ttb-hotel-suggestions" hidden></ul>
     </div>
+    <div class="ttb-hotel-location" id="ttb-hotel-location" hidden></div>
 
     <div class="ttb-modal__row-2">
       <div>
@@ -72,6 +45,45 @@ function renderManualForm(prefill = null) {
         <input class="ttb-modal__input" id="ttb-departure" type="date" />
       </div>
     </div>
+
+    <label class="ttb-modal__label">Room type</label>
+    <select class="ttb-modal__select" id="ttb-room-select" disabled>
+      <option value="">— select hotel first —</option>
+    </select>
+
+    <div class="ttb-modal__row-2">
+      <div>
+        <label class="ttb-modal__label">Booking date</label>
+        <input class="ttb-modal__input" id="ttb-reserv-date" type="date" />
+      </div>
+      <div>
+        <label class="ttb-modal__label">Booking number</label>
+        <input class="ttb-modal__input" id="ttb-booking-code" type="text" placeholder="ORD-123456" />
+      </div>
+    </div>
+
+    <label class="ttb-modal__label">Operator</label>
+    <select class="ttb-modal__select" id="ttb-operator-select">
+      <option value="">— select operator —</option>
+    </select>
+
+    <div class="ttb-modal__row-3">
+      <div>
+        <label class="ttb-modal__label">Adults</label>
+        <input class="ttb-modal__input" id="ttb-adults" type="number" min="0" value="1" />
+      </div>
+      <div>
+        <label class="ttb-modal__label">Children</label>
+        <input class="ttb-modal__input" id="ttb-children" type="number" min="0" value="0" />
+      </div>
+      <div>
+        <label class="ttb-modal__label">Infants</label>
+        <input class="ttb-modal__input" id="ttb-infants" type="number" min="0" value="0" />
+      </div>
+    </div>
+
+    <div id="ttb-tourists-list"></div>
+    <button class="ttb-modal__add-tourist" type="button" id="ttb-add-tourist">+ Add guest</button>
 
     <div class="ttb-modal__row-2">
       <div>
@@ -86,62 +98,28 @@ function renderManualForm(prefill = null) {
       </div>
     </div>
 
-    <div class="ttb-modal__section-title">Guests <span class="ttb-required">*</span></div>
-    <div id="ttb-tourists-list"></div>
-    <button class="ttb-modal__add-tourist" type="button" id="ttb-add-tourist">+ Add guest</button>
-
-    <div class="ttb-modal__row-3">
-      <div>
-        <label class="ttb-modal__label">Adults</label>
-        <input class="ttb-modal__input" id="ttb-adults" type="number" min="0" />
-      </div>
-      <div>
-        <label class="ttb-modal__label">Children</label>
-        <input class="ttb-modal__input" id="ttb-children" type="number" min="0" />
-      </div>
-      <div>
-        <label class="ttb-modal__label">Infants</label>
-        <input class="ttb-modal__input" id="ttb-infants" type="number" min="0" />
-      </div>
-    </div>
-    <p class="ttb-modal__required-note">Counted automatically from dates of birth — you can edit them.</p>
-
-    <div class="ttb-modal__section-title">Hotel</div>
-
-    <label class="ttb-modal__label">Hotel <span class="ttb-required">*</span></label>
-    <div class="ttb-modal__autocomplete">
-      <input class="ttb-modal__input" id="ttb-hotel-input" type="text" placeholder="Type hotel name..." autocomplete="off" />
-      <ul class="ttb-modal__suggestions" id="ttb-hotel-suggestions" hidden></ul>
-    </div>
-    <div class="ttb-hotel-location" id="ttb-hotel-location" hidden></div>
-
     <div class="ttb-rating-row">
-      <span class="ttb-rating-label">Your hotel rating <span class="ttb-required">*</span></span>
+      <span class="ttb-rating-label">Your hotel rating</span>
       <div class="ttb-stars" id="ttb-stars">
         ${[1,2,3,4,5,6,7,8,9,10].map(i => `<span class="ttb-star" data-vote="${i}">☆</span>`).join("")}
       </div>
     </div>
 
-    <label class="ttb-modal__label">Room type <span class="ttb-required">*</span></label>
-    <select class="ttb-modal__select" id="ttb-room-select" disabled>
-      <option value="">— select hotel first —</option>
-    </select>
-
-    <p class="ttb-modal__required-note"><span class="ttb-required">*</span> Required fields</p>
+    <p class="ttb-modal__required-note">All fields are required</p>
     <p class="ttb-modal__send-note">You are sending booking information directly to the hotel manager via the HelloOtel system.</p>
 
-    <div class="ttb-modal__api-error" id="ttb-api-error" hidden></div>
-
-    <div class="mb-form__footer">
+    <div class="ttb-modal__footer">
       <button class="ttb-modal__btn ttb-modal__btn--cancel"  type="button" id="mb-cancel">Cancel</button>
       <button class="ttb-modal__btn ttb-modal__btn--confirm" type="button" id="mb-confirm" disabled>Confirm</button>
     </div>
+
+    <div class="ttb-modal__api-error" id="ttb-api-error" hidden></div>
   `;
   document.body.appendChild(form);
 
   // Populate selects (lists may still be loading).
-  ensureCurrencies().then(() => populateCurrencySelectEl(form.querySelector("#ttb-currency"), prefill?.currency_code ?? ""));
-  ensureOperators().then(() => populateOperatorSelect(form.querySelector("#ttb-operator-select"), prefill?.operator_id ?? null));
+  ensureCurrencies().then(() => { populateCurrencySelectEl(form.querySelector("#ttb-currency"), prefill?.currency_code ?? ""); updateConfirmState(); });
+  ensureOperators().then(() => { populateOperatorSelect(form.querySelector("#ttb-operator-select"), prefill?.operator_id ?? null); updateConfirmState(); });
 
   const hotelInput      = form.querySelector("#ttb-hotel-input");
   const suggestions     = form.querySelector("#ttb-hotel-suggestions");
@@ -153,6 +131,11 @@ function renderManualForm(prefill = null) {
   const adultsInput     = form.querySelector("#ttb-adults");
   const childrenInput   = form.querySelector("#ttb-children");
   const infantsInput    = form.querySelector("#ttb-infants");
+  const reservDateInput = form.querySelector("#ttb-reserv-date");
+  const bookingCodeInput= form.querySelector("#ttb-booking-code");
+  const operatorSelect  = form.querySelector("#ttb-operator-select");
+  const priceInput      = form.querySelector("#ttb-price");
+  const currencySelect  = form.querySelector("#ttb-currency");
   const confirmBtn      = form.querySelector("#mb-confirm");
   const apiErrorEl      = form.querySelector("#ttb-api-error");
 
@@ -160,31 +143,16 @@ function renderManualForm(prefill = null) {
   let selectedHotelName = "";
   let selectedVote      = null;
   let hotelSearchTid    = null;
-  let autoCounts        = true; // recompute from DOB on guest changes (create and edit); saved counts are kept on load since recompute isn't called during prefill
 
-  // ── Auto-count guests by age (from DOB, at check-in) — editable afterwards ──
-  function recomputeCounts() {
-    if (!autoCounts) return;
-    const ref = arrivalInput.value ? new Date(arrivalInput.value) : new Date();
-    let adults = 0, children = 0, infants = 0;
-    for (const row of touristsList.querySelectorAll(".ttb-tourist-row")) {
-      const hasName = row.querySelector(".ttb-tourist__last").value.trim() ||
-                      row.querySelector(".ttb-tourist__first").value.trim();
-      if (!hasName) continue;
-      const dob = row.querySelector(".ttb-tourist__dob").value;
-      const age = dob ? ageAt(dob, ref) : null;
-      if (age === null)             adults++;        // unknown DOB → adult
-      else if (age < INFANT_MAX_AGE) infants++;
-      else if (age < CHILD_MAX_AGE)  children++;
-      else                           adults++;
-    }
-    adultsInput.value   = String(adults);
-    childrenInput.value = String(children);
-    infantsInput.value  = String(infants);
-  }
-  // Manual edit stops auto-recompute.
+  // Guest counts are entered manually.
   [adultsInput, childrenInput, infantsInput].forEach(el =>
-    el.addEventListener("input", () => { autoCounts = false; }));
+    el.addEventListener("input", () => updateConfirmState()));
+
+  // All remaining scalar fields are required — re-evaluate the confirm button on change.
+  [reservDateInput, bookingCodeInput, priceInput].forEach(el =>
+    el.addEventListener("input", () => updateConfirmState()));
+  [operatorSelect, currencySelect].forEach(el =>
+    el.addEventListener("change", () => updateConfirmState()));
 
   function updateHotelLocation(countryId, cityId) {
     const text = formatHotelLocation(countryId, cityId);
@@ -214,7 +182,22 @@ function renderManualForm(prefill = null) {
     );
   }
   function updateConfirmState() {
-    confirmBtn.disabled = !selectedHotelId || !roomSelect.value || !(selectedVote > 0) || !hasAnyTourist();
+    const ok =
+      !!selectedHotelId &&
+      !!arrivalInput.value &&
+      !!departureInput.value &&
+      !!roomSelect.value &&
+      !!reservDateInput.value &&
+      !!bookingCodeInput.value.trim() &&
+      !!operatorSelect.value &&
+      adultsInput.value   !== "" &&
+      childrenInput.value !== "" &&
+      infantsInput.value  !== "" &&
+      hasAnyTourist() &&
+      !!priceInput.value.trim() &&
+      !!currencySelect.value &&
+      (selectedVote > 0);
+    confirmBtn.disabled = !ok;
   }
   roomSelect.addEventListener("change", updateConfirmState);
 
@@ -225,27 +208,23 @@ function renderManualForm(prefill = null) {
     loadRoomTypes(selectedHotelId, roomSelect, keep, arrivalInput.value || null, departureInput.value || null)
       .then(updateConfirmState);
   }
-  // Changing the guest list or the check-in date must always re-derive the
-  // counts from DOB — re-enable autoCounts so it wins over any prior manual edit.
-  arrivalInput.addEventListener("change", () => { reloadRoomTypesForDates(); autoCounts = true; recomputeCounts(); });
-  departureInput.addEventListener("change", reloadRoomTypesForDates);
+  arrivalInput.addEventListener("change", () => { reloadRoomTypesForDates(); updateConfirmState(); });
+  departureInput.addEventListener("change", () => { reloadRoomTypesForDates(); updateConfirmState(); });
 
-  // ── Guests: prefilled rows when editing, otherwise one empty row ──
+  // ── Guests: prefilled rows when editing, otherwise one empty row (no DOB field) ──
   if (prefill?.tourists?.length) {
-    for (const t of prefill.tourists) touristsList.appendChild(buildTouristRow(t));
+    for (const t of prefill.tourists) touristsList.appendChild(buildTouristRow(t, { withDob: false }));
   } else {
-    touristsList.appendChild(buildTouristRow());
+    touristsList.appendChild(buildTouristRow({}, { withDob: false }));
   }
   form.querySelector("#ttb-add-tourist").addEventListener("click", () => {
-    touristsList.appendChild(buildTouristRow());
+    touristsList.appendChild(buildTouristRow({}, { withDob: false }));
     updateConfirmState();
-    autoCounts = true;
-    recomputeCounts();
   });
-  touristsList.addEventListener("input", () => { autoCounts = true; updateConfirmState(); recomputeCounts(); });
+  touristsList.addEventListener("input", () => updateConfirmState());
   touristsList.addEventListener("click", (e) => {
     if (e.target.classList?.contains("ttb-tourist__remove")) {
-      queueMicrotask(() => { updateConfirmState(); autoCounts = true; recomputeCounts(); });
+      queueMicrotask(() => updateConfirmState());
     }
   });
 
@@ -334,7 +313,6 @@ function renderManualForm(prefill = null) {
       const tourists = [...touristsList.querySelectorAll(".ttb-tourist-row")].map(row => ({
         last_name:  row.querySelector(".ttb-tourist__last").value.trim(),
         first_name: row.querySelector(".ttb-tourist__first").value.trim(),
-        dob:        row.querySelector(".ttb-tourist__dob").value.trim(),
       })).filter(t => t.last_name || t.first_name);
 
       const operatorSelectEl   = form.querySelector("#ttb-operator-select");

@@ -223,14 +223,14 @@ function toDateInputValue(v) {
   return "";
 }
 
-function buildTouristRow(t = {}) {
+function buildTouristRow(t = {}, { withDob = true } = {}) {
   const n   = normaliseTourist(t);
   const div = document.createElement("div");
-  div.className = "ttb-tourist-row";
+  div.className = withDob ? "ttb-tourist-row" : "ttb-tourist-row ttb-tourist-row--no-dob";
   div.innerHTML = `
     <input class="ttb-modal__input ttb-tourist__last"  type="text" placeholder="Last name"    value="${esc(n.last_name)}">
     <input class="ttb-modal__input ttb-tourist__first" type="text" placeholder="First name"   value="${esc(n.first_name)}">
-    <input class="ttb-modal__input ttb-tourist__dob"   type="date" title="Date of birth"      value="${esc(toDateInputValue(n.dob))}">
+    ${withDob ? `<input class="ttb-modal__input ttb-tourist__dob" type="date" title="Date of birth" value="${esc(toDateInputValue(n.dob))}">` : ""}
     <button class="ttb-tourist__remove" type="button" title="Remove">✕</button>
   `;
   div.querySelector(".ttb-tourist__remove").addEventListener("click", () => div.remove());
@@ -352,71 +352,67 @@ function showSentDataModal(processed) {
   const hotelField = staticField("Hotel", processed.hotel_name);
   if (hotelField) body.appendChild(hotelField);
 
-  // Vote stars display
-  if (processed.hotel_vote != null) {
-    const voteWrap = document.createElement("div");
-    const voteLbl = document.createElement("label");
-    voteLbl.className = "ttb-modal__label";
-    voteLbl.textContent = "Your hotel rating";
-    const stars = document.createElement("div");
-    stars.className = "ttb-stars ttb-stars--readonly";
-    const score = Math.round(processed.hotel_vote / 10);
-    for (let i = 1; i <= 10; i++) {
-      const s = document.createElement("span");
-      s.className = "ttb-star" + (i <= score ? " ttb-star--active" : "");
-      s.textContent = i <= score ? "★" : "☆";
-      stars.appendChild(s);
-    }
-    voteWrap.append(voteLbl, stars);
-    body.appendChild(voteWrap);
-  }
-
-  // Room type
-  const roomField = staticField("Room type", processed.room_type_name);
-  if (roomField) body.appendChild(roomField);
-
-  // Section: Booking details
-  const section = document.createElement("div");
-  section.className = "ttb-modal__section-title";
-  section.textContent = "Booking details";
-  body.appendChild(section);
-
-  const opField = staticField("Operator", operatorName);
-  if (opField) body.appendChild(opField);
-
-  body.appendChild(staticRow2([
-    ["Booking number", processed.booking_code],
-    ["Booking date",   fmtDate(processed.reservation_date)],
-  ]));
-
+  // Check-in / Check-out
   body.appendChild(staticRow2([
     ["Check-in",  fmtDate(processed.arrival_at)],
     ["Check-out", fmtDate(processed.departure_at)],
   ]));
 
+  // Room type
+  const roomField = staticField("Room type", processed.room_type_name);
+  if (roomField) body.appendChild(roomField);
+
+  // Booking date / Booking number
   body.appendChild(staticRow2([
-    ["Price",    processed.price ? String(processed.price) : null],
-    ["Currency", processed.currency_code],
+    ["Booking date",   fmtDate(processed.reservation_date)],
+    ["Booking number", processed.booking_code],
   ]));
 
+  // Operator
+  const opField = staticField("Operator", operatorName);
+  if (opField) body.appendChild(opField);
+
+  // Guest counts
   body.appendChild(staticRow3([
     ["Adults",   processed.person_count_adults != null ? String(processed.person_count_adults) : "0"],
     ["Children", processed.person_count_children != null ? String(processed.person_count_children) : "0"],
     ["Infants",  processed.person_count_teens != null ? String(processed.person_count_teens) : "0"],
   ]));
 
-  // Tourists
+  // Guests
   if (tourists.length) {
-    const tSection = document.createElement("div");
-    tSection.className = "ttb-modal__section-title";
-    tSection.textContent = "Guests";
-    body.appendChild(tSection);
     for (const t of tourists) {
       body.appendChild(staticRow2([
         ["Name", t.name],
         ["Date of birth", t.dob || null],
       ]));
     }
+  }
+
+  // Price / Currency
+  body.appendChild(staticRow2([
+    ["Price",    processed.price ? String(processed.price) : null],
+    ["Currency", processed.currency_code],
+  ]));
+
+  // Your hotel rating — same horizontal .ttb-rating-row markup as the editable forms.
+  if (processed.hotel_vote != null) {
+    const ratingRow = document.createElement("div");
+    ratingRow.className = "ttb-rating-row";
+    const voteLbl = document.createElement("span");
+    voteLbl.className = "ttb-rating-label";
+    voteLbl.textContent = "Your hotel rating";
+    const stars = document.createElement("div");
+    stars.className = "ttb-stars ttb-stars--readonly";
+    const score = Math.round(processed.hotel_vote / 10);
+    for (let i = 1; i <= 10; i++) {
+      const s = document.createElement("span");
+      s.className = "ttb-star" + (i <= score ? " ttb-star--filled" : "");
+      s.textContent = i <= score ? "★" : "☆";
+      stars.appendChild(s);
+    }
+    ratingRow.append(voteLbl, stars);
+    body.appendChild(ratingRow);
   }
 
   modal.append(header, body);
@@ -472,7 +468,7 @@ async function showConfirmModal(saveResult) {
       <div class="ttb-modal__body">
 
         <label class="ttb-modal__label">
-          Hotel <span class="ttb-required">*</span>
+          Hotel
           ${hotelMatch
             ? `<span class="ttb-modal__match-badge">Auto-matched · <strong>${Number(hotelMatch.score) || 0}%</strong></span>`
             : `<span class="ttb-modal__match-badge ttb-modal__match-badge--notfound">Hotel not found</span>`}
@@ -485,36 +481,6 @@ async function showConfirmModal(saveResult) {
         </div>
         <div class="ttb-hotel-location" id="ttb-hotel-location" hidden></div>
 
-        <div class="ttb-rating-row">
-          <span class="ttb-rating-label">Your hotel rating <span class="ttb-required">*</span></span>
-          <div class="ttb-stars" id="ttb-stars">
-            ${[1,2,3,4,5,6,7,8,9,10].map(i => `<span class="ttb-star" data-vote="${i}">☆</span>`).join("")}
-          </div>
-        </div>
-
-        <label class="ttb-modal__label">Room type <span class="ttb-required">*</span></label>
-        <select class="ttb-modal__select" id="ttb-room-select" ${pre.hotelId ? "" : "disabled"}>
-          <option value="">${pre.hotelId ? "— select room type —" : "— select hotel first —"}</option>
-        </select>
-
-        <div class="ttb-modal__section-title">Booking details</div>
-
-        <label class="ttb-modal__label">Operator</label>
-        <select class="ttb-modal__select" id="ttb-operator-select">
-          <option value="">— select operator —</option>
-        </select>
-
-        <div class="ttb-modal__row-2">
-          <div>
-            <label class="ttb-modal__label">Booking number</label>
-            <input class="ttb-modal__input" id="ttb-booking-code" type="text" value="${esc(pre.bookingCode)}" placeholder="ORD-123456" />
-          </div>
-          <div>
-            <label class="ttb-modal__label">Booking date</label>
-            <input class="ttb-modal__input" id="ttb-reserv-date" type="date" value="${esc(pre.reservDate)}" />
-          </div>
-        </div>
-
         <div class="ttb-modal__row-2">
           <div>
             <label class="ttb-modal__label">Check-in</label>
@@ -526,18 +492,26 @@ async function showConfirmModal(saveResult) {
           </div>
         </div>
 
+        <label class="ttb-modal__label">Room type</label>
+        <select class="ttb-modal__select" id="ttb-room-select" ${pre.hotelId ? "" : "disabled"}>
+          <option value="">${pre.hotelId ? "— select room type —" : "— select hotel first —"}</option>
+        </select>
+
         <div class="ttb-modal__row-2">
           <div>
-            <label class="ttb-modal__label">Price</label>
-            <input class="ttb-modal__input" id="ttb-price" type="text" placeholder="1250.00" value="${esc(pre.price)}" />
+            <label class="ttb-modal__label">Booking date</label>
+            <input class="ttb-modal__input" id="ttb-reserv-date" type="date" value="${esc(pre.reservDate)}" />
           </div>
           <div>
-            <label class="ttb-modal__label">Currency</label>
-            <select class="ttb-modal__input ttb-modal__select" id="ttb-currency">
-              <option value="">—</option>
-            </select>
+            <label class="ttb-modal__label">Booking number</label>
+            <input class="ttb-modal__input" id="ttb-booking-code" type="text" value="${esc(pre.bookingCode)}" placeholder="ORD-123456" />
           </div>
         </div>
+
+        <label class="ttb-modal__label">Operator</label>
+        <select class="ttb-modal__select" id="ttb-operator-select">
+          <option value="">— select operator —</option>
+        </select>
 
         <div class="ttb-modal__row-3">
           <div>
@@ -554,11 +528,30 @@ async function showConfirmModal(saveResult) {
           </div>
         </div>
 
-        <div class="ttb-modal__section-title">Guests${direct ? ` <span class="ttb-required">*</span>` : ``}</div>
         <div id="ttb-tourists-list"></div>
         <button class="ttb-modal__add-tourist" type="button" id="ttb-add-tourist">+ Add guest</button>
 
-        <p class="ttb-modal__required-note"><span class="ttb-required">*</span> Required fields</p>
+        <div class="ttb-modal__row-2">
+          <div>
+            <label class="ttb-modal__label">Price</label>
+            <input class="ttb-modal__input" id="ttb-price" type="text" placeholder="1250.00" value="${esc(pre.price)}" />
+          </div>
+          <div>
+            <label class="ttb-modal__label">Currency</label>
+            <select class="ttb-modal__input ttb-modal__select" id="ttb-currency">
+              <option value="">—</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="ttb-rating-row">
+          <span class="ttb-rating-label">Your hotel rating</span>
+          <div class="ttb-stars" id="ttb-stars">
+            ${[1,2,3,4,5,6,7,8,9,10].map(i => `<span class="ttb-star" data-vote="${i}">☆</span>`).join("")}
+          </div>
+        </div>
+
+        <p class="ttb-modal__required-note">All fields are required</p>
 
       </div>
 
@@ -582,12 +575,14 @@ async function showConfirmModal(saveResult) {
   ensureCurrencies().then(() => {
     const currSelect = overlay.querySelector("#ttb-currency");
     if (currSelect) populateCurrencySelectEl(currSelect, pre.currency);
+    updateConfirmState();
   });
 
   // Populate operator select
   ensureOperators().then(() => {
     const opSelect = overlay.querySelector("#ttb-operator-select");
     if (opSelect) populateOperatorSelect(opSelect, pre.operatorId);
+    updateConfirmState();
   });
 
   const hotelInput      = overlay.querySelector("#ttb-hotel-input");
@@ -596,6 +591,16 @@ async function showConfirmModal(saveResult) {
   const roomSelect      = overlay.querySelector("#ttb-room-select");
   const touristsList    = overlay.querySelector("#ttb-tourists-list");
   const confirmBtn      = overlay.querySelector(".ttb-modal__btn--confirm");
+  const arrivalInput    = overlay.querySelector("#ttb-arrival");
+  const departureInput  = overlay.querySelector("#ttb-departure");
+  const reservDateInput = overlay.querySelector("#ttb-reserv-date");
+  const bookingCodeInput= overlay.querySelector("#ttb-booking-code");
+  const operatorSelect  = overlay.querySelector("#ttb-operator-select");
+  const adultsInput     = overlay.querySelector("#ttb-adults");
+  const childrenInput   = overlay.querySelector("#ttb-children");
+  const infantsInput    = overlay.querySelector("#ttb-infants");
+  const priceInput      = overlay.querySelector("#ttb-price");
+  const currencySelect  = overlay.querySelector("#ttb-currency");
 
   let selectedHotelId   = pre.hotelId;
   let selectedHotelName = pre.hotelName;
@@ -642,15 +647,29 @@ async function showConfirmModal(saveResult) {
       );
   }
   function updateConfirmState() {
-    const baseInvalid = !selectedHotelId || !roomSelect.value || !(selectedVote > 0);
-    // In direct mode the user must add at least one guest by hand
-    confirmBtn.disabled = baseInvalid || (direct && !hasAnyTourist());
+    const ok =
+      !!selectedHotelId &&
+      !!arrivalInput.value &&
+      !!departureInput.value &&
+      !!roomSelect.value &&
+      !!reservDateInput.value &&
+      !!bookingCodeInput.value.trim() &&
+      !!operatorSelect.value &&
+      adultsInput.value   !== "" &&
+      childrenInput.value !== "" &&
+      infantsInput.value  !== "" &&
+      hasAnyTourist() &&
+      !!priceInput.value.trim() &&
+      !!currencySelect.value &&
+      (selectedVote > 0);
+    confirmBtn.disabled = !ok;
   }
 
   roomSelect.addEventListener("change", updateConfirmState);
-
-  const arrivalInput   = overlay.querySelector("#ttb-arrival");
-  const departureInput = overlay.querySelector("#ttb-departure");
+  [reservDateInput, bookingCodeInput, priceInput, adultsInput, childrenInput, infantsInput].forEach(el =>
+    el.addEventListener("input", updateConfirmState));
+  [operatorSelect, currencySelect].forEach(el =>
+    el.addEventListener("change", updateConfirmState));
 
   function reloadRoomTypesForDates() {
     if (!selectedHotelId) return;
@@ -664,8 +683,8 @@ async function showConfirmModal(saveResult) {
     ).then(updateConfirmState);
   }
 
-  arrivalInput.addEventListener("change", reloadRoomTypesForDates);
-  departureInput.addEventListener("change", reloadRoomTypesForDates);
+  arrivalInput.addEventListener("change", () => { reloadRoomTypesForDates(); updateConfirmState(); });
+  departureInput.addEventListener("change", () => { reloadRoomTypesForDates(); updateConfirmState(); });
 
   // ── Pre-load room types and vote if hotel already matched ────────
   if (pre.hotelId) {
@@ -682,6 +701,7 @@ async function showConfirmModal(saveResult) {
   for (const t of pre.tourists) {
     touristsList.appendChild(buildTouristRow(t));
   }
+  updateConfirmState();
 
   overlay.querySelector("#ttb-add-tourist").addEventListener("click", () => {
     touristsList.appendChild(buildTouristRow());

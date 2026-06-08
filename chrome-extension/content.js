@@ -274,15 +274,45 @@ function clearInjectedButtons() {
 
 // ── Scan ──────────────────────────────────────────────────────────────
 
+// Self-heal the registry: boot() loads parsers only once, so a transient failure
+// (asleep service worker, network blip, stale token → 401) would otherwise leave
+// the page button-less forever. Retry the load — guarded against spamming the API
+// on a persistent failure (e.g. a truly invalid token) with an in-flight lock and
+// a cooldown. A 401 is handled separately (background marks the session expired →
+// isAuthorized() turns false → queueScan stops calling this).
+const PARSER_RELOAD_COOLDOWN_MS = 10000;
+let parserReloadInFlight = null;
+let lastParserReloadAt   = 0;
+
+function ensureParsersLoaded() {
+  if (ParserRegistry.isLoaded()) return Promise.resolve(true);
+  if (parserReloadInFlight) return parserReloadInFlight;
+  if (Date.now() - lastParserReloadAt < PARSER_RELOAD_COOLDOWN_MS) return Promise.resolve(false);
+  lastParserReloadAt = Date.now();
+  parserReloadInFlight = (async () => {
+    try {
+      await Promise.all([ParserRegistry.loadParsers(), ParserRegistry.loadRules()]);
+      // Booking-state sets were likely empty too if the boot load failed.
+      if (ParserRegistry.isLoaded()) await refreshConfirmedCodes();
+    } finally {
+      parserReloadInFlight = null;
+    }
+    return ParserRegistry.isLoaded();
+  })();
+  return parserReloadInFlight;
+}
+
 function queueScan() {
   if (scanQueued) return;
   scanQueued = true;
   window.requestAnimationFrame(async () => {
     scanQueued = false;
-    const parser = ParserRegistry.find(getEffectiveLocation());
-    if (!parser) return;
     const authorized = await isAuthorized();
     if (!authorized) { clearInjectedButtons(); return; }
+    // Recover from a failed one-shot boot load before giving up on this page.
+    if (!ParserRegistry.isLoaded()) await ensureParsersLoaded();
+    const parser = ParserRegistry.find(getEffectiveLocation());
+    if (!parser) return;
     for (const card of parser.getCards()) {
       await injectButton(card, parser);
     }
@@ -329,8 +359,9 @@ document.addEventListener("livewire:navigate", destroyModal);
 // (or rather, not populated) while the user was still anonymous.
 chrome.storage.onChanged.addListener(async (changes, area) => {
   if (area !== "local" || !changes[AUTH_STATE_KEY]) return;
+  const newValue  = changes[AUTH_STATE_KEY].newValue;
   const wasAuthed = !!changes[AUTH_STATE_KEY].oldValue?.authorized;
-  const isAuthed  = !!changes[AUTH_STATE_KEY].newValue?.authorized;
+  const isAuthed  = !!newValue?.authorized;
   if (isAuthed && !wasAuthed) {
     // Parsers/rules now require auth. If boot() ran while logged out the registry
     // is empty, so (re)load them on login before scanning — otherwise no parser
@@ -341,6 +372,11 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
     queueScan();
   } else if (!isAuthed && wasAuthed) {
     clearInjectedButtons();
+    // Tell the user when the session was dropped by an expired/revoked token
+    // (background.js sets reason:"expired"), but stay silent on a manual logout.
+    if (newValue?.reason === "expired") {
+      showToast("Session expired — please sign in to the extension again.");
+    }
   }
 });
 

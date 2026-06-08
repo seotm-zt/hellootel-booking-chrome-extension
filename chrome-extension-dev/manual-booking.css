@@ -6,7 +6,8 @@
 html, body {
   margin: 0;
   height: 100%;
-  background: #f3f4f6;
+  /* Match the confirm/preview modal card, which sits on white. */
+  background: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #111827;
 }
@@ -20,8 +21,13 @@ html, body {
   padding: 18px 18px 24px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
 }
+
+/* The uniform field rhythm shared by this window and the modal bodies lives in
+   content.css (".mb-form, .ttb-modal__body"), so all three windows stay in sync. */
+
+/* Guest rows in this form have no date-of-birth field — only last/first + remove. */
+.ttb-tourist-row--no-dob { grid-template-columns: 1fr 1fr auto !important; }
 
 .mb-form__title {
   font-size: 16px;
@@ -31,12 +37,19 @@ html, body {
   margin: 0 0 6px;
 }
 
-.mb-form__footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 14px;
+/* The footer reuses the modal's .ttb-modal__footer styling so the bottom of all
+   three windows matches; no .mb-form__footer rule is needed. */
+
+/* In the modal these elements sit flush against the body; here they live inside
+   the padded .mb-form, which would double-inset them. Cancel their extra
+   horizontal margin/padding so the send-note box and the footer buttons span the
+   form width and align with the fields, exactly like in the popup. */
+.mb-form > .ttb-modal__send-note {
+  margin: 14px 0 0 !important;
+}
+.mb-form > .ttb-modal__footer {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 /* Not-signed-in fallback message. */

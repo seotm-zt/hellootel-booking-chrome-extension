@@ -181,8 +181,52 @@
   overflow-y: auto !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 5px !important;
 }
+
+/* ── Unified field rhythm ────────────────────────────────────────────────
+   Shared by the standalone manual window (.mb-form) and both modal bodies
+   (.ttb-modal__body — the confirm/preview modal and the read-only summary),
+   so all three windows lay fields out identically. The flex gap is dropped
+   and spacing is driven by margins: even space between field groups, each
+   label hugging its own input. */
+.mb-form,
+.ttb-modal__body { gap: 0 !important; }
+
+/* Even spacing between every field group. */
+.mb-form > *,
+.ttb-modal__body > * { margin-top: 14px !important; }
+
+/* The first field hugs the top of the form/body. */
+.mb-form > :first-child,
+.ttb-modal__body > :first-child { margin-top: 0 !important; }
+
+/* An input / select / location line / static value hugs the label above it. */
+.mb-form > .ttb-modal__autocomplete,
+.mb-form > .ttb-hotel-location,
+.mb-form > .ttb-modal__select,
+.ttb-modal__body > .ttb-modal__autocomplete,
+.ttb-modal__body > .ttb-hotel-location,
+.ttb-modal__body > .ttb-modal__select { margin-top: 4px !important; }
+
+/* Grid-cell inputs hug their cell label the same way as standalone ones. */
+.mb-form .ttb-modal__row-2 .ttb-modal__input,
+.mb-form .ttb-modal__row-2 .ttb-modal__select,
+.mb-form .ttb-modal__row-3 .ttb-modal__input,
+.ttb-modal__body .ttb-modal__row-2 .ttb-modal__input,
+.ttb-modal__body .ttb-modal__row-2 .ttb-modal__select,
+.ttb-modal__body .ttb-modal__row-3 .ttb-modal__input,
+.ttb-modal__static-value { margin-top: 4px !important; }
+
+/* Helper controls stay tight to the group above them. */
+.mb-form > .ttb-modal__add-tourist,
+.ttb-modal__body > .ttb-modal__add-tourist { margin-top: 6px !important; }
+
+/* The hotel-rating row (and the "required" note that follows it) is set off
+   from the rest with extra breathing room above. */
+.mb-form > .ttb-rating-row,
+.mb-form > .ttb-modal__required-note,
+.ttb-modal__body > .ttb-rating-row,
+.ttb-modal__body > .ttb-modal__required-note { margin-top: 28px !important; }
 
 .ttb-modal__label {
   display: block !important;

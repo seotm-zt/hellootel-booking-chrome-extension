@@ -1,4 +1,3 @@
-//const API_BASE = "http://booking.localhost/api/v1/extension";
 const API_BASE = "https://booking-configurator.hellootel.com/api/v1/extension";
 
 const AUTH_STATE_KEY = "authState";
@@ -21,6 +20,17 @@ async function writeAuthState(state) {
 async function clearAuthState() {
   try {
     await chrome.storage.local.remove(AUTH_STATE_KEY);
+  } catch {}
+}
+
+// Mark the session as expired (token rotated/revoked server-side → 401). Unlike a
+// manual logout (which removes the key), this writes an authorized:false state
+// carrying reason:"expired", so the UI can tell the two apart and prompt re-login.
+async function markSessionExpired() {
+  try {
+    await chrome.storage.local.set({
+      [AUTH_STATE_KEY]: { authorized: false, reason: "expired", savedAt: new Date().toISOString() },
+    });
   } catch {}
 }
 
