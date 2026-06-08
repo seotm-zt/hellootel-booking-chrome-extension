@@ -8,6 +8,7 @@ use App\Models\ExtensionBooking;
 use App\Models\ExtensionPageReport;
 use App\Models\ExtensionParser;
 use App\Models\ExtensionParserRule;
+use App\Models\ExtensionToken;
 use App\Models\ProcessedBooking;
 use App\Models\User;
 use App\Services\BookingProcessorService;
@@ -66,19 +67,26 @@ class ExtensionController extends Controller
             $user->name = $name;
         }
 
-        // Issue a fresh extension token (opaque, random) and store only its hash.
-        // The plaintext is returned once to the extension and never persisted.
-        // The upstream HelloOtel token is stored separately (encrypted cast).
-        $plainApiToken                = Str::random(64);
-        $user->api_token              = hash('sha256', $plainApiToken);
-        $user->api_token_expires_at   = null; // no forced TTL for now
-        $user->api_token_last_used_at = now();
+        // Refresh the upstream HelloOtel token (stored encrypted, shared by all of
+        // this user's devices, never returned to the extension).
         $user->hellootel_access_token = $hellootelToken;
         $user->save();
 
         if (!$user->hasAnyRole([Role::ADMIN->value, Role::OPERATOR->value])) {
             $user->assignRole(Role::OPERATOR->value);
         }
+
+        // Issue a fresh per-device extension token (opaque, random). Only its
+        // sha256 hash is stored; the plaintext is returned once below and never
+        // persisted. A NEW row is created, so other devices' tokens stay valid
+        // (no mutual logout). Idle-expiring via ExtensionToken::IDLE_TTL_DAYS.
+        $plainApiToken = Str::random(64);
+        $user->extensionTokens()->create([
+            'token'        => hash('sha256', $plainApiToken),
+            'device_label' => mb_substr($request->userAgent() ?? '', 0, 255),
+            'last_used_at' => now(),
+            'expires_at'   => ExtensionToken::freshExpiry(),
+        ]);
 
         return response()->json([
             'token' => $plainApiToken,
@@ -90,17 +98,26 @@ class ExtensionController extends Controller
         ]);
     }
 
-    // Revoke the current extension token server-side (the extension calls this on
-    // logout). Clears only the extension token, not the upstream HelloOtel one.
-    public function logout(): JsonResponse
+    // Revoke this device's extension token (the extension calls this on logout).
+    // Only the current device is signed out; other devices stay logged in. The
+    // upstream HelloOtel token is left untouched.
+    public function logout(Request $request): JsonResponse
+    {
+        $token = $request->bearerToken();
+        if ($token) {
+            ExtensionToken::where('token', hash('sha256', $token))->delete();
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+    // Revoke every device for the current user ("sign out everywhere") — useful
+    // when a token may have leaked or a device was lost.
+    public function logoutAll(): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
-
-        $user->forceFill([
-            'api_token'            => null,
-            'api_token_expires_at' => null,
-        ])->save();
+        $user->extensionTokens()->delete();
 
         return response()->json(['ok' => true]);
     }

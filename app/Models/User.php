@@ -5,6 +5,7 @@ namespace App\Models;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -23,7 +24,6 @@ class User extends Authenticatable implements FilamentUser
     protected $hidden = [
         'password',
         'remember_token',
-        'api_token',
         'hellootel_access_token',
     ];
 
@@ -34,22 +34,13 @@ class User extends Authenticatable implements FilamentUser
             'password'               => 'hashed',
             // Upstream HelloOtel token: encrypted at rest, never exposed.
             'hellootel_access_token' => 'encrypted',
-            'api_token_expires_at'   => 'datetime',
-            'api_token_last_used_at' => 'datetime',
         ];
     }
 
-    /**
-     * Resolve a user by the plaintext extension token. Only the sha256 hash is
-     * stored, so we hash the incoming token and look that up.
-     */
-    public static function findByApiToken(?string $plain): ?self
+    /** Per-device extension auth tokens (one row per signed-in device). */
+    public function extensionTokens(): HasMany
     {
-        if (!$plain) {
-            return null;
-        }
-
-        return static::where('api_token', hash('sha256', $plain))->first();
+        return $this->hasMany(ExtensionToken::class);
     }
 
     public function canAccessPanel(Panel $panel): bool

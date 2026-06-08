@@ -9,6 +9,7 @@ Route::prefix('v1/extension')->group(function () {
 
     Route::middleware(ApiTokenAuth::class)->group(function () {
         Route::post('logout',                       [ExtensionController::class, 'logout']);
+        Route::post('logout-all',                   [ExtensionController::class, 'logoutAll']);
 
         // Parser configs are no longer public — they expose target domains/selectors.
         Route::get('parsers',                       [ExtensionController::class, 'parsersList']);
