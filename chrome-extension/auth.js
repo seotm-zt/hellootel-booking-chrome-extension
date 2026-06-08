@@ -1,5 +1,6 @@
 const API_BASE = "https://booking-configurator.hellootel.com/api/v1/extension";
 
+
 const AUTH_STATE_KEY = "authState";
 
 async function readAuthState() {

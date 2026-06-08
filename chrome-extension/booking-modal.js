@@ -93,9 +93,10 @@ async function ensureOperators() {
     const json = await sendMessage({ type: "GET_OPERATORS" });
     _operators = json?.data ?? [];
   } catch {
-    _operators = [];
+    // Leave the cache unset (null) on failure so a later call retries instead of
+    // being stuck empty after a transient error / expired session at page load.
   }
-  return _operators;
+  return _operators ?? [];
 }
 
 async function ensureCountries() {
@@ -105,9 +106,9 @@ async function ensureCountries() {
     const arr  = json?.data ?? [];
     _countries = Object.fromEntries(arr.map(c => [c.id, c.name]));
   } catch {
-    _countries = {};
+    // Leave unset (null) on failure so a later call retries.
   }
-  return _countries;
+  return _countries ?? {};
 }
 
 async function ensureCities() {
@@ -117,9 +118,9 @@ async function ensureCities() {
     const arr  = json?.data ?? [];
     _cities = Object.fromEntries(arr.map(c => [c.id, c.name]));
   } catch {
-    _cities = {};
+    // Leave unset (null) on failure so a later call retries.
   }
-  return _cities;
+  return _cities ?? {};
 }
 
 function formatHotelLocation(countryId, cityId) {
@@ -154,9 +155,9 @@ async function ensureCurrencies() {
       _currencies = Object.entries(raw).map(([code, name]) => ({ code, name }));
     }
   } catch {
-    _currencies = [];
+    // Leave unset (null) on failure so a later call retries.
   }
-  return _currencies;
+  return _currencies ?? [];
 }
 
 function populateCurrencySelectEl(select, selectedCode) {
