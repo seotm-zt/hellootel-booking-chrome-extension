@@ -392,7 +392,7 @@ function showSentDataModal(processed) {
 
   // Price / Currency
   body.appendChild(staticRow2([
-    ["Price",    processed.price ? String(processed.price) : null],
+    ["Tour price", processed.price ? String(processed.price) : null],
     ["Currency", processed.currency_code],
   ]));
 
@@ -534,7 +534,7 @@ async function showConfirmModal(saveResult) {
 
         <div class="ttb-modal__row-2">
           <div>
-            <label class="ttb-modal__label">Price</label>
+            <label class="ttb-modal__label">Tour price</label>
             <input class="ttb-modal__input" id="ttb-price" type="text" placeholder="1250.00" value="${esc(pre.price)}" />
           </div>
           <div>
@@ -552,7 +552,7 @@ async function showConfirmModal(saveResult) {
           </div>
         </div>
 
-        <p class="ttb-modal__required-note">All fields are required</p>
+        <p class="ttb-modal__required-note">All fields are required except Tour price and Currency</p>
 
       </div>
 
@@ -589,6 +589,7 @@ async function showConfirmModal(saveResult) {
   const hotelInput      = overlay.querySelector("#ttb-hotel-input");
   const suggestions     = overlay.querySelector("#ttb-hotel-suggestions");
   const hotelLocationEl = overlay.querySelector("#ttb-hotel-location");
+  const matchBadge      = overlay.querySelector(".ttb-modal__match-badge");
   const roomSelect      = overlay.querySelector("#ttb-room-select");
   const touristsList    = overlay.querySelector("#ttb-tourists-list");
   const confirmBtn      = overlay.querySelector(".ttb-modal__btn--confirm");
@@ -660,8 +661,6 @@ async function showConfirmModal(saveResult) {
       childrenInput.value !== "" &&
       infantsInput.value  !== "" &&
       hasAnyTourist() &&
-      !!priceInput.value.trim() &&
-      !!currencySelect.value &&
       (selectedVote > 0);
     confirmBtn.disabled = !ok;
   }
@@ -738,6 +737,7 @@ async function showConfirmModal(saveResult) {
         selectedHotelName = h.name;
         hotelInput.value  = h.name;
         updateHotelLocation(h.country_id, h.city_id);
+        if (matchBadge) matchBadge.hidden = true;
         hideSuggestions();
         await loadRoomTypes(h.id, roomSelect, null, arrivalInput.value || null, departureInput.value || null);
         updateConfirmState();
@@ -751,6 +751,7 @@ async function showConfirmModal(saveResult) {
   hotelInput.addEventListener("input", () => {
     selectedHotelId = null;
     updateHotelLocation(null, null); // hide location while user is typing
+    if (matchBadge && !hotelMatch) matchBadge.hidden = false;
     updateConfirmState();
     clearTimeout(hotelSearchTimeout);
     const q = hotelInput.value.trim();
@@ -846,7 +847,7 @@ async function showConfirmModal(saveResult) {
 
         if (result?.hellootel?.error) {
           confirmBtn.disabled    = false;
-          confirmBtn.textContent = "Retry";
+          confirmBtn.textContent = "Confirm";
           const choice = await showHellootelErrorDialog(result.hellootel.error);
           if (choice === "ignore") {
             destroyModal();

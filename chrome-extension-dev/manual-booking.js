@@ -14,6 +14,34 @@
  * /processed-bookings/direct — creating a ProcessedBooking only (no raw booking).
  */
 
+function showSuccessDialog(result) {
+  const reservationId = result?.hellootel?.id ?? null;
+  const bookingsUrl   = chrome.runtime.getURL("bookings.html");
+
+  const overlay = document.createElement("div");
+  overlay.className = "ttb-he-overlay";
+  overlay.innerHTML = `
+    <div class="ttb-he-box">
+      <div class="ttb-he-icon">✓</div>
+      <div class="ttb-he-title">HelloOtel - Hotel reservation information successfully added to HelloOtel</div>
+      ${reservationId
+        ? `<div class="ttb-he-message ttb-he-message--success">Reservation ID: #${reservationId}</div>`
+        : ""}
+      <div class="ttb-he-actions">
+        <button class="ttb-he-btn ttb-he-btn--ignore" type="button" id="mb-success-ok">OK</button>
+        <button class="ttb-he-btn ttb-he-btn--fix"    type="button" id="mb-success-view">View all bookings</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector("#mb-success-ok").addEventListener("click", () => window.close());
+  overlay.querySelector("#mb-success-view").addEventListener("click", () => {
+    chrome.tabs.create({ url: bookingsUrl });
+    window.close();
+  });
+}
+
 function showFallback(message) {
   const fb = document.getElementById("mb-fallback");
   fb.hidden = false;
@@ -87,7 +115,7 @@ function renderManualForm(prefill = null) {
 
     <div class="ttb-modal__row-2">
       <div>
-        <label class="ttb-modal__label">Price</label>
+        <label class="ttb-modal__label">Tour price</label>
         <input class="ttb-modal__input" id="ttb-price" type="text" placeholder="1250.00" />
       </div>
       <div>
@@ -105,11 +133,12 @@ function renderManualForm(prefill = null) {
       </div>
     </div>
 
-    <p class="ttb-modal__required-note">All fields are required</p>
+    <p class="ttb-modal__required-note">All fields are required except Tour price and Currency</p>
     <p class="ttb-modal__send-note">You are sending booking information directly to the hotel manager via the HelloOtel system.</p>
 
     <div class="ttb-modal__footer">
       <button class="ttb-modal__btn ttb-modal__btn--cancel"  type="button" id="mb-cancel">Cancel</button>
+      <button class="ttb-modal__btn ttb-modal__btn--draft"   type="button" id="mb-draft">Save as Draft</button>
       <button class="ttb-modal__btn ttb-modal__btn--confirm" type="button" id="mb-confirm" disabled>Confirm</button>
     </div>
 
@@ -194,8 +223,6 @@ function renderManualForm(prefill = null) {
       childrenInput.value !== "" &&
       infantsInput.value  !== "" &&
       hasAnyTourist() &&
-      !!priceInput.value.trim() &&
-      !!currencySelect.value &&
       (selectedVote > 0);
     confirmBtn.disabled = !ok;
   }
@@ -297,10 +324,59 @@ function renderManualForm(prefill = null) {
     updateConfirmState();
   }
 
-  // ── Cancel / Confirm ──
+  // ── Cancel / Draft / Confirm ──
   const clearApiError = () => { apiErrorEl.hidden = true; apiErrorEl.textContent = ""; };
 
   form.querySelector("#mb-cancel").addEventListener("click", () => window.close());
+
+  form.querySelector("#mb-draft").addEventListener("click", async () => {
+    const draftBtn = form.querySelector("#mb-draft");
+    draftBtn.disabled    = true;
+    draftBtn.textContent = "Saving...";
+    clearApiError();
+    try {
+      const selectedRoomId   = roomSelect.value ? parseInt(roomSelect.value, 10) : null;
+      const selectedRoomName = roomSelect.selectedOptions[0]?.textContent?.trim() ?? null;
+      const tourists = [...touristsList.querySelectorAll(".ttb-tourist-row")].map(row => ({
+        last_name:  row.querySelector(".ttb-tourist__last").value.trim(),
+        first_name: row.querySelector(".ttb-tourist__first").value.trim(),
+      })).filter(t => t.last_name || t.first_name);
+      const operatorSelectEl   = form.querySelector("#ttb-operator-select");
+      const selectedOperatorId = operatorSelectEl?.value ? parseInt(operatorSelectEl.value, 10) : null;
+
+      const payload = {
+        draft:            true,
+        hotel_id:         selectedHotelId || null,
+        hotel_name:       selectedHotelName || null,
+        room_type_id:     selectedRoomId || null,
+        room_type_name:   selectedRoomId ? selectedRoomName : null,
+        booking_code:     form.querySelector("#ttb-booking-code").value.trim() || null,
+        reservation_date: form.querySelector("#ttb-reserv-date").value || null,
+        arrival_at:       form.querySelector("#ttb-arrival").value || null,
+        departure_at:     form.querySelector("#ttb-departure").value || null,
+        price:            form.querySelector("#ttb-price").value.trim() || null,
+        currency_code:    form.querySelector("#ttb-currency").value.trim().toUpperCase() || null,
+        adults:   form.querySelector("#ttb-adults").value   !== "" ? parseInt(form.querySelector("#ttb-adults").value,   10) : null,
+        children: form.querySelector("#ttb-children").value !== "" ? parseInt(form.querySelector("#ttb-children").value, 10) : null,
+        infants:  form.querySelector("#ttb-infants").value  !== "" ? parseInt(form.querySelector("#ttb-infants").value,  10) : null,
+        tourists:    tourists,
+        hotel_vote:  selectedVote !== null ? selectedVote * 10 : undefined,
+        operator_id: selectedOperatorId,
+      };
+
+      editId
+        ? await updateProcessedDirect(editId, payload)
+        : await storeProcessedDirect(payload);
+
+      showToast("Draft saved");
+      window.close();
+    } catch (err) {
+      draftBtn.disabled    = false;
+      draftBtn.textContent = "Save as Draft";
+      apiErrorEl.textContent = err.message || "Save failed";
+      apiErrorEl.hidden = false;
+    }
+  });
 
   confirmBtn.addEventListener("click", async () => {
     confirmBtn.disabled    = true;
@@ -343,7 +419,7 @@ function renderManualForm(prefill = null) {
 
       if (result?.hellootel?.error) {
         confirmBtn.disabled    = false;
-        confirmBtn.textContent = "Retry";
+        confirmBtn.textContent = "Confirm";
         const choice = await showHellootelErrorDialog(result.hellootel.error);
         if (choice === "ignore") {
           showToast("Failed to send HelloOtel ! (Booking confirmed)");
@@ -353,8 +429,7 @@ function renderManualForm(prefill = null) {
         return;
       }
 
-      // Success: nothing more to show — just close the window.
-      window.close();
+      showSuccessDialog(result);
     } catch (err) {
       confirmBtn.disabled    = false;
       confirmBtn.textContent = "Retry";

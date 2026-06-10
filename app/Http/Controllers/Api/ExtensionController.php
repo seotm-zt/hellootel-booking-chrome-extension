@@ -230,6 +230,8 @@ class ExtensionController extends Controller
     // and immediately ships it to HelloOtel.
     public function storeProcessedDirect(Request $request, HellOotelReservationService $reservation): JsonResponse
     {
+        $isDraft = $request->boolean('draft');
+
         $data = $request->validate([
             'hotel_id'         => 'nullable|integer',
             'hotel_name'       => 'nullable|string|max:500',
@@ -244,9 +246,10 @@ class ExtensionController extends Controller
             'adults'           => 'nullable|integer|min:0',
             'children'         => 'nullable|integer|min:0',
             'infants'          => 'nullable|integer|min:0',
-            'tourists'         => 'required|array|min:1',
+            'tourists'         => $isDraft ? 'nullable|array' : 'required|array|min:1',
             'hotel_vote'       => 'nullable|integer|min:10|max:100',
             'operator_id'      => 'nullable|integer',
+            'draft'            => 'nullable|boolean',
         ]);
 
         /** @var User $user */
@@ -279,7 +282,12 @@ class ExtensionController extends Controller
         Log::info('ProcessedBooking created without source booking', [
             'processed_id' => $processed->id,
             'user_id'      => $user->id,
+            'draft'        => $isDraft,
         ]);
+
+        if ($isDraft) {
+            return response()->json(['data' => $processed, 'hellootel' => null]);
+        }
 
         $hellootelResult = ['id' => null, 'error' => null];
         try {
@@ -362,6 +370,8 @@ class ExtensionController extends Controller
             return response()->json(['error' => 'Booking already sent to HelloOtel'], 422);
         }
 
+        $isDraft = $request->boolean('draft');
+
         $data = $request->validate([
             'hotel_id'         => 'nullable|integer',
             'hotel_name'       => 'nullable|string|max:500',
@@ -376,9 +386,10 @@ class ExtensionController extends Controller
             'adults'           => 'nullable|integer|min:0',
             'children'         => 'nullable|integer|min:0',
             'infants'          => 'nullable|integer|min:0',
-            'tourists'         => 'required|array|min:1',
+            'tourists'         => $isDraft ? 'nullable|array' : 'required|array|min:1',
             'hotel_vote'       => 'nullable|integer|min:10|max:100',
             'operator_id'      => 'nullable|integer',
+            'draft'            => 'nullable|boolean',
         ]);
 
         $processed->confirmed_by_user_id = $user->id;
@@ -401,6 +412,10 @@ class ExtensionController extends Controller
         if (array_key_exists('infants', $data))  $processed->person_count_teens    = (int) ($data['infants']  ?? 0);
 
         $processed->save();
+
+        if ($isDraft) {
+            return response()->json(['data' => $processed, 'hellootel' => null]);
+        }
 
         $hellootelResult = ['id' => null, 'error' => null];
         try {
