@@ -38,7 +38,7 @@ class HellOotelReservationService
 
         $payload = $this->buildPayload($processed);
 
-        $url = $this->base . '/reservation/create?hotel_id=' . $processed->hotel_id;
+        $url = $this->base . '/booking-saver/create-reservation?hotel_id=' . $processed->hotel_id;
 
         Log::info('HellOotel reservation send', [
             'processed_id' => $processed->id,
@@ -151,6 +151,22 @@ class HellOotelReservationService
         return null;
     }
 
+    // Root URL of the original site the booking came from, e.g.
+    // https://velikolepniy-vek.com/. Only parser bookings have a source page;
+    // manual entries (source_booking_id = null) return null and the field is
+    // dropped from the payload.
+    private function originWebsite(ProcessedBooking $processed): ?string
+    {
+        $source = $processed->sourceBooking;
+        if (!$source) {
+            return null;
+        }
+
+        $host = $this->resolveRealDomain($source);
+
+        return $host ? 'https://' . $host . '/' : null;
+    }
+
     private function buildGuestName(ProcessedBooking $processed): ?string
     {
         $tourists = $processed->tourists ?? [];
@@ -185,6 +201,9 @@ class HellOotelReservationService
             'tour_price_native'          => $processed->price,
             'tour_price_native_currency' => $processed->currency_code,
             'vote'                       => $processed->hotel_vote,
+            // 1 = parsed (automatic) save, 2 = manual entry (no source booking)
+            'chrome_extension_booking_type'   => $processed->source_booking_id ? 1 : 2,
+            'chrome_extension_origin_website' => $this->originWebsite($processed),
         ];
 
         // Remove null/empty values — only send fields that are actually set
