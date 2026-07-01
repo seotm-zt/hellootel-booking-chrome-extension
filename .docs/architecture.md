@@ -94,7 +94,22 @@
 
 ### Синхронизация prod → dev
 
-`content.js`, `content.css`, `popup.js`, `popup.css`, `parsers/*`, `icons/*` идентичны в обеих сборках — синхронизируются через `cp`. Менять руками нужно только `manifest.json` (намеренно разный) и `auth.js` (намеренно разный config). Подробный гайд — в memory проекта (`project_extension_dev_separate_build.md`).
+Синхронизация делается **скриптом** [`chrome-extension-dev/sync-from-prod.sh`](../chrome-extension-dev/sync-from-prod.sh), а не голым `cp`:
+
+```bash
+bash chrome-extension-dev/sync-from-prod.sh
+```
+
+Скрипт копирует общие файлы (`background.js`, `content.js`, `content.css`, `popup.js`, `popup.css`, `popup.html`, `bookings.*`, `manual-booking.*`, `booking-modal.js`, `parsers/*`, `icons/*`) и **повторно вставляет dev-only строки**, которые `cp` затирает:
+
+- в `background.js` — `importScripts("dev-reporter-bg.js")`;
+- в `popup.html` — `<link ... dev-reporter.css>` и `<script ... dev-reporter-popup.js></script>`.
+
+Вставка идемпотентна (проверка через `grep`), так что скрипт можно гонять сколько угодно раз.
+
+> ⚠️ **Почему нельзя просто `cp`:** `background.js` и `popup.html` — общие файлы, но обе половины «Send to Developer» живут в них через dev-only строки. Голый `cp background.js` сбрасывает `importScripts("dev-reporter-bg.js")`, обработчик `SEND_PAGE_REPORT` в service worker не регистрируется, и кнопка падает с `Failed: Failed` (popup не получает ответ на сообщение). Именно для защиты от этого и нужен скрипт.
+
+**Никогда не копируются** (намеренно разные, правятся руками): `manifest.json` (dev-имя, `<all_urls>`, доп. permissions) и `auth.js` (dev `API_BASE` на `http://booking.localhost/...`). Подробный гайд — в memory проекта (`project_extension_dev_separate_build.md`).
 
 ## Ключевой принцип: изменения только на стороне сервера
 
