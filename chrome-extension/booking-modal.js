@@ -446,7 +446,7 @@ async function showConfirmModal(saveResult) {
     reservTime:  null,
     arrivalAt:   processed?.arrival_at     ?? "",
     departureAt: processed?.departure_at   ?? "",
-    price:       processed?.price          ?? "",
+    price:       processed?.price          ?? extractPriceNumber(raw.total_price) ?? "",
     currency:    processed?.currency_code  ?? detectCurrency(raw.total_price) ?? "",
     adults:      processed?.person_count_adults   ?? raw.adults   ?? "",
     children:    processed?.person_count_children ?? raw.children ?? "",

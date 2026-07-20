@@ -18,12 +18,15 @@ class BookingProcessorService
         if ($booking->processed_booking_id) {
             $processed = ProcessedBooking::findOrFail($booking->processed_booking_id);
 
-            // Patch fields that may have been null on first processing
-            if (!$processed->currency_code && $booking->total_price) {
-                [, $currency] = $this->parseTotalPrice($booking->total_price);
-                if ($currency) {
-                    $processed->update(['currency_code' => $currency]);
-                }
+            // Patch fields that may have been null on first processing — the
+            // parser config may have been fixed since (e.g. a selector that
+            // didn't match the page state captured at the time).
+            if ((!$processed->price || !$processed->currency_code) && $booking->total_price) {
+                [$price, $currency] = $this->parseTotalPrice($booking->total_price);
+                $processed->update([
+                    'price'         => $processed->price ?: $price,
+                    'currency_code' => $processed->currency_code ?: $currency,
+                ]);
             }
 
             // Retry hotel matching if it failed before — the user may have

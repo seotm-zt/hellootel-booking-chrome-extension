@@ -32,6 +32,19 @@ class ParserEngineSimulator
     /** Run a parser config against raw HTML, return array of booking records. */
     public function run(array $config, string $html): array
     {
+        // Captured HTML is always UTF-8 (the extension serialises live outerHTML),
+        // but the source page's own <meta charset> tag (e.g. windows-1251) is
+        // captured along with it. libxml's HTML parser honours that meta tag and
+        // misreads the UTF-8 bytes as the declared legacy charset, garbling
+        // multi-byte sequences and aborting after the first invalid byte —
+        // silently truncating the tree to just a handful of elements. Strip any
+        // declared charset so the explicit UTF-8 prolog below is what wins.
+        $html = preg_replace('/<meta[^>]+charset[^>]*>/i', '', $html);
+
+        // Belt-and-braces: drop any genuinely invalid UTF-8 byte sequences too.
+        $clean = @iconv('UTF-8', 'UTF-8//IGNORE', $html);
+        if ($clean !== false && $clean !== '') $html = $clean;
+
         $dom = new DOMDocument();
         libxml_use_internal_errors(true);
         $dom->loadHTML('<?xml encoding="UTF-8">' . $html);
@@ -122,16 +135,18 @@ class ParserEngineSimulator
 
     private function applyCommonMaps(DOMElement $card, array $cfg, array &$result, DOMXPath $xpath): void
     {
+        // array_merge (not +=) so a match here overwrites an already-set-but-empty
+        // field, mirroring config-engine.js's Object.assign(result, ...) semantics.
         foreach ($cfg['label_maps'] ?? [] as $map) {
-            $result += $this->extractLabelMap($card, $map, $xpath);
+            $result = array_merge($result, $this->extractLabelMap($card, $map, $xpath));
         }
         foreach ($cfg['dl_maps'] ?? [] as $map) {
-            $result += $this->extractDlMap($card, $map, $xpath);
+            $result = array_merge($result, $this->extractDlMap($card, $map, $xpath));
         }
         if (!empty($cfg['meta_maps'])) {
             $result['meta'] = $result['meta'] ?? [];
             foreach ($cfg['meta_maps'] as $map) {
-                $result['meta'] += $this->extractLabelMap($card, $map, $xpath);
+                $result['meta'] = array_merge($result['meta'], $this->extractLabelMap($card, $map, $xpath));
             }
         }
         if (!empty($cfg['meta_fields'])) {

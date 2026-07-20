@@ -9,10 +9,6 @@
 
 importScripts("auth.js");
 
-// Dev build only: register the SEND_PAGE_REPORT service-worker handler.
-// (prod background.js is synced here via cp, so this dev import lives after it.)
-importScripts("dev-reporter-bg.js");
-
 async function authedFetch(path, options = {}) {
   const token = await getToken();
   if (!token) throw new Error("No token. Sign in to the extension.");
@@ -269,3 +265,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 });
+
+// Dev build only: register the SEND_PAGE_REPORT service-worker handler.
+importScripts("dev-reporter-bg.js");
