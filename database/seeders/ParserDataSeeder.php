@@ -7,7 +7,7 @@ use App\Models\ExtensionParserRule;
 use Illuminate\Database\Seeder;
 
 // Сгенерировано командой: php artisan parsers:generate-seeder
-// Дата: 2026-05-29 19:42:29
+// Дата: 2026-07-21 00:36:31
 // Полная замена: парсеры/правила, которых нет в этом сидере, удаляются.
 class ParserDataSeeder extends Seeder
 {
@@ -15,99 +15,6 @@ class ParserDataSeeder extends Seeder
     {
         $parsers = array (
   0 => 
-  array (
-    'name' => 'Velikolepniy Vek',
-    'domain' => 'demo.velikolepniy-vek.com',
-    'path_match' => '/hotel/book/history',
-    'config' => 
-    array (
-      'card' => '.hotel-reservation-history__item',
-      'type' => 'card',
-      'button' => '.hotel-reservation-history__item-header',
-      'fields' => 
-      array (
-        'subtitle' => 
-        array (
-          'sel' => '.hotel-reservation-history__item-body h2',
-          'strip_prefix' => 'Тип номера:',
-          'strip_pattern' => ' *[(][0-9]{2}[.][0-9]{2}[.][0-9]{4}[^)]*[)]$',
-        ),
-        'hotel_name' => 
-        array (
-          'sel' => '.hotel-reservation-history__item-header .hotel-reservation-history__item-header-col:nth-child(3) > div:nth-child(1)',
-          'strip_prefix' => 'Отель:',
-        ),
-        'stay_dates' => 
-        array (
-          'sel' => '.hotel-reservation-history__item-header .hotel-reservation-history__item-header-col:nth-child(3) > div:nth-child(2)',
-        ),
-        'total_price' => 
-        array (
-          'sel' => '.hotel-reservation-history__item-header .hotel-reservation-history__item-header-col:nth-child(6)',
-          'strip_prefix' => 'Стоимость без перелета / комиссия:',
-        ),
-        'booking_code' => 
-        array (
-          'sel' => '.hotel-reservation-history__item-header-col:nth-child(1)',
-        ),
-        'reservation_at' => 
-        array (
-          'sel' => '.hotel-reservation-history__item-header .hotel-reservation-history__item-header-col:nth-child(4)',
-          'strip_prefix' => 'Забронирован:',
-        ),
-      ),
-      'label_maps' => 
-      array (
-        0 => 
-        array (
-          'item' => '.hotel-reservation-history__item-sub-header-col, .tour-reservation-history__item-sub-header-col',
-          'label' => 'label',
-          'value' => 'span',
-          'fields' => 
-          array (
-            'adults' => 
-            array (
-              0 => 'взрослых',
-            ),
-            'infants' => 
-            array (
-              0 => 'младенцев',
-            ),
-            'children' => 
-            array (
-              0 => 'детей',
-            ),
-          ),
-        ),
-      ),
-      'tourist_blocks' => 
-      array (
-        'item' => '.hotel-reservation-history__item-info-row',
-        'label' => 'label',
-        'value' => 'span',
-        'fields' => 
-        array (
-          'dob' => 
-          array (
-            0 => 'дата рождения',
-          ),
-          'last_name' => 
-          array (
-            0 => 'фамилия',
-          ),
-          'first_name' => 
-          array (
-            0 => 'имя',
-          ),
-        ),
-      ),
-    ),
-    'is_active' => true,
-    'operator_id' => 60,
-    'operator_name' => NULL,
-    'notes' => NULL,
-  ),
-  1 => 
   array (
     'name' => 'CoralAgency — Заявки',
     'domain' => 'coralagency.ru',
@@ -208,7 +115,7 @@ class ParserDataSeeder extends Seeder
     'operator_name' => NULL,
     'notes' => 'Список заявок агентства на coralagency.ru/reservation/search. Поля из data-атрибутов div.box и видимых span.',
   ),
-  2 => 
+  1 => 
   array (
     'name' => 'Пегас тур',
     'domain' => 'agency.pegast.ru',
@@ -245,6 +152,22 @@ class ParserDataSeeder extends Seeder
           'strip_prefix' => 'от',
         ),
       ),
+      'label_maps' => 
+      array (
+        0 => 
+        array (
+          'item' => '.payment-value',
+          'label' => '.payment-value-title',
+          'value' => '.payment-value-text',
+          'fields' => 
+          array (
+            'total_price' => 
+            array (
+              0 => 'цена тура',
+            ),
+          ),
+        ),
+      ),
       'tourist_blocks' => 
       array (
         'item' => '.booking-persons-list__item',
@@ -273,14 +196,107 @@ class ParserDataSeeder extends Seeder
     'operator_name' => 'Pegas Touristik',
     'notes' => 'Pegas Touristik bookings list (agency.pegast.ru/MyAccount/Bookings/). Seeded from page report #11 on 2026-05-27. Operator name placeholder — verify against HelloOtel /operator/list.',
   ),
+  2 => 
+  array (
+    'name' => 'Velikolepniy Vek',
+    'domain' => 'demo.velikolepniy-vek.com',
+    'path_match' => '/hotel/book/history',
+    'config' => 
+    array (
+      'card' => '.hotel-reservation-history__item',
+      'type' => 'card',
+      'button' => '.hotel-reservation-history__item-header',
+      'fields' => 
+      array (
+        'subtitle' => 
+        array (
+          'sel' => '.hotel-reservation-history__item-body h2',
+          'strip_prefix' => 'Тип номера:',
+          'strip_pattern' => ' *[(][0-9]{2}[.][0-9]{2}[.][0-9]{4}[^)]*[)]$',
+        ),
+        'hotel_name' => 
+        array (
+          'sel' => '.hotel-reservation-history__item-header .hotel-reservation-history__item-header-col:nth-child(3) > div:nth-child(1)',
+          'strip_prefix' => 'Отель:',
+        ),
+        'stay_dates' => 
+        array (
+          'sel' => '.hotel-reservation-history__item-header .hotel-reservation-history__item-header-col:nth-child(3) > div:nth-child(2)',
+        ),
+        'total_price' => 
+        array (
+          'sel' => '.hotel-reservation-history__item-header .hotel-reservation-history__item-header-col:nth-child(6)',
+          'strip_prefix' => 'Стоимость без перелета / комиссия:',
+        ),
+        'booking_code' => 
+        array (
+          'sel' => '.hotel-reservation-history__item-header-col:nth-child(1)',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => '.hotel-reservation-history__item-header .hotel-reservation-history__item-header-col:nth-child(4)',
+          'strip_prefix' => 'Забронирован:',
+        ),
+      ),
+      'label_maps' => 
+      array (
+        0 => 
+        array (
+          'item' => '.hotel-reservation-history__item-sub-header-col, .tour-reservation-history__item-sub-header-col',
+          'label' => 'label',
+          'value' => 'span',
+          'fields' => 
+          array (
+            'adults' => 
+            array (
+              0 => 'взрослых',
+            ),
+            'infants' => 
+            array (
+              0 => 'младенцев',
+            ),
+            'children' => 
+            array (
+              0 => 'детей',
+            ),
+          ),
+        ),
+      ),
+      'tourist_blocks' => 
+      array (
+        'item' => '.hotel-reservation-history__item-info-row',
+        'label' => 'label',
+        'value' => 'span',
+        'fields' => 
+        array (
+          'dob' => 
+          array (
+            0 => 'дата рождения',
+          ),
+          'last_name' => 
+          array (
+            0 => 'фамилия',
+          ),
+          'first_name' => 
+          array (
+            0 => 'имя',
+          ),
+        ),
+      ),
+    ),
+    'is_active' => true,
+    'operator_id' => 60,
+    'operator_name' => NULL,
+    'notes' => NULL,
+  ),
   3 => 
   array (
     'name' => 'FunSun Russia — Просмотр заявок',
     'domain' => 'b2b.fstravel.com',
-    'path_match' => '/cl_refer',
+    'path_match' => '/default.php',
     'config' => 
     array (
-      'card' => 'button.pay_claim',
+      'card' => '.modalTitle',
       'type' => 'card',
       'fields' => 
       array (
@@ -313,7 +329,8 @@ class ParserDataSeeder extends Seeder
       array (
         'code_source' => 
         array (
-          'data' => 'claim',
+          'self' => true,
+          'strip_pattern' => '^[^0-9]*',
         ),
         'selector_template' => '#cl_{code}',
       ),
@@ -381,7 +398,7 @@ class ParserDataSeeder extends Seeder
     'path_match' => '/cl_refer',
     'config' => 
     array (
-      'card' => 'button.pay_claim',
+      'card' => '.modalTitle',
       'type' => 'card',
       'fields' => 
       array (
@@ -414,7 +431,8 @@ class ParserDataSeeder extends Seeder
       array (
         'code_source' => 
         array (
-          'data' => 'claim',
+          'self' => true,
+          'strip_pattern' => '^[^0-9]*',
         ),
         'selector_template' => '#cl_{code}',
       ),
