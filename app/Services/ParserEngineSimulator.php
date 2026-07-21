@@ -205,7 +205,15 @@ class ParserEngineSimulator
         if (!empty($spec['attr'])) return $el->getAttribute($spec['attr']) ?: null;
 
         $text = $this->textOf($el, $spec['strip_icons'] ?? false);
-        return $this->applyStrip($text, $spec);
+        $text = $this->applyStrip($text, $spec);
+
+        if (!empty($spec['append_location'])) {
+            $locEl = $this->css($xpath, $root, $spec['append_location'])[0] ?? null;
+            $loc   = $locEl ? $this->textOf($locEl, true) : '';
+            return ($text && $loc) ? "{$text} ({$loc})" : $text;
+        }
+
+        return $text;
     }
 
     private function applyStrip(string $text, array $spec): string

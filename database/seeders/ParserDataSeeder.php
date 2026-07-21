@@ -7,7 +7,7 @@ use App\Models\ExtensionParserRule;
 use Illuminate\Database\Seeder;
 
 // Сгенерировано командой: php artisan parsers:generate-seeder
-// Дата: 2026-07-21 00:36:31
+// Дата: 2026-07-21 12:03:02
 // Полная замена: парсеры/правила, которых нет в этом сидере, удаляются.
 class ParserDataSeeder extends Seeder
 {
@@ -688,6 +688,109 @@ class ParserDataSeeder extends Seeder
     'operator_id' => 38,
     'operator_name' => NULL,
     'notes' => NULL,
+  ),
+  7 => 
+  array (
+    'name' => 'Join UP! — Просмотр заявок',
+    'domain' => 'online.joinup.ua',
+    'path_match' => '/cl_refer',
+    'config' => 
+    array (
+      'card' => '.modalTitle',
+      'type' => 'card',
+      'fields' => 
+      array (
+        'subtitle' => 
+        array (
+          'sel' => '.order-block__data.hotel-room',
+          'strip_icons' => true,
+        ),
+        'hotel_name' => 
+        array (
+          'sel' => '.order-block__data.hotel-name a',
+        ),
+        'stay_dates' => 
+        array (
+          'sel' => '.order-block__data.hotel-dates',
+          'strip_icons' => true,
+        ),
+        'booking_code' => 
+        array (
+          'data' => 'claim',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => 'td.status',
+          'strip_icons' => true,
+          'strip_pattern' => '^[^0-9]*',
+        ),
+      ),
+      'card_root' => '#modalContainer',
+      'data_root' => 
+      array (
+        'code_source' => 
+        array (
+          'self' => true,
+          'strip_pattern' => '^[^0-9]*',
+        ),
+        'selector_template' => '#cl_{code}',
+      ),
+      'card_fields' => 
+      array (
+        'total_price' => 
+        array (
+          'sel' => '.samo_container > table:nth-of-type(2) tbody tr:nth-child(2) td.cl-cost.claim-currency',
+          'append_location' => '.samo_container > table:nth-of-type(2) thead th.cl-cost.claim-currency',
+        ),
+      ),
+      'meta_fields' => 
+      array (
+        'flights' => 
+        array (
+          'sel' => '.order-block__data.freight-name',
+          'multi' => true,
+        ),
+        'hotel_stars' => 
+        array (
+          'sel' => '.order-block__data.hotel-stars',
+        ),
+        'payment_status' => 
+        array (
+          'sel' => '.claim-status',
+          'strip_icons' => true,
+        ),
+      ),
+      'tourist_blocks' => 
+      array (
+        'item' => '.tbl_peoples tbody tr[data-people]',
+        'fields' => 
+        array (
+          'dob' => 
+          array (
+            'sel' => '.born',
+          ),
+          'gender' => 
+          array (
+            'sel' => '.human',
+          ),
+          'last_name' => 
+          array (
+            'sel' => '.tourist-latin-name',
+            'strip_pattern' => '[ ].*$',
+          ),
+          'first_name' => 
+          array (
+            'sel' => '.tourist-latin-name',
+            'strip_pattern' => '^[^ ]+[ ]+',
+          ),
+        ),
+      ),
+      'button_placement' => 'after',
+    ),
+    'is_active' => true,
+    'operator_id' => NULL,
+    'operator_name' => NULL,
+    'notes' => 'SAMO-based (as fstravel/anextour) — card anchored to .modalTitle, not the conditional pay button.',
   ),
 );
 

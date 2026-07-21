@@ -24,7 +24,8 @@
     "https://b2b.fstravel.com/default.php*",
     "https://samo.anextour.ru/cl_refer*",
     "https://agent.anextour.ru/orders*",
-    "https://www.bgoperator.ru/tozaya*"
+    "https://www.bgoperator.ru/tozaya*",
+    "https://online.joinup.ua/cl_refer*"
   ],
   "action": {
     "default_title": "Booking Saver for HelloOtel",
@@ -39,8 +40,9 @@
         "https://b2b.fstravel.com/cl_refer*",
         "https://b2b.fstravel.com/default.php*",
         "https://samo.anextour.ru/cl_refer*",
-        "https://agent.anextour.ru/orders*", 
-        "https://www.bgoperator.ru/tozaya*"
+        "https://agent.anextour.ru/orders*",
+        "https://www.bgoperator.ru/tozaya*",
+        "https://online.joinup.ua/cl_refer*"
       ],
       "js": [
         "auth.js",
