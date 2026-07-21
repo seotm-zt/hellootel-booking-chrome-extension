@@ -7,7 +7,7 @@ use App\Models\ExtensionParserRule;
 use Illuminate\Database\Seeder;
 
 // Сгенерировано командой: php artisan parsers:generate-seeder
-// Дата: 2026-07-21 12:03:02
+// Дата: 2026-07-21 12:29:19
 // Полная замена: парсеры/правила, которых нет в этом сидере, удаляются.
 class ParserDataSeeder extends Seeder
 {
@@ -791,6 +791,172 @@ class ParserDataSeeder extends Seeder
     'operator_id' => NULL,
     'operator_name' => NULL,
     'notes' => 'SAMO-based (as fstravel/anextour) — card anchored to .modalTitle, not the conditional pay button.',
+  ),
+  8 => 
+  array (
+    'name' => 'TravelOne — Просмотр заявок',
+    'domain' => 'b2b.travelone.md',
+    'path_match' => '/cl_refer',
+    'config' => 
+    array (
+      'card' => '.claim-orders__content:not(:empty)',
+      'type' => 'card',
+      'fields' => 
+      array (
+        'subtitle' => 
+        array (
+          'sel' => '.order-block__data.hotel-room',
+          'strip_icons' => true,
+        ),
+        'hotel_name' => 
+        array (
+          'sel' => '.order-block__data.hotel-name a',
+        ),
+        'stay_dates' => 
+        array (
+          'sel' => '.order-block__data.hotel-dates',
+          'strip_icons' => true,
+        ),
+      ),
+      'card_root' => 'table[id^=\'cl_\']',
+      'card_fields' => 
+      array (
+        'booking_code' => 
+        array (
+          'data' => 'claim',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => 'td.status',
+          'strip_icons' => true,
+        ),
+      ),
+      'meta_fields' => 
+      array (
+        'flights' => 
+        array (
+          'sel' => '.order-block__data.freight-name',
+          'multi' => true,
+        ),
+        'hotel_stars' => 
+        array (
+          'sel' => '.order-block__data.hotel-stars',
+        ),
+      ),
+      'tourist_blocks' => 
+      array (
+        'item' => '.tbl_peoples tbody tr[data-people]',
+        'fields' => 
+        array (
+          'dob' => 
+          array (
+            'sel' => '.born',
+          ),
+          'gender' => 
+          array (
+            'sel' => '.human',
+          ),
+          'last_name' => 
+          array (
+            'sel' => '.tourist-latin-name',
+            'strip_pattern' => '[ ].*$',
+          ),
+          'first_name' => 
+          array (
+            'sel' => '.tourist-latin-name',
+            'strip_pattern' => '^[^ ]+[ ]+',
+          ),
+        ),
+      ),
+      'button_placement' => 'after',
+    ),
+    'is_active' => true,
+    'operator_id' => NULL,
+    'operator_name' => NULL,
+    'notes' => 'SAMO-based, inline claim-composition toggle (no cost popup on this page — total_price unavailable here).',
+  ),
+  9 => 
+  array (
+    'name' => 'AnexTour UA — Перегляд заявок',
+    'domain' => 'online3.anextour.com.ua',
+    'path_match' => '/default.php',
+    'config' => 
+    array (
+      'card' => '.claim-orders__content:not(:empty)',
+      'type' => 'card',
+      'fields' => 
+      array (
+        'subtitle' => 
+        array (
+          'sel' => '.order-block__data.hotel-room',
+          'strip_icons' => true,
+        ),
+        'hotel_name' => 
+        array (
+          'sel' => '.order-block__data.hotel-name a',
+        ),
+        'stay_dates' => 
+        array (
+          'sel' => '.order-block__data.hotel-dates',
+          'strip_icons' => true,
+        ),
+      ),
+      'card_root' => 'table[id^=\'cl_\']',
+      'card_fields' => 
+      array (
+        'booking_code' => 
+        array (
+          'data' => 'claim',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => 'td.status',
+          'strip_icons' => true,
+        ),
+      ),
+      'meta_fields' => 
+      array (
+        'flights' => 
+        array (
+          'sel' => '.order-block__data.freight-name',
+          'multi' => true,
+        ),
+        'hotel_stars' => 
+        array (
+          'sel' => '.order-block__data.hotel-stars',
+        ),
+      ),
+      'tourist_blocks' => 
+      array (
+        'item' => '.tbl_peoples tbody tr[data-people]',
+        'fields' => 
+        array (
+          'dob' => 
+          array (
+            'sel' => '.born',
+          ),
+          'gender' => 
+          array (
+            'sel' => '.human',
+          ),
+          'last_name' => 
+          array (
+            'sel' => '.tourist-latin-name',
+            'strip_pattern' => '[ ].*$',
+          ),
+          'first_name' => 
+          array (
+            'sel' => '.tourist-latin-name',
+            'strip_pattern' => '^[^ ]+[ ]+',
+          ),
+        ),
+      ),
+      'button_placement' => 'after',
+    ),
+    'is_active' => true,
+    'operator_id' => NULL,
+    'operator_name' => NULL,
+    'notes' => 'SAMO-based, inline claim-composition toggle (no cost popup on this page — total_price unavailable here).',
   ),
 );
 

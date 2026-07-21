@@ -25,7 +25,9 @@
     "https://samo.anextour.ru/cl_refer*",
     "https://agent.anextour.ru/orders*",
     "https://www.bgoperator.ru/tozaya*",
-    "https://online.joinup.ua/cl_refer*"
+    "https://online.joinup.ua/cl_refer*",
+    "https://b2b.travelone.md/cl_refer*",
+    "https://online3.anextour.com.ua/default.php*"
   ],
   "action": {
     "default_title": "Booking Saver for HelloOtel",
@@ -42,7 +44,9 @@
         "https://samo.anextour.ru/cl_refer*",
         "https://agent.anextour.ru/orders*",
         "https://www.bgoperator.ru/tozaya*",
-        "https://online.joinup.ua/cl_refer*"
+        "https://online.joinup.ua/cl_refer*",
+        "https://b2b.travelone.md/cl_refer*",
+        "https://online3.anextour.com.ua/default.php*"
       ],
       "js": [
         "auth.js",
