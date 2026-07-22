@@ -163,13 +163,28 @@ TEXT),
         return $table
             ->columns([
                 TextColumn::make('name')->label('Name')->searchable()->sortable()->weight('bold'),
+                TextColumn::make('operator_id')
+                    ->label('Operator')
+                    ->placeholder('—')
+                    ->color('gray')
+                    ->formatStateUsing(function ($state, $record) {
+                        if (!$state) {
+                            return $record->operator_name ?: null;
+                        }
+                        try {
+                            $ops = app(HellOotelLookupService::class)->getOperators();
+                        } catch (\Throwable) {
+                            $ops = [];
+                        }
+                        return $ops[$state] ?? $record->operator_name ?: null;
+                    }),
                 TextColumn::make('domain')->label('Domain')->searchable()->placeholder('—'),
                 TextColumn::make('path_match')->label('Path')->placeholder('—'),
                 IconColumn::make('is_active')->label('Active')->boolean(),
                 TextColumn::make('notes')->label('Notes')->limit(50)->placeholder('—'),
                 TextColumn::make('updated_at')->label('Updated')->dateTime('d M Y')->sortable(),
             ])
-            ->defaultSort('name')
+            ->defaultSort('id', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

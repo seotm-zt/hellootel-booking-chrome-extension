@@ -7,7 +7,7 @@ use App\Models\ExtensionParserRule;
 use Illuminate\Database\Seeder;
 
 // Сгенерировано командой: php artisan parsers:generate-seeder
-// Дата: 2026-07-21 12:29:19
+// Дата: 2026-07-22 13:09:15
 // Полная замена: парсеры/правила, которых нет в этом сидере, удаляются.
 class ParserDataSeeder extends Seeder
 {
@@ -739,8 +739,9 @@ class ParserDataSeeder extends Seeder
       array (
         'total_price' => 
         array (
-          'sel' => '.samo_container > table:nth-of-type(2) tbody tr:nth-child(2) td.cl-cost.claim-currency',
-          'append_location' => '.samo_container > table:nth-of-type(2) thead th.cl-cost.claim-currency',
+          'sel' => '.samo_container > table:nth-of-type(2) tbody tr:nth-child(1) td.cl-cost.pay-currency.EUR',
+          'strip_pattern' => '$',
+          'strip_replace' => ' EUR',
         ),
       ),
       'meta_fields' => 
@@ -788,7 +789,7 @@ class ParserDataSeeder extends Seeder
       'button_placement' => 'after',
     ),
     'is_active' => true,
-    'operator_id' => NULL,
+    'operator_id' => 16,
     'operator_name' => NULL,
     'notes' => 'SAMO-based (as fstravel/anextour) — card anchored to .modalTitle, not the conditional pay button.',
   ),
@@ -827,8 +828,10 @@ class ParserDataSeeder extends Seeder
         ),
         'reservation_at' => 
         array (
-          'sel' => 'td.status',
+          'sel' => 'th.cl-r-claim-data',
           'strip_icons' => true,
+          'strip_pattern' => '^.*?(\\d{2}\\.\\d{2}\\.\\d{4}).*$',
+          'strip_replace' => '$1',
         ),
       ),
       'meta_fields' => 
@@ -954,7 +957,7 @@ class ParserDataSeeder extends Seeder
       'button_placement' => 'after',
     ),
     'is_active' => true,
-    'operator_id' => NULL,
+    'operator_id' => 32,
     'operator_name' => NULL,
     'notes' => 'SAMO-based, inline claim-composition toggle (no cost popup on this page — total_price unavailable here).',
   ),

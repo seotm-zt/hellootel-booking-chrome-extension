@@ -280,10 +280,43 @@
   box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.1) !important;
 }
 
+.ttb-modal__input--notfound {
+  border-color: #dc2626 !important;
+}
+
+.ttb-modal__input--notfound:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
+}
+
 .ttb-modal__select:disabled {
   color: #9ca3af !important;
   background: #f9fafb !important;
   cursor: not-allowed !important;
+}
+
+.ttb-modal__input--with-btn {
+  padding-right: 34px !important;
+}
+
+.ttb-modal__browse-btn {
+  all: initial !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 30px !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  color: #6b7280 !important;
+  font-size: 12px !important;
+  font-family: inherit !important;
+}
+
+.ttb-modal__browse-btn:hover {
+  color: #111827 !important;
 }
 
 .ttb-modal__suggestions[hidden] {
@@ -330,6 +363,10 @@
   font-size: 11px !important;
   color: #16a34a !important;
   font-weight: 400 !important;
+}
+
+.ttb-modal__match-badge[hidden] {
+  display: none !important;
 }
 
 .ttb-modal__match-badge strong {

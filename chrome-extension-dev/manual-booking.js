@@ -58,7 +58,8 @@ function renderManualForm(prefill = null) {
 
     <label class="ttb-modal__label">Hotel</label>
     <div class="ttb-modal__autocomplete">
-      <input class="ttb-modal__input" id="ttb-hotel-input" type="text" placeholder="Type hotel name..." autocomplete="off" />
+      <input class="ttb-modal__input ttb-modal__input--with-btn" id="ttb-hotel-input" type="text" placeholder="Type hotel name..." autocomplete="off" />
+      <button class="ttb-modal__browse-btn" type="button" id="ttb-hotel-browse" title="Browse all hotels">▾</button>
       <ul class="ttb-modal__suggestions" id="ttb-hotel-suggestions" hidden></ul>
     </div>
     <div class="ttb-hotel-location" id="ttb-hotel-location" hidden></div>
@@ -151,6 +152,7 @@ function renderManualForm(prefill = null) {
   ensureOperators().then(() => { populateOperatorSelect(form.querySelector("#ttb-operator-select"), prefill?.operator_id ?? null); updateConfirmState(); });
 
   const hotelInput      = form.querySelector("#ttb-hotel-input");
+  const hotelBrowseBtn  = form.querySelector("#ttb-hotel-browse");
   const suggestions     = form.querySelector("#ttb-hotel-suggestions");
   const hotelLocationEl = form.querySelector("#ttb-hotel-location");
   const roomSelect      = form.querySelector("#ttb-room-select");
@@ -270,6 +272,7 @@ function renderManualForm(prefill = null) {
         selectedHotelName = h.name;
         hotelInput.value  = h.name;
         updateHotelLocation(h.country_id, h.city_id);
+        hotelInput.classList.remove("ttb-modal__input--notfound");
         hideSuggestions();
         await loadRoomTypes(h.id, roomSelect, null, arrivalInput.value || null, departureInput.value || null);
         updateConfirmState();
@@ -285,12 +288,20 @@ function renderManualForm(prefill = null) {
     updateConfirmState();
     clearTimeout(hotelSearchTid);
     const q = hotelInput.value.trim();
+    hotelInput.classList.toggle("ttb-modal__input--notfound", q.length > 0);
     if (q.length < 2) { hideSuggestions(); return; }
     hotelSearchTid = setTimeout(async () => {
       try { showSuggestions(await searchHotelsOnServer(q)); } catch { hideSuggestions(); }
     }, 300);
   });
   hotelInput.addEventListener("blur", () => setTimeout(hideSuggestions, 150));
+
+  hotelBrowseBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  hotelBrowseBtn.addEventListener("click", async () => {
+    if (!suggestions.hidden) { hideSuggestions(); return; }
+    clearTimeout(hotelSearchTid);
+    try { showSuggestions(await searchHotelsOnServer("")); } catch { hideSuggestions(); }
+  });
 
   // ── Prefill scalar fields + hotel/room/rating when editing ──
   if (prefill) {
@@ -320,6 +331,7 @@ function renderManualForm(prefill = null) {
     } else {
       if (prefill.hotel_name) hotelInput.value = prefill.hotel_name;
       updateStars(prefill.hotel_vote ? Math.round(prefill.hotel_vote / 10) : 0);
+      hotelInput.classList.toggle("ttb-modal__input--notfound", !!prefill.hotel_name);
     }
     updateConfirmState();
   }

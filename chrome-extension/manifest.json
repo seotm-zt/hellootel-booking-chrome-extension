@@ -23,10 +23,14 @@
     "https://b2b.fstravel.com/cl_refer*",
     "https://b2b.fstravel.com/default.php*",
     "https://samo.anextour.ru/cl_refer*",
+    "https://samo.anextour.ru/default.php*",
     "https://agent.anextour.ru/orders*",
     "https://www.bgoperator.ru/tozaya*",
     "https://online.joinup.ua/cl_refer*",
+    "https://online.joinup.ua/default.php*",
     "https://b2b.travelone.md/cl_refer*",
+    "https://b2b.travelone.md/default.php*",
+    "https://online3.anextour.com.ua/cl_refer*",
     "https://online3.anextour.com.ua/default.php*"
   ],
   "action": {
@@ -42,10 +46,14 @@
         "https://b2b.fstravel.com/cl_refer*",
         "https://b2b.fstravel.com/default.php*",
         "https://samo.anextour.ru/cl_refer*",
+        "https://samo.anextour.ru/default.php*",
         "https://agent.anextour.ru/orders*",
         "https://www.bgoperator.ru/tozaya*",
         "https://online.joinup.ua/cl_refer*",
+        "https://online.joinup.ua/default.php*",
         "https://b2b.travelone.md/cl_refer*",
+        "https://b2b.travelone.md/default.php*",
+        "https://online3.anextour.com.ua/cl_refer*",
         "https://online3.anextour.com.ua/default.php*"
       ],
       "js": [

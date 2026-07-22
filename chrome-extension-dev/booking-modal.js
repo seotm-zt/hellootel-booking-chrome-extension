@@ -475,9 +475,10 @@ async function showConfirmModal(saveResult) {
             : `<span class="ttb-modal__match-badge ttb-modal__match-badge--notfound">Hotel not found</span>`}
         </label>
         <div class="ttb-modal__autocomplete">
-          <input class="ttb-modal__input" id="ttb-hotel-input" type="text"
+          <input class="ttb-modal__input ttb-modal__input--with-btn" id="ttb-hotel-input" type="text"
             placeholder="Type hotel name..."
             value="${esc(pre.hotelName)}" autocomplete="off" />
+          <button class="ttb-modal__browse-btn" type="button" id="ttb-hotel-browse" title="Browse all hotels">▾</button>
           <ul class="ttb-modal__suggestions" id="ttb-hotel-suggestions" hidden></ul>
         </div>
         <div class="ttb-hotel-location" id="ttb-hotel-location" hidden></div>
@@ -535,7 +536,7 @@ async function showConfirmModal(saveResult) {
         <div class="ttb-modal__row-2">
           <div>
             <label class="ttb-modal__label">Tour price</label>
-            <input class="ttb-modal__input" id="ttb-price" type="text" placeholder="1250.00" value="${esc(pre.price)}" />
+            <input class="ttb-modal__input" id="ttb-price" type="text" value="${esc(pre.price)}" />
           </div>
           <div>
             <label class="ttb-modal__label">Currency</label>
@@ -587,6 +588,7 @@ async function showConfirmModal(saveResult) {
   });
 
   const hotelInput      = overlay.querySelector("#ttb-hotel-input");
+  const hotelBrowseBtn  = overlay.querySelector("#ttb-hotel-browse");
   const suggestions     = overlay.querySelector("#ttb-hotel-suggestions");
   const hotelLocationEl = overlay.querySelector("#ttb-hotel-location");
   const matchBadge      = overlay.querySelector(".ttb-modal__match-badge");
@@ -622,6 +624,8 @@ async function showConfirmModal(saveResult) {
 
   // Show auto-matched location on initial open
   updateHotelLocation(pre.countryId, pre.cityId);
+
+  hotelInput.classList.toggle("ttb-modal__input--notfound", !hotelMatch);
 
   // ── Star rating ───────────────────────────────────────────────────
   const starBtns = overlay.querySelectorAll(".ttb-star");
@@ -738,6 +742,7 @@ async function showConfirmModal(saveResult) {
         hotelInput.value  = h.name;
         updateHotelLocation(h.country_id, h.city_id);
         if (matchBadge) matchBadge.hidden = true;
+        hotelInput.classList.remove("ttb-modal__input--notfound");
         hideSuggestions();
         await loadRoomTypes(h.id, roomSelect, null, arrivalInput.value || null, departureInput.value || null);
         updateConfirmState();
@@ -752,6 +757,7 @@ async function showConfirmModal(saveResult) {
     selectedHotelId = null;
     updateHotelLocation(null, null); // hide location while user is typing
     if (matchBadge && !hotelMatch) matchBadge.hidden = false;
+    if (!hotelMatch) hotelInput.classList.add("ttb-modal__input--notfound");
     updateConfirmState();
     clearTimeout(hotelSearchTimeout);
     const q = hotelInput.value.trim();
@@ -762,6 +768,13 @@ async function showConfirmModal(saveResult) {
   });
 
   hotelInput.addEventListener("blur", () => setTimeout(hideSuggestions, 150));
+
+  hotelBrowseBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  hotelBrowseBtn.addEventListener("click", async () => {
+    if (!suggestions.hidden) { hideSuggestions(); return; }
+    clearTimeout(hotelSearchTimeout);
+    try { showSuggestions(await searchHotelsOnServer("")); } catch { hideSuggestions(); }
+  });
 
   // ── Return Promise resolving to { status, processed? } ──────────
   // status: "sent" | "confirmed_only" | "deleted" | "cancelled"

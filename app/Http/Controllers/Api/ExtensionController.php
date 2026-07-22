@@ -556,17 +556,22 @@ class ExtensionController extends Controller
             array_values($hotels),
         );
 
-        // Sort: items that start with the query come first
         if ($q !== '') {
+            // Sort: items that start with the query come first
             $qLow = mb_strtolower($q);
             usort($result, fn($a, $b) =>
                 str_starts_with(mb_strtolower($a['name']), $qLow) <=> str_starts_with(mb_strtolower($b['name']), $qLow)
                     ?: strcmp($a['name'], $b['name'])
             );
             $result = array_reverse($result); // starts-with = true sorts last, flip it
+
+            return response()->json(['data' => array_values(array_slice($result, 0, 30))]);
         }
 
-        return response()->json(['data' => array_values(array_slice($result, 0, 30))]);
+        // No query — full-list browsing: alphabetical, uncapped.
+        usort($result, fn($a, $b) => strcmp($a['name'], $b['name']));
+
+        return response()->json(['data' => array_values($result)]);
     }
 
     public function countries(HellOotelLookupService $lookup): JsonResponse
