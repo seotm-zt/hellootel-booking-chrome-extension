@@ -173,7 +173,6 @@ function renderManualForm(prefill = null) {
   let selectedHotelId   = null;
   let selectedHotelName = "";
   let selectedVote      = null;
-  let hotelSearchTid    = null;
 
   // Guest counts are entered manually.
   [adultsInput, childrenInput, infantsInput].forEach(el =>
@@ -266,6 +265,10 @@ function renderManualForm(prefill = null) {
       const li = document.createElement("li");
       li.className = "ttb-modal__suggestion";
       li.textContent = h.name;
+      // Inline + !important so the host page's own CSS can't shrink/re-font
+      // the list text out of sync with the input above it.
+      li.style.setProperty("font-family", getComputedStyle(hotelInput).fontFamily, "important");
+      li.style.setProperty("font-size",   getComputedStyle(hotelInput).fontSize,   "important");
       li.addEventListener("mousedown", async (e) => {
         e.preventDefault();
         selectedHotelId   = h.id;
@@ -282,26 +285,22 @@ function renderManualForm(prefill = null) {
     }
     suggestions.hidden = false;
   }
-  hotelInput.addEventListener("input", () => {
+  hotelInput.addEventListener("input", async () => {
     selectedHotelId = null;
     updateHotelLocation(null, null);
     updateConfirmState();
-    clearTimeout(hotelSearchTid);
     const q = hotelInput.value.trim();
     hotelInput.classList.toggle("ttb-modal__input--notfound", q.length > 0);
     if (q.length < 2) { hideSuggestions(); return; }
-    hotelSearchTid = setTimeout(async () => {
-      try { showSuggestions(await searchHotelsOnServer(q)); } catch { hideSuggestions(); }
-    }, 300);
+    showSuggestions(filterHotels(await ensureHotels(), q));
   });
   hotelInput.addEventListener("blur", () => setTimeout(hideSuggestions, 150));
 
-  // Clicking/focusing the empty field browses all hotels, same as the arrow
-  // button — typing still narrows the list via the "input" handler above.
+  // Clicking/focusing the field always opens the full hotel list, same as the
+  // arrow button — search only kicks in once the user starts typing, via the
+  // "input" handler above.
   async function browseAllHotels() {
-    if (hotelInput.value.trim()) return;
-    clearTimeout(hotelSearchTid);
-    try { showSuggestions(await searchHotelsOnServer("")); } catch { hideSuggestions(); }
+    showSuggestions(filterHotels(await ensureHotels(), ""));
   }
   hotelInput.addEventListener("focus", browseAllHotels);
   hotelInput.addEventListener("click", browseAllHotels);
@@ -309,8 +308,7 @@ function renderManualForm(prefill = null) {
   hotelBrowseBtn.addEventListener("mousedown", (e) => e.preventDefault());
   hotelBrowseBtn.addEventListener("click", async () => {
     if (!suggestions.hidden) { hideSuggestions(); return; }
-    clearTimeout(hotelSearchTid);
-    try { showSuggestions(await searchHotelsOnServer("")); } catch { hideSuggestions(); }
+    showSuggestions(filterHotels(await ensureHotels(), ""));
   });
 
   // ── Prefill scalar fields + hotel/room/rating when editing ──
@@ -489,6 +487,7 @@ async function init() {
   ensureCurrencies();
   ensureCountries();
   ensureCities();
+  ensureHotels();
 
   const prefill = await readEditBooking();
   renderManualForm(prefill);

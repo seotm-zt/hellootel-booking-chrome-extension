@@ -86,6 +86,34 @@ let _currencies = null; // null = not yet fetched
 let _operators  = null; // null = not yet fetched
 let _countries  = null; // {id: name} after fetch
 let _cities     = null; // {id: name} after fetch
+let _hotels     = null; // full hotel list after fetch — search happens locally, not per keystroke
+
+async function ensureHotels() {
+  if (_hotels !== null) return _hotels;
+  try {
+    _hotels = await searchHotelsOnServer(""); // no query → full alphabetical list (see ExtensionController::hotels)
+  } catch {
+    // Leave unset (null) on failure so a later call retries.
+  }
+  return _hotels ?? [];
+}
+
+// Mirrors ExtensionController::hotels()'s in-PHP filtering, done locally
+// against the cached full list instead of round-tripping per keystroke.
+function filterHotels(hotels, query) {
+  const q = query.trim();
+  if (!q) return hotels;
+
+  const qLow = q.toLowerCase();
+  const matches = hotels.filter(h => h.name.toLowerCase().includes(qLow));
+  matches.sort((a, b) => {
+    const aStarts = a.name.toLowerCase().startsWith(qLow);
+    const bStarts = b.name.toLowerCase().startsWith(qLow);
+    if (aStarts !== bStarts) return aStarts ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+  return matches.slice(0, 30);
+}
 
 async function ensureOperators() {
   if (_operators !== null) return _operators;
@@ -183,12 +211,10 @@ function populateCurrencySelectEl(select, selectedCode) {
 // ── Confirmation modal ────────────────────────────────────────────────
 
 let modalElement = null;
-let hotelSearchTimeout = null;
 
 function destroyModal() {
   modalElement?.remove();
   modalElement = null;
-  clearTimeout(hotelSearchTimeout);
 }
 
 function esc(v) {
@@ -587,6 +613,9 @@ async function showConfirmModal(saveResult) {
     updateConfirmState();
   });
 
+  // Warm the hotel list cache so the first click on the field is instant.
+  ensureHotels();
+
   const hotelInput      = overlay.querySelector("#ttb-hotel-input");
   const hotelBrowseBtn  = overlay.querySelector("#ttb-hotel-browse");
   const suggestions     = overlay.querySelector("#ttb-hotel-suggestions");
@@ -735,6 +764,10 @@ async function showConfirmModal(saveResult) {
       const li = document.createElement("li");
       li.className   = "ttb-modal__suggestion";
       li.textContent = h.name;
+      // Inline + !important so the host page's own CSS can't shrink/re-font
+      // the list text out of sync with the input above it.
+      li.style.setProperty("font-family", getComputedStyle(hotelInput).fontFamily, "important");
+      li.style.setProperty("font-size",   getComputedStyle(hotelInput).fontSize,   "important");
       li.addEventListener("mousedown", async (e) => {
         e.preventDefault();
         selectedHotelId   = h.id;
@@ -753,28 +786,24 @@ async function showConfirmModal(saveResult) {
     suggestions.hidden = false;
   }
 
-  hotelInput.addEventListener("input", () => {
+  hotelInput.addEventListener("input", async () => {
     selectedHotelId = null;
     updateHotelLocation(null, null); // hide location while user is typing
     if (matchBadge && !hotelMatch) matchBadge.hidden = false;
     if (!hotelMatch) hotelInput.classList.add("ttb-modal__input--notfound");
     updateConfirmState();
-    clearTimeout(hotelSearchTimeout);
     const q = hotelInput.value.trim();
     if (q.length < 2) { hideSuggestions(); return; }
-    hotelSearchTimeout = setTimeout(async () => {
-      try { showSuggestions(await searchHotelsOnServer(q)); } catch { hideSuggestions(); }
-    }, 300);
+    showSuggestions(filterHotels(await ensureHotels(), q));
   });
 
   hotelInput.addEventListener("blur", () => setTimeout(hideSuggestions, 150));
 
-  // Clicking/focusing the empty field browses all hotels, same as the arrow
-  // button — typing still narrows the list via the "input" handler above.
+  // Clicking/focusing the field always opens the full hotel list, same as the
+  // arrow button — search only kicks in once the user starts typing, via the
+  // "input" handler above.
   async function browseAllHotels() {
-    if (hotelInput.value.trim()) return;
-    clearTimeout(hotelSearchTimeout);
-    try { showSuggestions(await searchHotelsOnServer("")); } catch { hideSuggestions(); }
+    showSuggestions(filterHotels(await ensureHotels(), ""));
   }
   hotelInput.addEventListener("focus", browseAllHotels);
   hotelInput.addEventListener("click", browseAllHotels);
@@ -782,8 +811,7 @@ async function showConfirmModal(saveResult) {
   hotelBrowseBtn.addEventListener("mousedown", (e) => e.preventDefault());
   hotelBrowseBtn.addEventListener("click", async () => {
     if (!suggestions.hidden) { hideSuggestions(); return; }
-    clearTimeout(hotelSearchTimeout);
-    try { showSuggestions(await searchHotelsOnServer("")); } catch { hideSuggestions(); }
+    showSuggestions(filterHotels(await ensureHotels(), ""));
   });
 
   // ── Return Promise resolving to { status, processed? } ──────────
