@@ -769,6 +769,16 @@ async function showConfirmModal(saveResult) {
 
   hotelInput.addEventListener("blur", () => setTimeout(hideSuggestions, 150));
 
+  // Clicking/focusing the empty field browses all hotels, same as the arrow
+  // button — typing still narrows the list via the "input" handler above.
+  async function browseAllHotels() {
+    if (hotelInput.value.trim()) return;
+    clearTimeout(hotelSearchTimeout);
+    try { showSuggestions(await searchHotelsOnServer("")); } catch { hideSuggestions(); }
+  }
+  hotelInput.addEventListener("focus", browseAllHotels);
+  hotelInput.addEventListener("click", browseAllHotels);
+
   hotelBrowseBtn.addEventListener("mousedown", (e) => e.preventDefault());
   hotelBrowseBtn.addEventListener("click", async () => {
     if (!suggestions.hidden) { hideSuggestions(); return; }
