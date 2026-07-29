@@ -371,7 +371,7 @@ function showSentDataModal(processed) {
   if (processed.hellootel_reservation_id) {
     const badge = document.createElement("div");
     badge.className = "ttb-modal__reservation-badge";
-    badge.textContent = `Reservation ID: #${processed.hellootel_reservation_id}`;
+    badge.textContent = `Reservation ID (HelloOtel): #${processed.hellootel_reservation_id}`;
     body.appendChild(badge);
   }
 

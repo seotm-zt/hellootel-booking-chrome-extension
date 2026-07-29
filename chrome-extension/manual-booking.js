@@ -25,7 +25,7 @@ function showSuccessDialog(result) {
       <div class="ttb-he-icon">✓</div>
       <div class="ttb-he-title">HelloOtel - Hotel reservation information successfully added to HelloOtel</div>
       ${reservationId
-        ? `<div class="ttb-he-message ttb-he-message--success">Reservation ID: #${reservationId}</div>`
+        ? `<div class="ttb-he-message ttb-he-message--success">Reservation ID (HelloOtel): #${reservationId}</div>`
         : ""}
       <div class="ttb-he-actions">
         <button class="ttb-he-btn ttb-he-btn--ignore" type="button" id="mb-success-ok">OK</button>

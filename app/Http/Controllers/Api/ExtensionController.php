@@ -18,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -49,6 +50,11 @@ class ExtensionController extends Controller
 
         $payload        = $hellootel->json();
         $hellootelToken = $payload['access_token'] ?? null;
+
+        Log::info('HellOotel login response', [
+            'username' => $request->username,
+            'payload'  => Arr::except($payload, ['access_token']),
+        ]);
 
         if (!$hellootelToken) {
             return response()->json(['error' => 'Authentication failed'], 401);
