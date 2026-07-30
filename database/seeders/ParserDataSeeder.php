@@ -7,7 +7,7 @@ use App\Models\ExtensionParserRule;
 use Illuminate\Database\Seeder;
 
 // Сгенерировано командой: php artisan parsers:generate-seeder
-// Дата: 2026-07-23 10:18:06
+// Дата: 2026-07-30 14:12:35
 // Полная замена: парсеры/правила, которых нет в этом сидере, удаляются.
 class ParserDataSeeder extends Seeder
 {
@@ -296,7 +296,7 @@ class ParserDataSeeder extends Seeder
     'path_match' => '/default.php',
     'config' => 
     array (
-      'card' => '.modalTitle',
+      'card' => '.modalTitle, .claim-orders__content:not(:empty)',
       'type' => 'card',
       'fields' => 
       array (
@@ -324,7 +324,7 @@ class ParserDataSeeder extends Seeder
           'strip_icons' => true,
         ),
       ),
-      'card_root' => '#modalContainer',
+      'card_root' => '#modalContainer, table[id^=\'cl_\']',
       'data_root' => 
       array (
         'code_source' => 
@@ -340,6 +340,16 @@ class ParserDataSeeder extends Seeder
         array (
           'sel' => '.samo_container > table:nth-of-type(2) tbody tr:nth-child(2) td.cl-cost.claim-currency',
           'append_location' => '.samo_container > table:nth-of-type(2) thead th.cl-cost.claim-currency',
+        ),
+        'booking_code' => 
+        array (
+          'data' => 'claim',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => 'td.status',
+          'strip_icons' => true,
+          'strip_pattern' => '^[^0-9]*',
         ),
       ),
       'meta_fields' => 
@@ -398,7 +408,7 @@ class ParserDataSeeder extends Seeder
     'path_match' => '/cl_refer',
     'config' => 
     array (
-      'card' => '.modalTitle',
+      'card' => '.modalTitle, .claim-orders__content:not(:empty)',
       'type' => 'card',
       'fields' => 
       array (
@@ -426,7 +436,7 @@ class ParserDataSeeder extends Seeder
           'strip_icons' => true,
         ),
       ),
-      'card_root' => '#modalContainer',
+      'card_root' => '#modalContainer, table[id^=\'cl_\']',
       'data_root' => 
       array (
         'code_source' => 
@@ -442,6 +452,16 @@ class ParserDataSeeder extends Seeder
         array (
           'sel' => '.samo_container > table:nth-of-type(2) tbody tr:nth-child(2) td.cl-cost.claim-currency',
           'append_location' => '.samo_container > table:nth-of-type(2) thead th.cl-cost.claim-currency',
+        ),
+        'booking_code' => 
+        array (
+          'data' => 'claim',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => 'td.status',
+          'strip_icons' => true,
+          'strip_pattern' => '^[^0-9]*',
         ),
       ),
       'meta_fields' => 
