@@ -60,6 +60,14 @@ class ExtensionController extends Controller
             return response()->json(['error' => 'Authentication failed'], 401);
         }
 
+        if (($payload['role'] ?? null) !== 'agency') {
+            Log::warning('HellOotel login rejected: wrong role', [
+                'username' => $request->username,
+                'role'     => $payload['role'] ?? null,
+            ]);
+            return response()->json(['error' => 'Only agency accounts can use this extension'], 403);
+        }
+
         $username  = $payload['login'] ?? $request->username;
         $fakeEmail = $username . '@hellootel.local';
         $name      = $payload['full_name'] ?? $payload['legacy_name'] ?? $username;
