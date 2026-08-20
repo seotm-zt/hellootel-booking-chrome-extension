@@ -12,6 +12,7 @@ class ExtensionParser extends Model
         'path_match',
         'config',
         'is_active',
+        'edition',
         'operator_id',
         'operator_name',
         'notes',

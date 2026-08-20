@@ -78,6 +78,20 @@ class ExtensionParserRuleResource extends Resource
                 TextColumn::make('domain')->label('Domain')->searchable()->sortable()->copyable()->weight('bold'),
                 TextColumn::make('path_match')->label('Path')->placeholder('—'),
                 TextColumn::make('parser')->label('Parser')->badge()->color('info'),
+                // Derived from the parser this rule points at — a rule never carries
+                // its own edition, so the two can't drift apart.
+                TextColumn::make('edition')
+                    ->label('Edition')
+                    ->badge()
+                    ->placeholder('—')
+                    ->state(fn ($record) => \App\Models\ExtensionParser::where('name', $record->parser)
+                        ->value('edition'))
+                    ->color(fn (?string $state) => match ($state) {
+                        'intl'  => 'success',
+                        'all'   => 'warning',
+                        'ru'    => 'danger',
+                        default => 'gray',
+                    }),
                 TextColumn::make('notes')->label('Notes')->limit(60)->placeholder('—'),
                 TextColumn::make('created_at')->label('Added')->dateTime('d M Y')->sortable(),
             ])

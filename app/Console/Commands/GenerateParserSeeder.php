@@ -14,7 +14,7 @@ class GenerateParserSeeder extends Command
     public function handle(): void
     {
         $parsers = ExtensionParser::all([
-            'name', 'domain', 'path_match', 'config', 'is_active',
+            'name', 'domain', 'path_match', 'config', 'is_active', 'edition',
             'operator_id', 'operator_name', 'notes',
         ])->toArray();
         $rules   = ExtensionParserRule::all(['domain', 'path_match', 'parser', 'notes'])->toArray();
@@ -51,6 +51,7 @@ class ParserDataSeeder extends Seeder
                     'path_match'    => \$row['path_match'],
                     'config'        => \$row['config'],
                     'is_active'     => \$row['is_active'],
+                    'edition'       => \$row['edition']       ?? 'ru',
                     'operator_id'   => \$row['operator_id']   ?? null,
                     'operator_name' => \$row['operator_name'] ?? null,
                     'notes'         => \$row['notes'],

@@ -7,7 +7,7 @@ use App\Models\ExtensionParserRule;
 use Illuminate\Database\Seeder;
 
 // Сгенерировано командой: php artisan parsers:generate-seeder
-// Дата: 2026-07-30 14:12:35
+// Дата: 2026-08-20 12:57:19
 // Полная замена: парсеры/правила, которых нет в этом сидере, удаляются.
 class ParserDataSeeder extends Seeder
 {
@@ -111,6 +111,7 @@ class ParserDataSeeder extends Seeder
       'button_placement' => 'after',
     ),
     'is_active' => true,
+    'edition' => 'ru',
     'operator_id' => 15,
     'operator_name' => NULL,
     'notes' => 'Список заявок агентства на coralagency.ru/reservation/search. Поля из data-атрибутов div.box и видимых span.',
@@ -192,6 +193,7 @@ class ParserDataSeeder extends Seeder
       'button_placement' => 'after',
     ),
     'is_active' => true,
+    'edition' => 'ru',
     'operator_id' => 41,
     'operator_name' => 'Pegas Touristik',
     'notes' => 'Pegas Touristik bookings list (agency.pegast.ru/MyAccount/Bookings/). Seeded from page report #11 on 2026-05-27. Operator name placeholder — verify against HelloOtel /operator/list.',
@@ -285,6 +287,7 @@ class ParserDataSeeder extends Seeder
       ),
     ),
     'is_active' => true,
+    'edition' => 'all',
     'operator_id' => 60,
     'operator_name' => NULL,
     'notes' => NULL,
@@ -397,6 +400,7 @@ class ParserDataSeeder extends Seeder
       'button_placement' => 'after',
     ),
     'is_active' => true,
+    'edition' => 'ru',
     'operator_id' => NULL,
     'operator_name' => NULL,
     'notes' => NULL,
@@ -509,6 +513,7 @@ class ParserDataSeeder extends Seeder
       'button_placement' => 'after',
     ),
     'is_active' => true,
+    'edition' => 'ru',
     'operator_id' => 32,
     'operator_name' => NULL,
     'notes' => NULL,
@@ -616,6 +621,7 @@ class ParserDataSeeder extends Seeder
       'button_placement' => 'after',
     ),
     'is_active' => true,
+    'edition' => 'ru',
     'operator_id' => 32,
     'operator_name' => NULL,
     'notes' => NULL,
@@ -705,6 +711,7 @@ class ParserDataSeeder extends Seeder
       'button_placement' => 'after',
     ),
     'is_active' => true,
+    'edition' => 'ru',
     'operator_id' => 38,
     'operator_name' => NULL,
     'notes' => NULL,
@@ -819,6 +826,7 @@ class ParserDataSeeder extends Seeder
       'button_placement' => 'after',
     ),
     'is_active' => true,
+    'edition' => 'intl',
     'operator_id' => 16,
     'operator_name' => NULL,
     'notes' => 'SAMO-based (as fstravel/anextour) — card anchored to .modalTitle, not the conditional pay button. Also handles the no-popup page state (inline expanded .claim-orders__content row) — booking_code/reservation_at read from the ancestor #cl_{code} table via card_root when no modal is open.',
@@ -904,6 +912,7 @@ class ParserDataSeeder extends Seeder
       'button_placement' => 'after',
     ),
     'is_active' => true,
+    'edition' => 'intl',
     'operator_id' => NULL,
     'operator_name' => NULL,
     'notes' => 'SAMO-based, inline claim-composition toggle (no cost popup on this page — total_price unavailable here).',
@@ -987,6 +996,7 @@ class ParserDataSeeder extends Seeder
       'button_placement' => 'after',
     ),
     'is_active' => true,
+    'edition' => 'intl',
     'operator_id' => 32,
     'operator_name' => NULL,
     'notes' => 'SAMO-based, inline claim-composition toggle (no cost popup on this page — total_price unavailable here).',
@@ -1004,6 +1014,7 @@ class ParserDataSeeder extends Seeder
                     'path_match'    => $row['path_match'],
                     'config'        => $row['config'],
                     'is_active'     => $row['is_active'],
+                    'edition'       => $row['edition']       ?? 'ru',
                     'operator_id'   => $row['operator_id']   ?? null,
                     'operator_name' => $row['operator_name'] ?? null,
                     'notes'         => $row['notes'],

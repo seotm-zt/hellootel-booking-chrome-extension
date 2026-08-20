@@ -65,8 +65,20 @@ class ExtensionParserResource extends Resource
 
                 Toggle::make('is_active')
                     ->label('Active')
-                    ->default(true)
-                    ->columnSpanFull(),
+                    ->default(true),
+
+                Select::make('edition')
+                    ->label('Extension edition')
+                    ->options([
+                        'ru'   => 'RU — Russian operators',
+                        'intl' => 'International — everyone else',
+                        'all'  => 'Both builds',
+                    ])
+                    ->default('ru')
+                    ->required()
+                    ->selectablePlaceholder(false)
+                    ->helperText('Which build ships this parser. Pick by the operator\'s '
+                        . 'jurisdiction, not the domain zone — b2b.fstravel.com is Russian.'),
 
                 Select::make('operator_id')
                     ->label('Operator (HellOotel)')
@@ -179,12 +191,29 @@ TEXT),
                         return $ops[$state] ?? $record->operator_name ?: null;
                     }),
                 TextColumn::make('domain')->label('Domain')->searchable()->placeholder('—'),
+                TextColumn::make('edition')
+                    ->label('Edition')
+                    ->badge()
+                    ->color(fn (?string $state) => match ($state) {
+                        'intl'  => 'success',
+                        'all'   => 'warning',
+                        default => 'danger',
+                    }),
                 TextColumn::make('path_match')->label('Path')->placeholder('—'),
                 IconColumn::make('is_active')->label('Active')->boolean(),
                 TextColumn::make('notes')->label('Notes')->limit(50)->placeholder('—'),
                 TextColumn::make('updated_at')->label('Updated')->dateTime('d M Y')->sortable(),
             ])
             ->defaultSort('id', 'desc')
+            ->filters([
+                Tables\Filters\SelectFilter::make('edition')
+                    ->label('Edition')
+                    ->options([
+                        'ru'   => 'RU',
+                        'intl' => 'International',
+                        'all'  => 'Both',
+                    ]),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
