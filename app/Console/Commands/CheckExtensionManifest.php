@@ -3,15 +3,19 @@
 namespace App\Console\Commands;
 
 use App\Models\ExtensionParser;
+use App\Models\ExtensionParserRule;
 use Illuminate\Console\Command;
 
 /**
  * Diffs the parsers in the database against the domain patterns each extension
  * edition ships with.
  *
- * The same site list lives in two places that cannot see each other: the DB
- * (domain + path_match per parser) and chrome-extension/editions/*.json (match
- * patterns that end up in the manifest). A parser without a matching pattern is
+ * The same site list lives in two places that cannot see each other: the DB and
+ * chrome-extension/editions/*.json (match patterns that end up in the manifest).
+ * On the DB side a domain can be served two ways — by a parser's own `domain`, or
+ * by an extension_parser_rules row pointing at that parser (which is how one config
+ * covers several hosts, e.g. a site and its demo stand). Both count as coverage.
+ * A parser without a matching pattern is
  * dead code — Chrome never injects a content script on that page, so no button
  * appears and nobody finds out until an agent complains. This command is what
  * makes that drift loud.
@@ -108,17 +112,39 @@ class CheckExtensionManifest extends Command
         //    Проверяем по хосту: у одного домена бывает несколько паттернов
         //    (/cl_refer* — точка входа SAMO-редиректа, /default.php* — сама страница),
         //    и лишь один из них соответствует path_match парсера.
+        //
+        //    Домен считается покрытым и тогда, когда на него указывает правило
+        //    маршрутизации: один парсер может обслуживать несколько хостов, не
+        //    дублируя конфиг (сайт и его демо-стенд).
+        $parserNames   = $parsers->pluck('name');
         $parserDomains = $parsers->pluck('domain')->filter()->unique();
 
+        $ruleDomains = ExtensionParserRule::query()
+            ->whereIn('parser', $parserNames)
+            ->pluck('domain')
+            ->unique();
+
+        $covered = $parserDomains->merge($ruleDomains)->unique();
+
         foreach ($patterns as $p) {
-            if (!$parserDomains->contains($p['host'])) {
+            if (!$covered->contains($p['host'])) {
                 $this->error("  ✗ паттерн {$p['raw']} — нет активного парсера этой редакции на {$p['host']}");
                 $failed = true;
             }
         }
 
+        // 3. Правило, указывающее на несуществующий парсер, — мёртвая маршрутизация.
+        $orphans = ExtensionParserRule::all()
+            ->reject(fn ($r) => ExtensionParser::where('name', $r->parser)->exists());
+
+        foreach ($orphans as $r) {
+            $this->warn("  • правило {$r->domain} → «{$r->parser}»: такого парсера нет");
+        }
+
         if (!$failed) {
-            $this->info("  ✓ {$parsers->count()} парсеров и " . count($sites) . ' паттернов сходятся');
+            $viaRules = $ruleDomains->diff($parserDomains)->count();
+            $note = $viaRules ? " (из них {$viaRules} домен(ов) через правила)" : '';
+            $this->info("  ✓ {$parsers->count()} парсеров и " . count($sites) . " паттернов сходятся{$note}");
         }
 
         return $failed;

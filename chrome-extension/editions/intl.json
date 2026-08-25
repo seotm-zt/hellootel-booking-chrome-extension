@@ -1,14 +1,14 @@
 {
-  "_comment": "International edition — operators outside Russia. See ../../.docs/2ext.md",
-  "name": "Booking Saver for HelloOtel — International",
-  "description": "Capture bookings from supported tour operator portals and send them to HelloOtel with one click.",
-  "sites": [
-    "https://demo.velikolepniy-vek.com/hotel/book/history*",
-    "https://online.joinup.ua/cl_refer*",
-    "https://online.joinup.ua/default.php*",
-    "https://b2b.travelone.md/cl_refer*",
-    "https://b2b.travelone.md/default.php*",
-    "https://online3.anextour.com.ua/cl_refer*",
-    "https://online3.anextour.com.ua/default.php*"
-  ]
+    "_comment": "International edition — operators outside Russia. See ../../.docs/2ext.md",
+    "name": "Booking Saver for HelloOtel — International",
+    "description": "Capture bookings from supported tour operator portals and send them to HelloOtel with one click.",
+    "sites": [
+        "https://velikolepniy-vek.com/hotel/book/history*",
+        "https://online.joinup.ua/cl_refer*",
+        "https://online.joinup.ua/default.php*",
+        "https://b2b.travelone.md/cl_refer*",
+        "https://b2b.travelone.md/default.php*",
+        "https://online3.anextour.com.ua/cl_refer*",
+        "https://online3.anextour.com.ua/default.php*"
+    ]
 }

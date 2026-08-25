@@ -7,7 +7,7 @@ use App\Models\ExtensionParserRule;
 use Illuminate\Database\Seeder;
 
 // Сгенерировано командой: php artisan parsers:generate-seeder
-// Дата: 2026-08-20 12:57:19
+// Дата: 2026-08-25 11:14:49
 // Полная замена: парсеры/правила, которых нет в этом сидере, удаляются.
 class ParserDataSeeder extends Seeder
 {
@@ -201,7 +201,7 @@ class ParserDataSeeder extends Seeder
   2 => 
   array (
     'name' => 'Velikolepniy Vek',
-    'domain' => 'demo.velikolepniy-vek.com',
+    'domain' => 'velikolepniy-vek.com',
     'path_match' => '/hotel/book/history',
     'config' => 
     array (
@@ -1027,8 +1027,8 @@ class ParserDataSeeder extends Seeder
   array (
     'domain' => 'demo.velikolepniy-vek.com',
     'path_match' => '/hotel/book/history',
-    'parser' => 'HellOotel — История бронирований',
-    'notes' => NULL,
+    'parser' => 'Velikolepniy Vek',
+    'notes' => 'Демо-стенд того же сайта. Основной домен velikolepniy-vek.com обслуживается самим парсером.',
   ),
   1 => 
   array (

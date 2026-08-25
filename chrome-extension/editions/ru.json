@@ -1,16 +1,17 @@
 {
-  "_comment": "RU edition — Russian tour operator portals. See ../../.docs/2ext.md",
-  "name": "Booking Saver for HelloOtel — RU",
-  "description": "Capture bookings from supported tour operator portals and send them to HelloOtel with one click.",
-  "sites": [
-    "https://demo.velikolepniy-vek.com/hotel/book/history*",
-    "https://coralagency.ru/reservation/search*",
-    "https://agency.pegast.ru/MyAccount/Bookings*",
-    "https://b2b.fstravel.com/cl_refer*",
-    "https://b2b.fstravel.com/default.php*",
-    "https://samo.anextour.ru/cl_refer*",
-    "https://samo.anextour.ru/default.php*",
-    "https://agent.anextour.ru/orders*",
-    "https://www.bgoperator.ru/tozaya*"
-  ]
+    "_comment": "RU edition — Russian tour operator portals. See ../../.docs/2ext.md",
+    "name": "Booking Saver for HelloOtel — RU",
+    "description": "Capture bookings from supported tour operator portals and send them to HelloOtel with one click.",
+    "sites": [
+        "https://velikolepniy-vek.com/hotel/book/history*",
+        "https://demo.velikolepniy-vek.com/hotel/book/history*",
+        "https://coralagency.ru/reservation/search*",
+        "https://agency.pegast.ru/MyAccount/Bookings*",
+        "https://b2b.fstravel.com/cl_refer*",
+        "https://b2b.fstravel.com/default.php*",
+        "https://samo.anextour.ru/cl_refer*",
+        "https://samo.anextour.ru/default.php*",
+        "https://agent.anextour.ru/orders*",
+        "https://www.bgoperator.ru/tozaya*"
+    ]
 }
