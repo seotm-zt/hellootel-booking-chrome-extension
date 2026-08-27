@@ -38,7 +38,7 @@ class HellOotelReservationService
 
         $payload = $this->buildPayload($processed);
 
-        $url = $this->base . '/booking-saver/create-reservation?hotel_id=' . $processed->hotel_id;
+        $url = $this->base . '/reservation/create?hotel_id=' . $processed->hotel_id;
 
         Log::info('HellOotel reservation send', [
             'processed_id' => $processed->id,
@@ -66,6 +66,7 @@ class HellOotelReservationService
 
         $response = Http::timeout(15)
             ->withBasicAuth($this->token, '')
+            ->withHeaders(['X-CLIENT-SECRET' => config('services.hellootel.client_secret')])
             ->post($url, $payload);
 
         $body = $response->json() ?? $response->body();
@@ -201,9 +202,11 @@ class HellOotelReservationService
             'tour_price_native'          => $processed->price,
             'tour_price_native_currency' => $processed->currency_code,
             'vote'                       => $processed->hotel_vote,
-            // 1 = parsed (automatic) save, 2 = manual entry (no source booking)
-            'chrome_extension_booking_type'   => $processed->source_booking_id ? 1 : 2,
-            'chrome_extension_origin_website' => $this->originWebsite($processed),
+            'extra'                      => array_filter([
+                // 1 = parsed (automatic) save, 2 = manual entry (no source booking)
+                'booking_type'   => $processed->source_booking_id ? 1 : 2,
+                'origin_website' => $this->originWebsite($processed),
+            ], fn($v) => $v !== null && $v !== ''),
         ];
 
         // Remove null/empty values — only send fields that are actually set

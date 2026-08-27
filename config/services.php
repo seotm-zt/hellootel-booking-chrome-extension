@@ -36,8 +36,9 @@ return [
     ],
 
     'hellootel' => [
-        'base'  => env('HELLOOTEL_API_BASE', 'https://hellootel.com/api/v1'),
-        'token' => env('HELLOOTEL_API_TOKEN'),
+        'base'          => env('HELLOOTEL_API_BASE', 'https://hellootel.com/api/v1'),
+        'token'         => env('HELLOOTEL_API_TOKEN'),
+        'client_secret' => env('HELLOOTEL_CLIENT_SECRET'),
     ],
 
 ];

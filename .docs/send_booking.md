@@ -2,6 +2,11 @@
 
 ## POST /reservation/create?hotel_id={id}
 
+Требует заголовок `X-CLIENT-SECRET` (env `HELLOOTEL_CLIENT_SECRET`, конфиг
+`services.hellootel.client_secret`) в дополнение к Basic Auth токеном
+оператора. Общий метод — им пользуется не только это расширение, поэтому
+все специфичные для источника поля живут в `extra`.
+
 | Поле | Источник в processed_bookings |
 |------|-------------------------------|
 | `arrival_at` | `arrival_at` (формат `Y-m-d`) |
@@ -16,8 +21,16 @@
 | `service_number` | `booking_code` |
 | `tour_price_native` | `price` |
 | `tour_price_native_currency` | `currency_code` |
+| `extra[booking_type]` | `1` если `source_booking_id` заполнен (сохранено парсером), `2` для ручной записи |
+| `extra[origin_website]` | Корневой URL сайта-источника (`https://<domain>/`), только для броней от парсера; для ручных записей отсутствует |
 
-Поля со значением `null` или `""` не включаются в payload.
+Поля со значением `null` или `""` не включаются в payload (включая ключи
+внутри `extra`).
+
+До 2026-08 использовался старый метод `POST /booking-saver/create-reservation`
+с плоскими полями `chrome_extension_booking_type`/`chrome_extension_origin_website`
+вместо `extra[...]`. HellOotel держит его рабочим до отключения — новый код на
+него не завязываем.
 
 При успехе ответ содержит `id` — сохраняется в `hellootel_reservation_id`.  
 Повторный вызов `send()` при уже заполненном `hellootel_reservation_id` не делает запрос к API.
