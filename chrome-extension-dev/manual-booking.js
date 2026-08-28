@@ -134,7 +134,7 @@ function renderManualForm(prefill = null) {
       </div>
     </div>
 
-    <p class="ttb-modal__required-note">All fields are required except Tour price and Currency</p>
+    <p class="ttb-modal__required-note">All fields are required except Tour price and Currency (Currency is required once a price is entered)</p>
     <p class="ttb-modal__send-note">You are sending booking information directly to the hotel manager via the HelloOtel system.</p>
 
     <div class="ttb-modal__footer">
@@ -212,6 +212,10 @@ function renderManualForm(prefill = null) {
     );
   }
   function updateConfirmState() {
+    const priceFilled = !!priceInput.value.trim();
+    const currencyOk  = !priceFilled || !!currencySelect.value;
+    currencySelect.classList.toggle("ttb-modal__input--notfound", priceFilled && !currencySelect.value);
+
     const ok =
       !!selectedHotelId &&
       !!arrivalInput.value &&
@@ -224,7 +228,8 @@ function renderManualForm(prefill = null) {
       childrenInput.value !== "" &&
       infantsInput.value  !== "" &&
       hasAnyTourist() &&
-      (selectedVote > 0);
+      (selectedVote > 0) &&
+      currencyOk;
     confirmBtn.disabled = !ok;
   }
   roomSelect.addEventListener("change", updateConfirmState);

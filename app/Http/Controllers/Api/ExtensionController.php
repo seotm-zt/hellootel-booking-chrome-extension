@@ -246,6 +246,8 @@ class ExtensionController extends Controller
     {
         $isDraft = $request->boolean('draft');
 
+        // Draft saves are intentionally incomplete (see 'tourists' below) — don't
+        // force currency_code there even if price is filled in.
         $data = $request->validate([
             'hotel_id'         => 'nullable|integer',
             'hotel_name'       => 'nullable|string|max:500',
@@ -256,7 +258,7 @@ class ExtensionController extends Controller
             'arrival_at'       => 'nullable|date_format:Y-m-d',
             'departure_at'     => 'nullable|date_format:Y-m-d',
             'price'            => 'nullable|numeric',
-            'currency_code'    => 'nullable|string|max:3',
+            'currency_code'    => $isDraft ? 'nullable|string|max:3' : 'nullable|required_with:price|string|max:3',
             'adults'           => 'nullable|integer|min:0',
             'children'         => 'nullable|integer|min:0',
             'infants'          => 'nullable|integer|min:0',
@@ -386,6 +388,8 @@ class ExtensionController extends Controller
 
         $isDraft = $request->boolean('draft');
 
+        // Draft saves are intentionally incomplete (see 'tourists' below) — don't
+        // force currency_code there even if price is filled in.
         $data = $request->validate([
             'hotel_id'         => 'nullable|integer',
             'hotel_name'       => 'nullable|string|max:500',
@@ -396,7 +400,7 @@ class ExtensionController extends Controller
             'arrival_at'       => 'nullable|date_format:Y-m-d',
             'departure_at'     => 'nullable|date_format:Y-m-d',
             'price'            => 'nullable|numeric',
-            'currency_code'    => 'nullable|string|max:3',
+            'currency_code'    => $isDraft ? 'nullable|string|max:3' : 'nullable|required_with:price|string|max:3',
             'adults'           => 'nullable|integer|min:0',
             'children'         => 'nullable|integer|min:0',
             'infants'          => 'nullable|integer|min:0',
@@ -489,7 +493,7 @@ class ExtensionController extends Controller
             'arrival_at'       => 'nullable|date_format:Y-m-d',
             'departure_at'     => 'nullable|date_format:Y-m-d',
             'price'            => 'nullable|numeric',
-            'currency_code'    => 'nullable|string|max:3',
+            'currency_code'    => 'nullable|required_with:price|string|max:3',
             'adults'           => 'nullable|integer|min:0',
             'children'         => 'nullable|integer|min:0',
             'infants'          => 'nullable|integer|min:0',

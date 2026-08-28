@@ -579,7 +579,7 @@ async function showConfirmModal(saveResult) {
           </div>
         </div>
 
-        <p class="ttb-modal__required-note">All fields are required except Tour price and Currency</p>
+        <p class="ttb-modal__required-note">All fields are required except Tour price and Currency (Currency is required once a price is entered)</p>
 
       </div>
 
@@ -682,6 +682,10 @@ async function showConfirmModal(saveResult) {
       );
   }
   function updateConfirmState() {
+    const priceFilled = !!priceInput.value.trim();
+    const currencyOk  = !priceFilled || !!currencySelect.value;
+    currencySelect.classList.toggle("ttb-modal__input--notfound", priceFilled && !currencySelect.value);
+
     const ok =
       !!selectedHotelId &&
       !!arrivalInput.value &&
@@ -694,7 +698,8 @@ async function showConfirmModal(saveResult) {
       childrenInput.value !== "" &&
       infantsInput.value  !== "" &&
       hasAnyTourist() &&
-      (selectedVote > 0);
+      (selectedVote > 0) &&
+      currencyOk;
     confirmBtn.disabled = !ok;
   }
 
