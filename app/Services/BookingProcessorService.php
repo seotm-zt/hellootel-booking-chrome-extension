@@ -47,7 +47,8 @@ class BookingProcessorService
             return $processed;
         }
 
-        [$arrival, $departure] = $this->parseStayDates($booking->stay_dates);
+        $reservedAtHint = $this->reservationHint($booking);
+        [$arrival, $departure] = $this->parseStayDates($booking->stay_dates, $reservedAtHint);
         [$price, $currency] = $this->parseTotalPrice($booking->total_price);
 
         $tourists = $booking->tourists ?: [];
@@ -76,7 +77,7 @@ class BookingProcessorService
             'room_type_name'        => $roomTypeName ?? $this->resolveField($booking, $fieldMap, 'room_type_name', $booking->subtitle),
             'operator_id'           => $parser?->operator_id,
             'operator_name'         => $parser?->operator_name ?? $this->resolveField($booking, $fieldMap, 'operator_name', null),
-            'reservation_date'       => $this->tryParseDate($this->extractDatePart($booking->reservation_at ?? '')),
+            'reservation_date'       => $reservedAtHint?->format('Y-m-d'),
             'arrival_at'            => $arrival,
             'departure_at'          => $departure,
             'nights'                => $this->resolveField($booking, $fieldMap, 'nights', $booking->nights ?? $this->calcNights($arrival, $departure)),
@@ -109,7 +110,7 @@ class BookingProcessorService
             if ($hotel) {
                 $hotelId = $hotel['id'];
 
-                [$arrivalStr, $departureStr] = $this->parseStayDates($booking->stay_dates);
+                [$arrivalStr, $departureStr] = $this->parseStayDates($booking->stay_dates, $this->reservationHint($booking));
 
                 $roomCandidate = $this->resolveField($booking, $fieldMap, 'room_type_name', $booking->subtitle ?? null);
                 if ($roomCandidate) {
@@ -200,7 +201,28 @@ class BookingProcessorService
         return $default;
     }
 
-    private function parseStayDates(?string $raw): array
+    // Russian short month names (3-letter prefix covers every declension —
+    // "июнь"/"июня"/"июн" all start with "июн"), used by parsers whose site
+    // only renders a day + month name for stay dates, no year (e.g. Anex
+    // Tour Agent's "Проживание" tab: "9 июн - 16 июн").
+    private const RU_MONTHS = [
+        'янв' => 1, 'фев' => 2, 'мар' => 3, 'апр' => 4, 'май' => 5, 'июн' => 6,
+        'июл' => 7, 'авг' => 8, 'сен' => 9, 'окт' => 10, 'ноя' => 11, 'дек' => 12,
+    ];
+
+    // Best-effort "what year is this booking's stay in" hint, used only when
+    // a date string has no year of its own. Derived from the booking's own
+    // reservation date — reliable in the vast majority of cases since a
+    // reservation and its stay are normally made in the same or following
+    // year, which parseStayDates()/tryParseDate() already account for via
+    // month rollover.
+    private function reservationHint(ExtensionBooking $booking): ?Carbon
+    {
+        $date = $this->tryParseDate($this->extractDatePart($booking->reservation_at ?? ''));
+        return $date ? Carbon::createFromFormat('Y-m-d', $date) : null;
+    }
+
+    private function parseStayDates(?string $raw, ?Carbon $yearHint = null): array
     {
         if (!$raw) {
             return [null, null];
@@ -214,12 +236,12 @@ class BookingProcessorService
         }
 
         return [
-            $this->tryParseDate($parts[0]),
-            $this->tryParseDate($parts[1]),
+            $this->tryParseDate($parts[0], $yearHint),
+            $this->tryParseDate($parts[1], $yearHint),
         ];
     }
 
-    private function tryParseDate(string $s): ?string
+    private function tryParseDate(string $s, ?Carbon $yearHint = null): ?string
     {
         $s = trim($s, " \t\n\r\0\x0B()");
         foreach (['d.m.Y H:i', 'd.m.Y', 'd/m/Y H:i', 'd/m/Y', 'Y-m-d', 'd.m.y', 'd-m-Y'] as $fmt) {
@@ -228,6 +250,30 @@ class BookingProcessorService
                 if ($d && $d->year >= 1900) return $d->format('Y-m-d');
             } catch (\Exception) {}
         }
+
+        // "9 июн" / "16 июня" — day + Russian month name, no year at all in
+        // the source markup. Only usable with a year hint (see
+        // reservationHint()): try the hint's year first, and if the
+        // resulting date lands before the reservation was even made, it
+        // must actually be next year — a stay can't start before its own
+        // booking date (e.g. booked in December for a January trip).
+        if ($yearHint && preg_match('/^(\d{1,2})\s+([а-яё]+)\.?$/ui', $s, $m)) {
+            $month = self::RU_MONTHS[mb_substr(mb_strtolower($m[2]), 0, 3)] ?? null;
+            $day   = (int) $m[1];
+            if ($month && $day >= 1 && $day <= 31) {
+                try {
+                    $daysInMonth = Carbon::createFromDate($yearHint->year, $month, 1)->daysInMonth;
+                    if ($day <= $daysInMonth) {
+                        $candidate = Carbon::createFromDate($yearHint->year, $month, $day)->startOfDay();
+                        if ($candidate->lt($yearHint->copy()->startOfDay())) {
+                            $candidate->addYear();
+                        }
+                        return $candidate->format('Y-m-d');
+                    }
+                } catch (\Exception) {}
+            }
+        }
+
         return null;
     }
 
