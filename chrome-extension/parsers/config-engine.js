@@ -92,16 +92,7 @@
  * ─── dl_maps ──────────────────────────────────────────────────────────────────
  *
  *   Array of definition-list configs (dt/dd pairs):
- *   [{ container?, item, key, value, fields: { fieldName: ["keyword1", ...] },
- *      value_strip_pattern?, value_strip_flags?, value_strip_replace? }]
- *
- *   value_strip_pattern (RegExp, same escaping rules as elsewhere — no
- *   backslash-letter escapes) is applied to every extracted value in this
- *   map before it's assigned to a field. Use for map-wide cleanup that a
- *   keyword match can't express, e.g. stripping a trailing weekday name from
- *   a date value ("23.06.25 Пн" → "23.06.25") so it stays parseable
- *   downstream. Scoped to the whole map (not per field) since one dl_maps
- *   block usually mixes a few unrelated fields under the same item shape.
+ *   [{ container?, item, key, value, fields: { fieldName: ["keyword1", ...] } }]
  *
  * ─── meta_maps ────────────────────────────────────────────────────────────────
  *
@@ -698,17 +689,7 @@ const ConfigParserEngine = (() => {
       const valueEl = item.querySelector(map.value);
       if (!keyEl || !valueEl) continue;
       const key = _norm(keyEl.textContent).toLowerCase();
-      let value = _norm(valueEl.textContent);
-      // Optional cleanup applied to every value in this map (e.g. strip a
-      // trailing weekday name from a date so it stays machine-parseable) —
-      // scoped to the whole map, not per-field, since a dl_maps block
-      // usually mixes a few unrelated fields under one item/key/value shape.
-      if (map.value_strip_pattern) {
-        value = value.replace(
-          new RegExp(map.value_strip_pattern, map.value_strip_flags || ""),
-          map.value_strip_replace ?? ""
-        ).trim();
-      }
+      const value = _norm(valueEl.textContent);
       for (const [field, keywords] of Object.entries(map.fields)) {
         if (keywords.some((kw) => key.includes(kw))) result[field] = value;
       }

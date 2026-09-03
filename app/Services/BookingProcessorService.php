@@ -244,6 +244,13 @@ class BookingProcessorService
     private function tryParseDate(string $s, ?Carbon $yearHint = null): ?string
     {
         $s = trim($s, " \t\n\r\0\x0B()");
+        // Strip a trailing Russian weekday abbreviation some sites append to
+        // a date value (CoralAgency's "Проживание" tab: "23.06.25 Пн" →
+        // "23.06.25"). Narrow enough (space + exactly one capitalized
+        // Cyrillic letter pair at the very end) that it can't misfire on the
+        // "day + month name" format below ("9 июн" ends in two lowercase
+        // letters, not Capitalized-lowercase).
+        $s = preg_replace('/\s+[А-Я][а-я]$/u', '', $s);
         foreach (['d.m.Y H:i', 'd.m.Y', 'd/m/Y H:i', 'd/m/Y', 'Y-m-d', 'd.m.y', 'd-m-Y'] as $fmt) {
             try {
                 $d = Carbon::createFromFormat($fmt, $s);
