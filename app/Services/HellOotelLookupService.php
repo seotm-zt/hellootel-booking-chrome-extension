@@ -128,6 +128,14 @@ class HellOotelLookupService
         );
     }
 
+    // Returns ['id' => int, 'name' => string, 'score' => int] or null.
+    // Same threshold as findHotel() — operator names, like hotel names, are
+    // specific company names rather than descriptive phrases.
+    public function findOperator(string $rawName): ?array
+    {
+        return $this->bestMatch($this->getOperators(), $rawName, threshold: 75);
+    }
+
     /** @param array<int|string,string> $candidates */
     private function bestMatch(array $candidates, string $rawName, int $threshold): ?array
     {

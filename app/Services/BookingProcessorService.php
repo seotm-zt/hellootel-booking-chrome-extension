@@ -44,6 +44,21 @@ class BookingProcessorService
                 }
             }
 
+            // Retry operator matching if it failed before — same idea as the
+            // hotel retry above. Only relevant for parsers without a fixed
+            // Operator (operator_id resolved per-booking from the page, e.g.
+            // Pink Elephant); parsers with a fixed Operator already got it on
+            // first processing and never hit this ($parser?->operator_id
+            // would have been set from the start).
+            if (!$processed->operator_id) {
+                $parser     = $this->resolveParser($booking->source_domain ?? '', $booking->source_url ?? '');
+                $fieldMap   = $parser?->config['field_map'] ?? [];
+                $operatorId = $parser?->operator_id ?? $this->matchOperator($booking, $fieldMap);
+                if ($operatorId) {
+                    $processed->update(['operator_id' => $operatorId]);
+                }
+            }
+
             return $processed;
         }
 
@@ -75,7 +90,7 @@ class BookingProcessorService
             'hotel_id'              => $hotelId,
             'room_type_id'          => $roomTypeId,
             'room_type_name'        => $roomTypeName ?? $this->resolveField($booking, $fieldMap, 'room_type_name', $booking->subtitle),
-            'operator_id'           => $parser?->operator_id,
+            'operator_id'           => $parser?->operator_id ?? $this->matchOperator($booking, $fieldMap),
             'operator_name'         => $parser?->operator_name ?? $this->resolveField($booking, $fieldMap, 'operator_name', null),
             'reservation_date'       => $reservedAtHint?->format('Y-m-d'),
             'arrival_at'            => $arrival,
@@ -124,6 +139,21 @@ class BookingProcessorService
         }
 
         return [$hotelId, $roomTypeId, $roomTypeName];
+    }
+
+    // Try to resolve operator_id from the raw booking's parsed operator name
+    // (field_map "operator_name" → typically meta.<key>). Only ever called
+    // as a fallback for the *current* operator_id lookup ($parser?->operator_id
+    // ?? $this->matchOperator(...)) — a parser with a fixed Operator never
+    // reaches this, its static operator_id always wins first.
+    public function matchOperator(ExtensionBooking $booking, ?array $fieldMap = null): ?int
+    {
+        $fieldMap ??= $this->getFieldMap($booking);
+
+        $rawName = $this->resolveField($booking, $fieldMap, 'operator_name', null);
+        if (!$rawName) return null;
+
+        return $this->lookup->findOperator($rawName)['id'] ?? null;
     }
 
     // Load field_map from the parser config for this booking's domain/path
@@ -276,6 +306,24 @@ class BookingProcessorService
                             $candidate->addYear();
                         }
                         return $candidate->format('Y-m-d');
+                    }
+                } catch (\Exception) {}
+            }
+        }
+
+        // "01 июля 2026" — day + Russian month name + year, all in the
+        // string itself (Pink Elephant's "Длительность:" row). Unlike the
+        // no-year branch above, no yearHint/rollover guessing needed — the
+        // year is already explicit.
+        if (preg_match('/^(\d{1,2})\s+([а-яё]+)\.?\s+(\d{4})$/ui', $s, $m)) {
+            $month = self::RU_MONTHS[mb_substr(mb_strtolower($m[2]), 0, 3)] ?? null;
+            $day   = (int) $m[1];
+            $year  = (int) $m[3];
+            if ($month && $day >= 1 && $day <= 31) {
+                try {
+                    $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+                    if ($day <= $daysInMonth) {
+                        return Carbon::createFromDate($year, $month, $day)->format('Y-m-d');
                     }
                 } catch (\Exception) {}
             }

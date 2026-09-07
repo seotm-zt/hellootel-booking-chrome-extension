@@ -7,7 +7,7 @@ use App\Models\ExtensionParserRule;
 use Illuminate\Database\Seeder;
 
 // Сгенерировано командой: php artisan parsers:generate-seeder
-// Дата: 2026-08-25 11:14:49
+// Дата: 2026-09-07 16:21:05
 // Полная замена: парсеры/правила, которых нет в этом сидере, удаляются.
 class ParserDataSeeder extends Seeder
 {
@@ -35,10 +35,6 @@ class ParserDataSeeder extends Seeder
         array (
           'sel' => '.travel-line.text-description a',
           'strip_pattern' => '^[^,]+, ',
-        ),
-        'stay_dates' => 
-        array (
-          'sel' => '.travel-line .date',
         ),
         'total_price' => 
         array (
@@ -69,6 +65,10 @@ class ParserDataSeeder extends Seeder
             'hotel_name' => 
             array (
               0 => 'отель',
+            ),
+            'stay_dates' => 
+            array (
+              0 => 'даты',
             ),
           ),
           'container' => '.reservation-tab.residence .tab-list',
@@ -137,7 +137,8 @@ class ParserDataSeeder extends Seeder
         ),
         'stay_dates' => 
         array (
-          'sel' => '.main-cell--tour-duration .main-cell__primary',
+          'sel' => '.booking-hotel-service__wrapper .main-column__period',
+          'strip_pattern' => '[,][ ]*[0-9]+[ ]ноч.*$',
         ),
         'total_price' => 
         array (
@@ -401,7 +402,7 @@ class ParserDataSeeder extends Seeder
     ),
     'is_active' => true,
     'edition' => 'ru',
-    'operator_id' => NULL,
+    'operator_id' => 68,
     'operator_name' => NULL,
     'notes' => NULL,
   ),
@@ -535,12 +536,6 @@ class ParserDataSeeder extends Seeder
           'sel' => 'li > div.flex.flex-col.rounded-8.bg-fog a.text-16.font-medium.text-black',
           'strip_icons' => true,
         ),
-        'stay_dates' => 
-        array (
-          'sel' => 'time[data-field="datebeg"]',
-          'join' => ' - ',
-          'multi' => true,
-        ),
         'booking_code' => 
         array (
           'sel' => 'p.text-16.leading-22.font-bold',
@@ -564,6 +559,10 @@ class ParserDataSeeder extends Seeder
             'subtitle' => 
             array (
               0 => 'номер',
+            ),
+            'stay_dates' => 
+            array (
+              0 => 'дата',
             ),
           ),
         ),
@@ -913,7 +912,7 @@ class ParserDataSeeder extends Seeder
     ),
     'is_active' => true,
     'edition' => 'intl',
-    'operator_id' => NULL,
+    'operator_id' => 104,
     'operator_name' => NULL,
     'notes' => 'SAMO-based, inline claim-composition toggle (no cost popup on this page — total_price unavailable here).',
   ),
@@ -1000,6 +999,92 @@ class ParserDataSeeder extends Seeder
     'operator_id' => 32,
     'operator_name' => NULL,
     'notes' => 'SAMO-based, inline claim-composition toggle (no cost popup on this page — total_price unavailable here).',
+  ),
+  10 => 
+  array (
+    'name' => 'Розовый Слон — Заявки',
+    'domain' => 'online.pinkelephant.ru',
+    'path_match' => '/claims',
+    'config' => 
+    array (
+      'card' => 'div.tour-info',
+      'type' => 'card',
+      'button' => '.buttons',
+      'fields' => 
+      array (
+        'subtitle' => 
+        array (
+          'sel' => 'table.tour-info.claim tr:nth-child(4) td:nth-child(2)',
+          'strip_pattern' => '^.*,[ ]',
+        ),
+        'hotel_name' => 
+        array (
+          'sel' => 'table.tour-info.claim tr:nth-child(4) td:nth-child(2)',
+          'strip_pattern' => '[ ][0-9]+[ ]взросл.*',
+        ),
+        'stay_dates' => 
+        array (
+          'sel' => 'table.tour-info.claim tr:nth-child(3) td:nth-child(2)',
+          'strip_pattern' => '^[0-9]+[ ]ноч[а-я]*[ ]с[ ](.+)[ ]по[ ](.+)$',
+          'strip_replace' => '$1 - $2',
+        ),
+        'total_price' => 
+        array (
+          'sel' => '.filling .price',
+        ),
+        'booking_code' => 
+        array (
+          'sel' => '.trip-table-h3 h3 a',
+          'strip_prefix' => 'Заявка',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => '.trip-table-h3',
+          'strip_icons' => true,
+          'strip_pattern' => '^([0-9:]+),[ ]([0-9.]+)$',
+          'strip_replace' => '$2 $1',
+        ),
+      ),
+      'field_map' => 
+      array (
+        'operator_name' => 'meta.operator',
+      ),
+      'meta_fields' => 
+      array (
+        'operator' => 
+        array (
+          'sel' => '.logo-company a',
+        ),
+      ),
+      'tourist_blocks' => 
+      array (
+        'item' => '.tour-tourists tbody:nth-of-type(2) tr',
+        'fields' => 
+        array (
+          'dob' => 
+          array (
+            'sel' => 'td:nth-child(2)',
+          ),
+          'last_name' => 
+          array (
+            'sel' => 'td:nth-child(1)',
+            'strip_pattern' => '^[A-Za-z]+[ ]+([A-Za-z]+)[ ]+[A-Za-z]+$',
+            'strip_replace' => '$1',
+          ),
+          'first_name' => 
+          array (
+            'sel' => 'td:nth-child(1)',
+            'strip_pattern' => '^[A-Za-z]+[ ]+[A-Za-z]+[ ]+([A-Za-z]+)$',
+            'strip_replace' => '$1',
+          ),
+        ),
+      ),
+    ),
+    'is_active' => true,
+    'edition' => 'ru',
+    'operator_id' => NULL,
+    'operator_name' => NULL,
+    'notes' => 'Создан по ТЗ-4 (.docs/tz4.md). Домен-агрегатор: заявки могут быть проведены через разных туроператоров, поэтому Operator намеренно не зафиксирован на парсере — operator_id резолвится автоматически по имени оператора, распарсенному со страницы (meta.operator), через HellOotelLookupService::findOperator() / BookingProcessorService::matchOperator(). Если авто-подбор не сработал — operator_id останется null, поправить вручную в Processed Booking или Retry после появления оператора в справочнике HelloOtel.',
   ),
 );
 
