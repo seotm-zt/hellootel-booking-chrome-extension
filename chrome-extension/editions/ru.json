@@ -13,6 +13,8 @@
         "https://samo.anextour.ru/default.php*",
         "https://agent.anextour.ru/orders*",
         "https://www.bgoperator.ru/tozaya*",
-        "https://online.pinkelephant.ru/claims*"
+        "https://online.pinkelephant.ru/claims*",
+        "https://online.space-travel.ru/default.php*",
+        "https://sunmaragency.ru/reservation/search*"
     ]
 }

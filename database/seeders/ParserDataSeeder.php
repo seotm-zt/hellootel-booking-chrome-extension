@@ -7,7 +7,7 @@ use App\Models\ExtensionParserRule;
 use Illuminate\Database\Seeder;
 
 // Сгенерировано командой: php artisan parsers:generate-seeder
-// Дата: 2026-09-07 16:21:05
+// Дата: 2026-09-10 20:01:07
 // Полная замена: парсеры/правила, которых нет в этом сидере, удаляются.
 class ParserDataSeeder extends Seeder
 {
@@ -1086,6 +1086,119 @@ class ParserDataSeeder extends Seeder
     'operator_name' => NULL,
     'notes' => 'Создан по ТЗ-4 (.docs/tz4.md). Домен-агрегатор: заявки могут быть проведены через разных туроператоров, поэтому Operator намеренно не зафиксирован на парсере — operator_id резолвится автоматически по имени оператора, распарсенному со страницы (meta.operator), через HellOotelLookupService::findOperator() / BookingProcessorService::matchOperator(). Если авто-подбор не сработал — operator_id останется null, поправить вручную в Processed Booking или Retry после появления оператора в справочнике HelloOtel.',
   ),
+  11 => 
+  array (
+    'name' => 'Space Travel — Просмотр заявок',
+    'domain' => 'online.space-travel.ru',
+    'path_match' => '/default.php',
+    'config' => 
+    array (
+      'card' => '.modalTitle, .claim-orders__content:not(:empty)',
+      'type' => 'card',
+      'fields' => 
+      array (
+        'subtitle' => 
+        array (
+          'sel' => '.order-block__data.hotel-room',
+          'strip_icons' => true,
+        ),
+        'hotel_name' => 
+        array (
+          'sel' => '.order-block__data.hotel-name a',
+        ),
+        'stay_dates' => 
+        array (
+          'sel' => '.order-block__data.hotel-dates',
+          'strip_icons' => true,
+        ),
+        'booking_code' => 
+        array (
+          'data' => 'claim',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => 'td.status',
+          'strip_icons' => true,
+        ),
+      ),
+      'card_root' => '#modalContainer, table[id^=\'cl_\']',
+      'data_root' => 
+      array (
+        'code_source' => 
+        array (
+          'self' => true,
+          'strip_pattern' => '^[^0-9]*',
+        ),
+        'selector_template' => '#cl_{code}',
+      ),
+      'card_fields' => 
+      array (
+        'total_price' => 
+        array (
+          'sel' => '.samo_container > table:nth-of-type(2) tbody tr:nth-child(2) td.cl-cost.claim-currency',
+          'append_location' => '.samo_container > table:nth-of-type(2) thead th.cl-cost.claim-currency',
+        ),
+        'booking_code' => 
+        array (
+          'data' => 'claim',
+        ),
+        'reservation_at' => 
+        array (
+          'sel' => 'td.status',
+          'strip_icons' => true,
+          'strip_pattern' => '^[^0-9]*',
+        ),
+      ),
+      'meta_fields' => 
+      array (
+        'flights' => 
+        array (
+          'sel' => '.order-block__data.freight-name',
+          'multi' => true,
+        ),
+        'hotel_stars' => 
+        array (
+          'sel' => '.order-block__data.hotel-stars',
+        ),
+        'payment_status' => 
+        array (
+          'sel' => '.claim-status',
+          'strip_icons' => true,
+        ),
+      ),
+      'tourist_blocks' => 
+      array (
+        'item' => '.tbl_peoples tbody tr[data-people]',
+        'fields' => 
+        array (
+          'dob' => 
+          array (
+            'sel' => '.born',
+          ),
+          'gender' => 
+          array (
+            'sel' => '.human',
+          ),
+          'last_name' => 
+          array (
+            'sel' => '.tourist-latin-name',
+            'strip_pattern' => '[ ].*$',
+          ),
+          'first_name' => 
+          array (
+            'sel' => '.tourist-latin-name',
+            'strip_pattern' => '^[^ ]+[ ]+',
+          ),
+        ),
+      ),
+      'button_placement' => 'after',
+    ),
+    'is_active' => true,
+    'edition' => 'ru',
+    'operator_id' => NULL,
+    'operator_name' => NULL,
+    'notes' => 'Создан по ТЗ-5 (.docs/tz5.md). Тот же движок SAMO, что у FunSun Russia (b2b.fstravel.com) и Anex Tour (samo.anextour.ru) — конфиг скопирован без изменений, сверен посимвольно с Page Report 87. Operator намеренно не заполнен — нет точного совпадения в справочнике HelloOtel (getOperators()), пользователь решил оставить пустым; заполнить вручную в Processed Booking или когда оператор появится в HelloOtel.',
+  ),
 );
 
         $keepNames = array_column($parsers, 'name');
@@ -1121,6 +1234,13 @@ class ParserDataSeeder extends Seeder
     'path_match' => '/reservation/search',
     'parser' => 'CoralAgency — Заявки',
     'notes' => 'Список заявок агентства',
+  ),
+  2 => 
+  array (
+    'domain' => 'sunmaragency.ru',
+    'path_match' => '/reservation/search',
+    'parser' => 'CoralAgency — Заявки',
+    'notes' => 'Создано по ТЗ-5 (.docs/tz5.md). Та же CRM ("Coral Travel Group"), что у coralagency.ru — селекторы сверены посимвольно с Page Report 101, включая специфичный класс .price.wow. Operator существующего парсера (id=15, "Coral Travel/Sunmar/Odeon" в HelloOtel) уже корректно покрывает бренд Sunmar — доп. решений не требуется.',
   ),
 );
 
