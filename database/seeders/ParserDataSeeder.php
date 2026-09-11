@@ -7,7 +7,7 @@ use App\Models\ExtensionParserRule;
 use Illuminate\Database\Seeder;
 
 // Сгенерировано командой: php artisan parsers:generate-seeder
-// Дата: 2026-09-10 20:01:07
+// Дата: 2026-09-11 12:06:47
 // Полная замена: парсеры/правила, которых нет в этом сидере, удаляются.
 class ParserDataSeeder extends Seeder
 {
@@ -21,9 +21,9 @@ class ParserDataSeeder extends Seeder
     'path_match' => '/reservation/search',
     'config' => 
     array (
-      'card' => 'div.box[data-voucher]',
+      'card' => 'div.box.active[data-voucher]',
       'type' => 'card',
-      'button' => '.content-box',
+      'button' => '.reservation-tab.residence',
       'fields' => 
       array (
         'subtitle' => 
@@ -108,7 +108,7 @@ class ParserDataSeeder extends Seeder
         ),
         'td_text' => true,
       ),
-      'button_placement' => 'after',
+      'button_placement' => 'before',
     ),
     'is_active' => true,
     'edition' => 'ru',
@@ -1093,7 +1093,7 @@ class ParserDataSeeder extends Seeder
     'path_match' => '/default.php',
     'config' => 
     array (
-      'card' => '.modalTitle, .claim-orders__content:not(:empty)',
+      'card' => '.modalTitle, .claim-orders__content[style*="block"]',
       'type' => 'card',
       'fields' => 
       array (
@@ -1191,11 +1191,11 @@ class ParserDataSeeder extends Seeder
           ),
         ),
       ),
-      'button_placement' => 'after',
+      'button_placement' => 'before',
     ),
     'is_active' => true,
     'edition' => 'ru',
-    'operator_id' => NULL,
+    'operator_id' => 73,
     'operator_name' => NULL,
     'notes' => 'Создан по ТЗ-5 (.docs/tz5.md). Тот же движок SAMO, что у FunSun Russia (b2b.fstravel.com) и Anex Tour (samo.anextour.ru) — конфиг скопирован без изменений, сверен посимвольно с Page Report 87. Operator намеренно не заполнен — нет точного совпадения в справочнике HelloOtel (getOperators()), пользователь решил оставить пустым; заполнить вручную в Processed Booking или когда оператор появится в HelloOtel.',
   ),
@@ -1240,7 +1240,7 @@ class ParserDataSeeder extends Seeder
     'domain' => 'sunmaragency.ru',
     'path_match' => '/reservation/search',
     'parser' => 'CoralAgency — Заявки',
-    'notes' => 'Создано по ТЗ-5 (.docs/tz5.md). Та же CRM ("Coral Travel Group"), что у coralagency.ru — селекторы сверены посимвольно с Page Report 101, включая специфичный класс .price.wow. Operator существующего парсера (id=15, "Coral Travel/Sunmar/Odeon" в HelloOtel) уже корректно покрывает бренд Sunmar — доп. решений не требуется.',
+    'notes' => NULL,
   ),
 );
 
